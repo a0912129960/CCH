@@ -43,25 +43,7 @@ The project utilizes the latest stable enterprise technologies to ensure perform
 
 ---
 
-## 4. Core Modules & Requirements (核心模組與需求)
-
-### 4.1 AI Classification (AI 歸類)
-- **Goal**: Suggest HTS/HS codes based on product descriptions. (根據產品描述建議 HTS/HS 編碼)
-- **Provider**: Swappable via `IAIClassificationProvider` (Avalara/Zonos/Descartes). (可透過介面更換供應商)
-- **Validation**: Confidence scores and reasoning text stored for review. (儲存信心評分與推理文本以供審核)
-
-### 4.2 Tariff Monitoring (關稅監控)
-- **Jobs**: Daily checks against USITC Change Records and Federal Register. (每日檢查 USITC 變更記錄與聯邦公報)
-- **Alerting**: Flag active records if HTS codes or duty rates change. (若 HTS 編碼或稅率變動，則標記現有紀錄)
-- **Duty Saving**: Calculate estimated savings for Section 301 exclusions. (計算 301 條款豁免的預估節省金額)
-
-### 4.3 Data Synchronization (資料同步)
-- **Value+ Integration**: Nightly sync with eCBS for Part No discovery and reconciliation. (每晚與 eCBS 同步以進行零件號發現與核對)
-- **Idempotency**: Ensure jobs can be re-run without duplicating alerts. (確保工作可重複執行而不產生重複警報)
-
----
-
-## 5. Security & Compliance (安全與合規)
+## 4. Security & Compliance (安全與合規)
 
 - **Credential Management**: Secrets stored in environment variables, never in code. (金鑰儲存於環境變數，絕不寫入程式碼)
 - **PII Protection**: Masking personally identifiable information in logs. (在日誌中遮罩個人識別資訊)

@@ -1,0 +1,27 @@
+<svg width="64" height="50" viewBox="0 0 64 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_904_852)">
+<path d="M45.5 35.48C55.165 35.48 63 27.645 63 17.98C63 8.315 55.165 0.47998 45.5 0.47998C35.835 0.47998 28 8.315 28 17.98C28 27.645 35.835 35.48 45.5 35.48Z" fill="#E7EEF1"/>
+<path d="M39 5.48001H29.17C28.73 4.48001 27.69 3.65001 26.49 3.65001C26.11 3.65001 25.74 3.70001 25.41 3.83001C24.74 2.04001 23.01 0.76001 20.98 0.76001C18.37 0.76001 16.25 3.49001 16.25 5.49001H7" stroke="#A2A9B1" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M63 10.48H59.04C58.38 9.47997 57.01 8.42997 55.37 8.62997C54.65 7.39997 53.34 6.46997 51.81 6.46997C49.54 6.46997 47.7 8.47997 47.68 10.48H38" stroke="#A2A9B1" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M62 39.48C62.03 38.33 62.47 33.98 59.61 33.28C59.36 32.81 58.29 30.49 57.38 28.51C56.54 26.67 54.7 25.48 52.67 25.48H45V44.48H61.6C61.6 44.48 63 43.53 63 42.48C63 41.43 63.25 39.81 62 39.48Z" fill="#6BFFFF"/>
+<path d="M45 44.48H61.6C61.6 44.48 63 43.53 63 42.48C63 41.43 63.25 39.81 62 39.48C62.03 38.33 62.47 33.98 59.61 33.28C59.36 32.81 58.29 30.49 57.38 28.51C56.54 26.67 54.7 25.48 52.67 25.48H45" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M55.02 33.39L53.38 29.89C53.26 29.63 53 29.47 52.72 29.47H48.99V34.47H54.32C54.88 34.47 55.25 33.89 55.01 33.38L55.02 33.39Z" fill="white" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M13 16.48V24.48V35.48V44.48H45V16.48H13Z" fill="white"/>
+<path d="M13 24.48V16.48H45V44.48H13V35.48" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M13 33.48V27.48" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M26.01 44.47C26.01 46.67 24.22 48.46 22.01 48.46C19.8 48.46 18.01 46.67 18.01 44.47C18.01 42.27 19.8 40.48 22.01 40.48C24.22 40.48 26.01 42.27 26.01 44.47Z" fill="#E7EEF1" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M56.01 44.47C56.01 46.67 54.22 48.46 52.01 48.46C49.8 48.46 48.01 46.67 48.01 44.47C48.01 42.27 49.8 40.48 52.01 40.48C54.22 40.48 56.01 42.27 56.01 44.47Z" fill="#E7EEF1" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M23 32.48H4" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M34 24.48H9" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M40 16.48H9" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M7 16.48H5" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M3 16.48H1" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M2 32.48H0" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+<path d="M7 24.48H5" stroke="#011837" stroke-width="1.5" stroke-miterlimit="10"/>
+</g>
+<defs>
+<clipPath id="clip0_904_852">
+<rect width="63.77" height="49.21" fill="white"/>
+</clipPath>
+</defs>
+</svg>

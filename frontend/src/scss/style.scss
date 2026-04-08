@@ -1,0 +1,79 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+:root {
+    /* ===== Colors ===== */
+    --body-color: #e4e9f7;
+    --sidebar-color: #465363;
+    --primary-color: #00a8e2;
+    --primary-color-light: #f6f5ff;
+    --toggle-color: #ddd;
+    --text-color: #ffffff;
+    --warning-color: #f68b39;
+    --dashboard-bg: #f3f6f8;
+    --el-color-black: #011837 !important;
+    /* ====== Transition ====== */
+    --tran-03: all 0.2s ease;
+    --tran-03: all 0.3s ease;
+    --tran-04: all 0.3s ease;
+    --tran-05: all 0.3s ease;
+}
+
+body {
+    min-height: 100vh;
+    background-color: var(--body-color);
+    transition: var(--tran-05);
+    color: var(--el-color-black, #000);
+}
+
+.dark {
+    --body-color: #18191a;
+    --sidebar-color: #242526;
+    --primary-color: #3a3b3c;
+    --primary-color-light: #3a3b3c;
+    --toggle-color: #fff;
+    --text-color: #ccc;
+}
+::-webkit-scrollbar {
+	width: 8px;
+    height: 8px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+	border-radius: 10px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+	background: #d9d9d9;
+	border-radius: 10px;
+}
+
+@font-face {
+    font-family: "MyDimerco-Arial";
+    src: url("../assets/fonts/Arial.ttf");
+}
+@font-face {
+    font-family: "MyDimerco-OpenSansBold";
+    src: url("../assets/fonts/OpenSans-Bold.ttf");
+}
+@font-face {
+    font-family: "MyDimerco-OpenSansRegular";
+    src: url("../assets/fonts/OpenSans-Regular.ttf");
+}
+@font-face {
+    font-family: "MyDimerco-WorkSansBold";
+    src: url("../assets/fonts/WorkSans-SemiBold.ttf");
+}
+@font-face {
+    font-family: "MyDimerco-WorkSansLight";
+    src: url("../assets/fonts/WorkSans-Light.ttf");
+}
+
+@import "./variables.scss";
+@import './_utilities.scss';
+@import "./override.scss";
+@import "./iconmoon.scss";

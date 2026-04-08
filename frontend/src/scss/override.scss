@@ -1,0 +1,366 @@
+.login-wrapper__content .el-icon {
+    font-size: 14px;
+    color: black !important;
+}
+
+.el-form-item__error {
+    font-family: "MyDimerco-OpenSansRegular";
+    font-size: 13px;
+}
+
+.el-popper,
+.apexcharts-legend-text,
+.apexcharts-text tspan {
+    font-family: "MyDimerco-OpenSansRegular" !important;
+}
+
+.el-select .el-input .el-select__caret {
+    color: #465363 !important;
+}
+
+.dmc__dashboard .el-input__wrapper .el-input__inner {
+    font-family: "MyDimerco-OpenSansBold";
+    font-weight: bold;
+}
+
+.el-pager li {
+    font-weight: normal !important;
+}
+.el-tabs__content {
+    padding: 0 !important;
+}
+.el-tabs__item.is-active {
+	color: #00a8e2 !important;
+}
+.el-tabs__active-bar{
+    background-color: #00a8e2 !important;
+}
+.custom-library .el-input__inner {
+    font-family: "MyDimerco-OpenSansBold";
+    font-weight: bold;
+}
+.DimercoLoginHeaderLink {
+    color: #011837 !important;
+    text-align: center;
+    font-family: MyDimerco-OpenSansBold;
+    font-size: 18.2px;
+}
+.page--title {
+    font-family: MyDimerco-OpenSansBold;
+    font-size: 20px;
+}
+
+.DimercoHeadLine-FontStyle {
+    font-family: MyDimerco-WorkSansBold !important;
+}
+.DimercoFont-OpenSansBold {
+    font-family: MyDimerco-OpenSansBold;
+}
+
+.DimercoHeadLine-FontStyle {
+    font-family: MyDimerco-WorkSansBold !important;
+}
+
+.select-project-authorization {
+    .el-input__wrapper {
+        background-color: #e7eef1 !important;
+    }
+}
+
+.login-wrapper__content .el-icon {
+    font-size: 14px;
+    color: black !important;
+}
+
+.el-form-item__error {
+    font-family: "MyDimerco-OpenSansRegular";
+    font-size: 13px;
+}
+
+.el-popper {
+    font-family: "MyDimerco-OpenSansRegular" !important;
+}
+
+.el-pagination {
+    button,
+    li {
+        font-family: "MyDimerco-OpenSansRegular" !important;
+        border: 1px solid #e5e5e5 !important;
+        width: 40px !important;
+        height: 40px !important;
+        background-color: #e7eef1 !important;
+        &:hover {
+            border: 1px solid #e5e5e5 !important;
+        }
+    }
+
+    .is-active {
+        background-color: #00a8e2 !important;
+        border: 1px solid #00a8e2 !important;
+        color: $white !important;
+    }
+}
+
+//courier list pagination
+.small-pagination {
+    button,
+    li {
+        width: 30px !important;
+        height: 30px !important;
+
+    }
+}
+
+.el-notification {
+    font-family: "MyDimerco-OpenSansRegular" !important;
+}
+
+.el-notification__content {
+    text-align: left !important;
+}
+
+button:disabled,
+button[disabled] {
+    opacity: 0.5;
+    pointer-events: none;
+    background-color: #465363 !important;
+    opacity: 0.3;
+}
+
+.dmc__page--title {
+    font-family: "MyDimerco-OpenSansBold" !important;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.report {
+    .el-input__wrapper {
+        background: white !important;
+    }
+    .el-input__inner {
+        color: #8b95a0;
+    }
+    .el-dialog__header {
+        background: #00a8e2;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 0px;
+        margin-right: 0px;
+        height: 50px;
+        padding: 0 20px;
+        font-size: 18px;
+        line-height: 24px;
+        font-family: "MyDimerco-OpenSansRegular";
+        font-weight: bold;
+        .el-dialog__title {
+            color: white;
+        }
+    }
+    .el-dialog__headerbtn {
+        position: relative;
+        background: white;
+        height: 30px;
+        width: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        top: 0;
+    }
+}
+.report__info {
+    .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+        color: #00a8e2 !important;
+        font-size: 14px;
+        font-family: "MyDimerco-OpenSansBold";
+    }
+    .el-tabs__item {
+        color: #465363 !important;
+        background: #e7eef1;
+        font-family: "MyDimerco-OpenSansBold";
+        width: 200px;
+        height: 45px;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    .custom-date-picker {
+        width: 100% !important;
+        .el-input__wrapper {
+            width: 100% !important;
+        }
+    }
+    .el-input__icon {
+        color: #8b95a0 !important;
+        margin-right: 0 !important;
+    }
+    .custom-date-picker .el-input__wrapper {
+        flex-direction: row-reverse !important;
+    }
+    .el-input__suffix-inner {
+        flex-direction: row-reverse !important;
+    }
+}
+.content-table {
+    margin-top: 20px;
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th {
+        background: #e7eef1 !important;
+        font-family: "MyDimerco-OpenSansBold" !important;
+    }
+    td,
+    th {
+        text-align: left;
+        padding: 10px;
+        font-size: 14px;
+        font-family: "MyDimerco-OpenSansRegular";
+        color: #465363;
+    }
+    tr {
+        background: #f3f6f8 !important;
+    }
+    tr:nth-child(even) {
+        background: #fff !important;
+    }
+}
+.result-nodata {
+    .el-dialog {
+        width: 35% !important;
+    }
+}
+.result-havedata {
+    .el-dialog {
+        width: 80% !important;
+    }
+    .el-table .cell{
+        word-break: break-word !important;
+    }
+}
+.el-autocomplete.w-100.el-tooltip__trigger.el-tooltip__trigger {
+    width: 100%;
+}
+
+.el-input__wrapper .el-input__inner {
+    line-height: 1rem !important;
+    font-family: "MyDimerco-OpenSansRegular";
+}
+
+.el-input__wrapper {
+    border: 0.5px solid #ced4da;
+}
+
+.el-form-item.is-error .el-input__wrapper {
+    border: 0.5px solid var(--el-color-danger);
+}
+.el-step__title,
+.el-statistic__head,
+.el-form-item__label,
+.el-select__placeholder span,
+.el-select-dropdown__item span{
+    font-family: "MyDimerco-OpenSansRegular";
+}
+
+
+
+.el-card__body,
+.el-table__header .el-table .cell{
+    font-family: "MyDimerco-OpenSansBold";
+}
+
+span.el-breadcrumb__inner.is-link{
+    font-weight: bold !important;
+    color: #8B95A0 !important;
+}
+.el-breadcrumb__item:first-child{
+    color: #011837;
+    font-weight: bold !important;
+    span.el-breadcrumb__inner.is-link{
+        font-weight: bold !important;
+        color: #011837 !important;
+    }
+}
+
+.el-date-table td.today .el-date-table-cell__text{
+    border: 1px solid var(--el-color-primary) !important;
+}
+
+.custom-input-recent .el-input__wrapper{
+    background-color: #E7EEF1;
+}
+
+.custom-input-recent .el-input__wrapper.is-focus{
+    background: white !important;
+}
+
+@media (max-width: 1367px) {
+    .el-input__inner{
+        font-size: 13px !important;
+    }
+    .dmc__dashboard .el-input__wrapper .el-input__inner {
+        font-size: 12px;
+    }
+    li.el-select-dropdown__item , .el-autocomplete-suggestion li{
+        font-size: 12px !important;
+    }
+    .el-notification__content p {
+        font-size: 13px;
+    }
+    .el-notification__title {
+        font-size: 16px;
+    }
+    .el-select-dropdown__item{
+        padding: 0 24px 0 20px !important;
+    }
+    .report .el-dialog__header .el-dialog__title{
+        font-size: 14px;
+    }
+    .report .el-dialog__headerbtn{
+        height: 26px;
+        width: 26px;
+    }
+    .d-flex-result-nodata p{
+        font-size: 14px !important;
+    }
+    span.btn-export{
+        font-size: 13px !important;
+    }
+    .cell{
+        font-size: 13px !important;
+    }
+    .popup-report-result {
+        .number {
+            font-size: 12px;
+            width: 34px !important;
+            height: 34px !important;
+        }
+        .el-dialog__body{
+            padding-top: 15px !important;
+        }
+        .el-table--fit.el-table--fluid-height{
+            max-height: 370px !important;
+            overflow-y: scroll !important;
+        }
+    }
+}
+
+.el-loading-mask {
+    position: fixed !important;
+    padding-left: 100px;
+    .el-loading-spinner .el-loading-text {
+        font-size: 16px;
+    }
+}
+
+.el-table .caret-wrapper {
+    width: 6px !important;
+}
+:root{
+    --el-font-family:"MyDimerco-OpenSansRegular"
+}

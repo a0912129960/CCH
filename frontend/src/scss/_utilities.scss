@@ -1,0 +1,51 @@
+  
+@each $spacing-var, $space in $spacings {
+    //margin
+    .mb#{$spacing-var} {
+        margin-bottom: $space;
+    }
+    .mt#{$spacing-var} {
+        margin-top: $space;
+    }
+    .ml#{$spacing-var} {
+        margin-left: $space;
+    }
+    .mr#{$spacing-var} {
+        margin-right: $space;
+    }
+    .m#{$spacing-var} {
+        margin: $space;
+    }
+    .mtb#{$spacing-var} {
+        margin-top: $space;
+        margin-bottom: $space;
+    }
+    .mlr#{$spacing-var} {
+        margin-left: $space;
+        margin-right: $space;
+    }
+    //padding
+    .pb#{$spacing-var} {
+        padding-bottom: $space;
+    }
+    .pt#{$spacing-var} {
+        padding-top: $space;
+    }
+    .pl#{$spacing-var} {
+        padding-left: $space;
+    }
+    .pr#{$spacing-var} {
+        padding-right: $space;
+    }
+    .p#{$spacing-var} {
+        padding: $space;
+    }
+    .ptb#{$spacing-var} {
+        padding-top: $space;
+        padding-bottom: $space;
+    }
+    .plr#{$spacing-var} {
+        padding-left: $space;
+        padding-right: $space;
+    }
+}
