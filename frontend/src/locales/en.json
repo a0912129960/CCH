@@ -4,14 +4,22 @@
     "app_full_name": "Dimerco Customs Compliance Hub",
     "login": "Login",
     "logout": "Logout",
-    "home": "Home",
+    "home": "Dashboard",
     "dashboard": "Dashboard",
-    "portal": "Portal",
+    "portal": "Dashboard",
     "welcome": "Welcome",
     "role": "Role",
     "save": "Save",
     "cancel": "Cancel",
-    "status": "Status"
+    "status": "Status",
+    "search": "Search",
+    "all": "All",
+    "last_updated": "Last Updated",
+    "supplier": "Supplier",
+    "menu": {
+      "dashboard": "Dashboard",
+      "parts": "Part No List"
+    }
   },
   "login": {
     "title": "Login",
@@ -28,12 +36,19 @@
     "role_name": "Dimerco Employee"
   },
   "customer": {
-    "title": "Customer Portal",
+    "title": "Customer Dashboard",
     "role_name": "External Customer",
     "status_summary": "Part Status Summary",
     "sla_countdown": "SLA Countdown (Pending Actions)",
     "sla_remaining": "{min} min remaining",
-    "part_no": "Part No"
+    "part_no": "Part No",
+    "hts_code": "HTS Code"
+  },
+  "part_list": {
+    "title": "Part No List",
+    "search_placeholder": "Search Part No or HTS Code...",
+    "filter_status": "Status Filter",
+    "filter_supplier": "Supplier Filter"
   },
   "status": {
     "unknown": "Unknown",

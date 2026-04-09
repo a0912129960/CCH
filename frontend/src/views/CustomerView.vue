@@ -32,9 +32,9 @@ onMounted(async () => {
   }
 });
 
-const handleLogout = () => {
-  authService.logout();
-  router.push('/login');
+const goToPartList = (status?: string) => {
+  const query = status ? { status } : {};
+  router.push({ name: 'parts', query });
 };
 </script>
 
@@ -44,14 +44,12 @@ const handleLogout = () => {
       <header class="dashboard-header">
         <div class="title-group">
           <h1>{{ $t('customer.title') }}</h1>
-          <p class="subtitle">{{ $t('common.app_full_name') }}</p>
         </div>
         <div class="user-action">
           <div class="user-info">
             <span class="welcome-text">{{ $t('common.welcome') }},</span>
             <span class="username">{{ username }}</span>
           </div>
-          <button class="logout-btn" @click="handleLogout">{{ $t('common.logout') }}</button>
         </div>
       </header>
 
@@ -67,7 +65,12 @@ const handleLogout = () => {
             <h3>{{ $t('customer.status_summary') }}</h3>
           </div>
           <div class="status-grid">
-            <Card v-for="item in statusSummary" :key="item.status" class="status-card">
+            <Card 
+              v-for="item in statusSummary" 
+              :key="item.status" 
+              class="status-card"
+              @click="goToPartList(item.status)"
+            >
               <div class="status-header">
                 <Dot :color="item.color" size="10px" />
                 <span class="status-label">{{ $t(item.labelKey) }}</span>
@@ -84,7 +87,7 @@ const handleLogout = () => {
             <h3>{{ $t('customer.sla_countdown') }}</h3>
           </div>
           <div class="sla-list">
-            <Card v-for="item in slaItems" :key="item.id" class="sla-card">
+            <Card v-for="item in slaItems" :key="item.id" class="sla-card" @click="goToPartList(item.status)">
               <div class="sla-main">
                 <div class="part-badge">
                   <span class="part-label">{{ $t('customer.part_no') }}</span>
@@ -108,13 +111,13 @@ const handleLogout = () => {
 
 <style scoped>
 .dashboard-wrapper {
-  background-color: var(--dashboard-bg, #f3f6f8);
+  background-color: var(--dashboard-bg);
   min-height: 100vh;
   width: 100%;
 }
 
 .dashboard-container {
-  padding: 2rem;
+  padding: 2.5rem;
   max-width: 1400px;
   margin: 0 auto;
   font-family: "MyDimerco-WorkSansBold", sans-serif;
@@ -124,53 +127,27 @@ const handleLogout = () => {
 .dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 h1 {
   font-size: 2rem;
-  color: var(--sidebar-color, #465363);
-  margin-bottom: 0.2rem;
-}
-
-.subtitle {
-  color: #8898aa;
-  font-size: 0.9rem;
-}
-
-.user-action {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
+  color: var(--sidebar-color);
+  margin: 0;
 }
 
 .user-info {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--sidebar-color);
 }
 
 .username {
   margin-left: 0.3rem;
-  color: var(--primary-color, #00a8e2);
+  color: var(--primary-color);
   font-weight: bold;
-}
-
-.logout-btn {
-  background: white;
-  color: #f56c6c;
-  border: 1px solid #f56c6c;
-  padding: 4px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s;
-}
-
-.logout-btn:hover {
-  background: #f56c6c;
-  color: white;
 }
 
 /* Section Common Styles */
@@ -189,32 +166,35 @@ h1 {
 }
 
 .decorator.secondary {
-  background-color: var(--warning-color, #f68b39);
+  background-color: var(--warning-color);
 }
 
 h3 {
   font-size: 1.25rem;
   color: var(--sidebar-color);
+  margin: 0;
 }
 
 /* Status Summary Grid */
 .status-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.2rem;
-  margin-bottom: 3rem;
+  gap: 1.5rem;
+  margin-bottom: 3.5rem;
 }
 
 .status-card {
-  padding: 1.25rem;
+  padding: 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   background: white;
   transition: transform 0.2s;
+  cursor: pointer;
 }
 
 .status-card:hover {
   transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.08);
 }
 
 .status-header {
@@ -230,7 +210,7 @@ h3 {
 }
 
 .status-value {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: bold;
   color: var(--sidebar-color);
 }
@@ -250,6 +230,13 @@ h3 {
   border-radius: 12px;
   background: white;
   box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sla-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateX(4px);
 }
 
 .sla-main {

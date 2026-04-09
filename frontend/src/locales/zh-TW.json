@@ -4,14 +4,22 @@
     "app_full_name": "中菲行報關合規中心",
     "login": "登入",
     "logout": "登出",
-    "home": "首頁",
+    "home": "儀表板",
     "dashboard": "儀表板",
-    "portal": "入口",
+    "portal": "儀表板",
     "welcome": "歡迎",
     "role": "角色",
     "save": "儲存",
     "cancel": "取消",
-    "status": "狀態"
+    "status": "狀態",
+    "search": "搜尋",
+    "all": "全部",
+    "last_updated": "最後更新",
+    "supplier": "供應商",
+    "menu": {
+      "dashboard": "儀表板",
+      "parts": "零件編號清單"
+    }
   },
   "login": {
     "title": "登入",
@@ -28,12 +36,19 @@
     "role_name": "Dimerco 員工"
   },
   "customer": {
-    "title": "客戶入口",
+    "title": "客戶儀表板",
     "role_name": "外部客戶",
     "status_summary": "零件狀態摘要",
     "sla_countdown": "SLA 倒數 (待處理項目)",
     "sla_remaining": "剩餘 {min} 分鐘",
-    "part_no": "零件編號"
+    "part_no": "零件編號",
+    "hts_code": "HTS Code"
+  },
+  "part_list": {
+    "title": "零件編號清單",
+    "search_placeholder": "搜尋零件編號或 HTS Code...",
+    "filter_status": "狀態篩選",
+    "filter_supplier": "供應商篩選"
   },
   "status": {
     "unknown": "未知",

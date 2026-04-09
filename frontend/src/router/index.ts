@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import EmployeeView from '../views/EmployeeView.vue'
 import CustomerView from '../views/CustomerView.vue'
+import PartListView from '../views/PartListView.vue'
 import { authService, UserRole } from '../services/auth'
 
 /**
@@ -32,6 +33,12 @@ const router = createRouter({
       path: '/customer',
       name: 'customer',
       component: CustomerView,
+      meta: { requiresAuth: true, role: UserRole.CUSTOMER }
+    },
+    {
+      path: '/parts',
+      name: 'parts',
+      component: PartListView,
       meta: { requiresAuth: true, role: UserRole.CUSTOMER }
     }
   ]

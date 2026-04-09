@@ -4,21 +4,30 @@
     "app_full_name": "中菲行报关合规中心",
     "login": "登录",
     "logout": "登出",
-    "home": "首页",
+    "home": "仪表板",
     "dashboard": "仪表板",
-    "portal": "入口",
+    "portal": "仪表板",
     "welcome": "欢迎",
     "role": "角色",
     "save": "保存",
-    "cancel": "取消"
+    "cancel": "取消",
+    "status": "状态",
+    "search": "搜索",
+    "all": "全部",
+    "last_updated": "最后更新",
+    "supplier": "供应商",
+    "menu": {
+      "dashboard": "仪表板",
+      "parts": "零件编号清单"
+    }
   },
   "login": {
     "title": "登录",
-    "account_label": "帐号",
+    "account_label": "账号",
     "password_label": "密码",
-    "account_placeholder": "请输入帐号",
+    "account_placeholder": "请输入账号",
     "password_placeholder": "请输入密码",
-    "error_invalid": "帐号或密码错误。",
+    "error_invalid": "账号或密码错误。",
     "hint_employee": "员工: Y9999 / 888888",
     "hint_customer": "客户: customer001 / 888888"
   },
@@ -27,7 +36,27 @@
     "role_name": "Dimerco 员工"
   },
   "customer": {
-    "title": "客户入口",
-    "role_name": "外部客户"
+    "title": "客户仪表板",
+    "role_name": "外部客户",
+    "status_summary": "零件状态摘要",
+    "sla_countdown": "SLA 倒数 (待处理项目)",
+    "sla_remaining": "剩余 {min} 分钟",
+    "part_no": "零件编号",
+    "hts_code": "HTS Code"
+  },
+  "part_list": {
+    "title": "零件编号清单",
+    "search_placeholder": "搜索零件编号或 HTS Code...",
+    "filter_status": "状态筛选",
+    "filter_supplier": "供应商筛选"
+  },
+  "status": {
+    "unknown": "未知",
+    "pending_customer": "待客户提交",
+    "pending_review": "待中菲行审核",
+    "returned": "退回 (待修正)",
+    "active": "生效中",
+    "flagged": "标记重估",
+    "superseded": "已取代"
   }
 }
