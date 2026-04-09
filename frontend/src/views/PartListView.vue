@@ -4,10 +4,17 @@ import { useRoute, useRouter } from 'vue-router';
 import { partService, type Part, PartStatus } from '../services/part';
 import Card from '../components/common/Card.vue';
 import Dot from '../components/common/Dot.vue';
+import Button from '../components/common/Button.vue';
 
 /**
  * Part No List View (零件編號清單頁面)
  * Sidebar layout version.
+ * 
+ * Audit Update on 2026-04-09 by Gemini AI:
+ * Ticket: UI-REFACTOR-001
+ * Intent: Move "Add New Part" button to below search bar for better UX and apply project-standard Button style.
+ * Impact: UI layout adjustment and component standardization.
+ * (繁體中文) 2026-04-09 Gemini AI 更新：將「新增零件」按鈕移至搜尋列下方，並套用專案標準 Button 樣式。
  */
 
 const route = useRoute();
@@ -96,6 +103,11 @@ const getStatusColor = (status: PartStatus) => {
               :placeholder="$t('part_list.search_placeholder')"
               class="form-input"
             />
+            <div class="action-row">
+              <Button @click="router.push({ name: 'part-create' })">
+                + {{ $t('part_list.add_new') }}
+              </Button>
+            </div>
           </div>
 
           <!-- Status Filter -->
@@ -137,14 +149,12 @@ const getStatusColor = (status: PartStatus) => {
           </thead>
           <tbody>
             <tr v-if="loading"><td colspan="5" class="text-center">Loading...</td></tr>
-            <tr v-else v-for="part in filteredParts" :key="part.id" class="clickable-row" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
-              <!-- 
-                Update by Gemini AI on 2026-04-09: 
-                Added clickable-row class and @click handler for navigation.
-                (繁體中文) 2026-04-09 Gemini AI 更新：加入 clickable-row 類別與 @click 處理函式以實現導航功能。
-                /* <tr v-else v-for="part in filteredParts" :key="part.id"> */
-              -->
-              <td class="part-no-cell">{{ part.partNo }}</td>
+            <tr v-else v-for="part in filteredParts" :key="part.id">
+              <td class="part-no-cell">
+                <a href="javascript:void(0)" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
+                  {{ part.partNo }}
+                </a>
+              </td>
               <td><code>{{ part.htsCode }}</code></td>
               <td>{{ part.supplier }}</td>
               <td>
@@ -222,6 +232,10 @@ h1 {
   border-color: var(--primary-color);
 }
 
+.action-row {
+  margin-top: 1rem;
+}
+
 /* Table Styles */
 .table-wrapper {
   background: white;
@@ -250,18 +264,19 @@ h1 {
   user-select: none;
 }
 
-.clickable-row {
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.clickable-row:hover {
-  background-color: #f8f9fe;
-}
-
 .part-no-cell {
   font-weight: bold;
+}
+
+.part-no-cell a {
   color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.part-no-cell a:hover {
+  text-decoration: underline;
+  color: #0086b3;
 }
 
 .status-cell {

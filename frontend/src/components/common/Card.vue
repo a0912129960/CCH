@@ -12,22 +12,21 @@ export default {
 
 <style scoped>
 div {
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* .basecard {
-  height: 194px;
-} */
+div:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
 
 .grid-basecard {
   display: grid;
   grid-template-columns: .05fr 0.15fr 0.98fr .05fr;
   padding: 14px 0;
-  /* width: max-content; */
-  /* min-width: 100%;
-  height: unset;
-  min-height: 194px; */
 }
 
 @media screen and (max-width: 1440px) {

@@ -52,7 +52,27 @@
     "title": "零件清单",
     "search_placeholder": "搜索零件编号或 HTS Code...",
     "filter_status": "状态筛选",
-    "filter_supplier": "供应商筛选"
+    "filter_supplier": "供应商筛选",
+    "add_new": "新增零件"
+  },
+  "part_create": {
+    "title": "建立新零件",
+    "part_no_placeholder": "请输入零件编号",
+    "description": "产品描述",
+    "description_placeholder": "请输入详细的产品描述...",
+    "hts_code_placeholder": "NNNN.NN.NNNN",
+    "suggested_hts": "建议 USHTS Code",
+    "quality_score": "描述质量评分",
+    "score": {
+      "weak": "偏弱 (需更多细节)",
+      "adequate": "尚可",
+      "strong": "良好"
+    },
+    "validation": {
+      "hts_format": "HTS Code 格式错误 (必须为 NNNN.NN.NNNN)",
+      "required": "此字段为必填"
+    },
+    "success": "零件建立成功"
   },
   "part_detail": {
     "title": "零件详情",

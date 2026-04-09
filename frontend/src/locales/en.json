@@ -52,7 +52,27 @@
     "title": "Part List",
     "search_placeholder": "Search Part No or HTS Code...",
     "filter_status": "Status Filter",
-    "filter_supplier": "Supplier Filter"
+    "filter_supplier": "Supplier Filter",
+    "add_new": "Add New Part"
+  },
+  "part_create": {
+    "title": "Create New Part",
+    "part_no_placeholder": "Enter Part No",
+    "description": "Product Description",
+    "description_placeholder": "Enter detailed product description...",
+    "hts_code_placeholder": "NNNN.NN.NNNN",
+    "suggested_hts": "Suggested USHTS Code",
+    "quality_score": "Description Quality Score",
+    "score": {
+      "weak": "Weak (Needs more detail)",
+      "adequate": "Adequate",
+      "strong": "Strong"
+    },
+    "validation": {
+      "hts_format": "Invalid HTS Code format (must be NNNN.NN.NNNN)",
+      "required": "This field is required"
+    },
+    "success": "Part created successfully"
   },
   "part_detail": {
     "title": "Part Details",

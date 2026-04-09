@@ -34,7 +34,8 @@ describe('PartListView.vue', () => {
       mocks: { $t: (key: string) => key },
       stubs: {
         Card: { template: '<div class="card"><slot></slot></div>' },
-        Dot: { template: '<div class="dot"></div>' }
+        Dot: { template: '<div class="dot"></div>' },
+        Button: { template: '<button class="app-button"><slot></slot></button>' }
       }
     }
   };
@@ -51,6 +52,22 @@ describe('PartListView.vue', () => {
     expect(wrapper.find('h1').text()).toBe('part_list.title');
   });
 
+  it('navigates to create page when add button is clicked (點擊新增按鈕時導航至建立頁)', async () => {
+    const wrapper = mount(PartListView, globalConfig);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    const addButton = wrapper.findComponent({ name: 'Button' });
+    if (!addButton.exists()) {
+      // Fallback to class if findComponent fails due to stubbing
+      const btn = wrapper.find('.app-button');
+      await btn.trigger('click');
+    } else {
+      await addButton.trigger('click');
+    }
+    
+    expect(pushSpy).toHaveBeenCalledWith({ name: 'part-create' });
+  });
+
   it('performs keyword search (執行關鍵字搜尋)', async () => {
     const wrapper = mount(PartListView, globalConfig);
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -63,12 +80,12 @@ describe('PartListView.vue', () => {
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  it('navigates to detail page when a row is clicked (點擊列時導航至詳情頁)', async () => {
+  it('navigates to detail page when Part No link is clicked (點擊零件編號連結時導航至詳情頁)', async () => {
     const wrapper = mount(PartListView, globalConfig);
     await new Promise(resolve => setTimeout(resolve, 50));
     
-    const row = wrapper.find('tbody tr.clickable-row');
-    await row.trigger('click');
+    const link = wrapper.find('.part-no-cell a');
+    await link.trigger('click');
     
     expect(pushSpy).toHaveBeenCalled();
     const callArgs = pushSpy.mock.calls[0][0];

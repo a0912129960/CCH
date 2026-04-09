@@ -1,10 +1,11 @@
 # 🧪 CCH Frontend Testing Rules (CCH 前端測試規範)
 
 ## ⚖️ 1. Core Principles (核心原則)
-- **Atomic Requirement (原子化要求)**: Creating a View or Component is NOT complete without its corresponding test. 
-  - **原則**: 建立 View 或 Component 時，若無對應測試即視為未完工。
+- **Constitutional Verification (憲法級驗證)**: Testing is a MANDATORY part of verifying the correctness of the results. (測試是驗證結果正確性不可或缺的強制性環節。)
+- **Atomic Requirement (原子化要求)**: Creating a View, Component, or Service is NOT complete without its corresponding test file.
+  - **原則**: 建立 View, Component 或 Service 時，必須同步建立對應的測試檔案，否則視為未完工。
 - **Bilingual Mandate (雙語指令)**: All test descriptions (`describe`, `it`) MUST be in both **Traditional Chinese (繁體中文)** and **English**.
-- **Isolation**: Each test should be independent. Use `vi.mock` for external services.
+- **Verification Priority**: Always prioritize running tests over manual verification.
 
 ## 📁 2. File Naming & Location (檔案命名與位置)
 - **Location**: Test files MUST be placed in a `__tests__` directory at the same level as the source file.

@@ -12,7 +12,8 @@ export default {
 
 <style scoped>
 button {
-  width: 80px;
+  min-width: 80px;
+  padding: 0 16px;
   height: 40px;
   border: 1px solid #f68b39;
   background: linear-gradient(180deg, #f68b39 0%, #ff6b00 100%);
@@ -23,10 +24,28 @@ button {
   font-size: 14px;
   color: #fff;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
 button:hover {
   background: #fab710;
   border: 1px solid #fab710;
+}
+
+/* Outline Mode (外框模式) */
+button.btn-outline {
+  background: #fff;
+  color: #f68b39;
+  border: 1px solid #f68b39;
+  box-shadow: none;
+}
+
+button.btn-outline:hover {
+  background: #fff5ed;
+  border-color: #ff6b00;
+  color: #ff6b00;
 }
 </style>

@@ -52,7 +52,27 @@
     "title": "零件清單",
     "search_placeholder": "搜尋零件編號或 HTS Code...",
     "filter_status": "狀態篩選",
-    "filter_supplier": "供應商篩選"
+    "filter_supplier": "供應商篩選",
+    "add_new": "新增零件"
+  },
+  "part_create": {
+    "title": "建立新零件",
+    "part_no_placeholder": "請輸入零件編號",
+    "description": "產品描述",
+    "description_placeholder": "請輸入詳細的產品描述...",
+    "hts_code_placeholder": "NNNN.NN.NNNN",
+    "suggested_hts": "建議 USHTS Code",
+    "quality_score": "描述品質評分",
+    "score": {
+      "weak": "偏弱 (需更多細節)",
+      "adequate": "尚可",
+      "strong": "良好"
+    },
+    "validation": {
+      "hts_format": "HTS Code 格式錯誤 (必須為 NNNN.NN.NNNN)",
+      "required": "此欄位為必填"
+    },
+    "success": "零件建立成功"
   },
   "part_detail": {
     "title": "零件詳情",

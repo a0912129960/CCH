@@ -15,10 +15,12 @@
 5. **空手提問 (Inquiry with Evidence)**: 提問前必須先附上已查到的進度與數據。
 6. **盲目重試 (Fail Fast & Pivot)**: 連續失敗 2 次必須停下來換方向。
 7. **未驗證即交付 (Verify Before Delivery)**: 修改後必經驗證（編譯、測試、Lint）始得回報完成。
+8. **同步更新測試 (Sync Test Updates)**: 任何邏輯或 UI 變更必須同步更新對應的 `.spec` 或測試檔，嚴禁讓程式碼與測試脫節。
 
 ### 0.2 🛡️ Surgical Update Protocol (手術級更新協議)
 - **Read-Before-Edit**: 修改前必須重新讀取檔案內容，確保資訊不失真。
 - **Precision Replacement**: `replace` 時應僅包含變動核心區塊，避免冗餘碼包入。
+- **Atomic Verification Chain (原子驗證鏈)**: AI 執行 `replace` 後，**必須**緊接調用 `run_shell_command` 執行相關測試，不得延遲驗證。
 - **No Comment Stacking**: 嚴禁將已註解程式碼再次包入新的 `/* ... */` 註解中。
 
 ---

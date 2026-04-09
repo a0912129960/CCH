@@ -15,8 +15,9 @@ description: Enforces CCH project's Business Logic, Architecture, and AI SOP. Us
 2.  **No Overwriting Historical Remarks (不准覆蓋歷史 Remark)**: Existing `Update by...` comments are READ-ONLY. Append new remarks only. (現有的 `Update by...` 註釋為唯讀。僅限附加新的註釋。)
 3.  **No Reverting User-Corrected Code (不准回滾使用者修正過的程式碼)**: Current code on disk is the "Source of Truth". (磁碟上的現狀程式碼即為「事實來源」。)
 
-### 1.2 Bilingual Mandate (雙語指令)
-All technical explanations, plan summaries, and code comments MUST be provided in both **Traditional Chinese (繁體中文)** and **English**.
+### 1.2 Instruction Mandate (指令規範)
+- **Bilingual Communication (雙語溝通)**: All technical explanations, plan summaries, and code comments MUST be provided in both **Traditional Chinese (繁體中文)** and **English**. This applies to AI-Human communication and code remarks ONLY. (溝通與註解僅限繁體中文與英文。)
+- **Trilingual Implementation (三語實作)**: ALL application i18n keys (locales/*.json) MUST sync across `en`, `zh-TW`, and `zh-CN`. (程式多語系必須同步英文、繁體中文與簡體中文。)
 
 ---
 
@@ -61,5 +62,26 @@ Ensure all classification-related logic respects these states:
 ---
 
 ## 5. Verification (驗證)
-- **Test-Driven Delivery**: Every logic change requires a corresponding unit test.
+- **Constitutional Verification (憲法級驗證)**: Testing is a MANDATORY part of verifying the correctness of the results. (測試是驗證結果正確性不可或缺的強制性環節。)
+- **Test-Driven Delivery**: No code change is complete without corresponding unit/integration tests.
+- **New Component Mandate**: For every new view, component, or service, a corresponding test file MUST be created. (針對新視圖/組件/服務必須建立對應的測試檔案。)
 - **Linting**: Run `npm run lint` (frontend) or `dotnet build` (backend) after changes.
+
+---
+
+## 6. Peer Review & Independent Validation (同行評審與獨立驗證)
+
+### 6.1 The "Four-Eyes Principle" (四眼原則)
+Every code modification MUST be reviewed by a separate role/agent to ensure compliance with the Project Constitution and AI Rules. (每項程式碼修改必須由另一獨立角色/代理人進行評審。)
+- **The Surgeon (修改者)**: Executes the surgical edit and provides implementation details. (執行外科手術式修改並提供實作細節。)
+- **The Sentinel (審核者)**: Independently validates the change against `gemini.md`, `AI_RULES.md`, and business logic. The Sentinel MUST NOT be the same role/agent as the Surgeon. (獨立驗證修改是否符合規範。審核者不得與修改者為同一角色/代理人。)
+
+### 6.2 Review Criteria (評審標準)
+The Sentinel MUST verify:
+1.  **Compliance (合規性)**: Are there Audit Blocks, Bilingual remarks, and Trilingual i18n? (是否有稽核區塊、雙語註解與三語多語系？)
+2.  **Integrity (完整性)**: Are tests updated and passing? (測試是否已更新且通過？)
+3.  **Governance (治理)**: Are historical remarks preserved? (是否保留了歷史 Remark？)
+
+### 6.3 Rejection & Rectification (否決與修正)
+If the Sentinel identifies any breach, the change is considered **FAILED**. The Surgeon MUST rectify all issues before the next review cycle. (若審核者發現任何違反規範之處，該次變更即為**不通過**。修改者必須在下一次評審前修正所有問題。)
+

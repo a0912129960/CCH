@@ -103,6 +103,28 @@ export const partService = {
   async getSuppliers(): Promise<string[]> {
     return Array.from(new Set(MOCK_PARTS.map(p => p.supplier)));
   },
+  async createPart(data: { partNo: string; description: string; htsCode: string }): Promise<Part> {
+    const newPart: Part = {
+      id: (MOCK_PARTS.length + 1).toString(),
+      partNo: data.partNo,
+      htsCode: data.htsCode,
+      status: PartStatus.PENDING_REVIEW,
+      supplier: 'Customer A', // Default for now
+      lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      description: data.description,
+      history: [
+        {
+          id: 'h-new',
+          status: PartStatus.PENDING_REVIEW,
+          updatedBy: 'Customer A',
+          updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          remark: 'Part created and submitted for review.'
+        }
+      ]
+    };
+    MOCK_PARTS.unshift(newPart);
+    return newPart;
+  },
   async updatePartStatus(id: string, newStatus: PartStatus, remark?: string): Promise<boolean> {
     const part = MOCK_PARTS.find(p => p.id === id);
     if (part) {

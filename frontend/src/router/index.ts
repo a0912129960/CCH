@@ -43,6 +43,12 @@ const router = createRouter({
       meta: { requiresAuth: true, role: UserRole.CUSTOMER }
     },
     {
+      path: '/parts/new',
+      name: 'part-create',
+      component: () => import('../views/PartCreateView.vue'),
+      meta: { requiresAuth: true, role: UserRole.CUSTOMER }
+    },
+    {
       path: '/parts/:id',
       name: 'part-detail',
       component: PartDetailView,

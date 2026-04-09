@@ -5,8 +5,10 @@
 - **Key Naming Convention (鍵名命名規範)**: 
   - Use `snake_case` for keys.
   - Structure: `[view/component].[context].[sub_context]`.
-- **Trilingual Mandate (三語強制指令)**: Following the latest governance update, all i18n keys **MUST** contain `en`, `zh-TW`, and `zh-CN`. 
-  - **三語同步**: 所有的 i18n 鍵名必須同時包含英文、繁體中文與簡體中文。
+- **Instruction vs. Implementation (指令與實作之別)**: 
+  - **Bilingual Instructions**: AI communication (plans, explanations) and code remarks are limited to **Traditional Chinese** and **English**. (溝通與註解僅限繁體中文與英文。)
+  - **Trilingual Implementation**: ALL application i18n keys **MUST** sync across `en`, `zh-TW`, and `zh-CN`. (程式多語系必須同步英文、繁體中文與簡體中文。)
+- **Completeness**: A feature is NOT "Done" if any supported locale file is missing the new keys. (若任一支援語系遺漏鍵名，即視為未完成。)
 
 ## 📁 2. Directory Structure (目錄結構)
 ```text
