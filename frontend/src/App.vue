@@ -1,29 +1,51 @@
 <script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router'
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { authService } from './services/auth';
+import { switchLanguage } from './locales';
 
 /**
  * Main App Component (主應用程式組件)
  */
 const route = useRoute();
+const { locale } = useI18n();
 
 /**
  * Hide header if on login page (如果在登入頁則隱藏頁首)
  */
 const showHeader = computed(() => {
-  return route.name !== 'login' && authService.isAuthenticated();
+  return route.name !== 'login';
 });
+
+/**
+ * Handle language change (處理語系切換)
+ * @param {Event} event - Selection change event (選擇變更事件)
+ */
+const onLanguageChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  switchLanguage(target.value);
+};
 </script>
 
 <template>
-  <!-- Only show header if authenticated and not on login page (僅在已驗證且不在登入頁時顯示頁首) -->
-  <header v-if="showHeader">
-    <nav>
-      <RouterLink to="/">Home (首頁)</RouterLink>
-      <RouterLink v-if="authService.state.role === 'EMPLOYEE'" to="/employee">Dashboard (儀表板)</RouterLink>
-      <RouterLink v-if="authService.state.role === 'CUSTOMER'" to="/customer">Portal (入口)</RouterLink>
-    </nav>
+  <header>
+    <div class="header-content">
+      <nav v-if="authService.isAuthenticated()">
+        <RouterLink to="/">{{ $t('common.home') }}</RouterLink>
+        <RouterLink v-if="authService.state.role === 'EMPLOYEE'" to="/employee">{{ $t('common.dashboard') }}</RouterLink>
+        <RouterLink v-if="authService.state.role === 'CUSTOMER'" to="/customer">{{ $t('common.portal') }}</RouterLink>
+      </nav>
+      
+      <!-- Language Switcher (語系切換器) -->
+      <div class="lang-switcher">
+        <select :value="locale" @change="onLanguageChange">
+          <option value="en">English</option>
+          <option value="zh-TW">繁體中文</option>
+          <option value="zh-CN">简体中文</option>
+        </select>
+      </div>
+    </div>
   </header>
 
   <main>
@@ -40,10 +62,28 @@ header {
   margin-bottom: 2rem;
 }
 
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+}
+
+.brand-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color, #00a8e2);
+  margin-right: 2rem;
+}
+
 nav {
-  width: 100%;
   font-size: 1rem;
-  text-align: center;
 }
 
 nav a.router-link-exact-active {
@@ -60,6 +100,13 @@ nav a {
 
 nav a:not(:first-child) {
   border-left: 1px solid #ddd;
+}
+
+.lang-switcher select {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  outline: none;
 }
 
 main {

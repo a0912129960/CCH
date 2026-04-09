@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { authService, UserRole } from '../services/auth';
 import AppButton from '../components/common/Button.vue';
 
 /**
- * Login View Component (登入頁面組件)
+ * Login View Component with i18n support (具備多國語系支援的登入頁面)
  */
 
+const { t } = useI18n();
 const router = useRouter();
 const username = ref('');
 const password = ref('');
@@ -23,7 +25,6 @@ const handleLogin = () => {
   
   if (success) {
     const role = authService.state.role;
-    // Redirect based on role (根據角色重導向)
     if (role === UserRole.EMPLOYEE) {
       router.push('/employee');
     } else if (role === UserRole.CUSTOMER) {
@@ -32,8 +33,8 @@ const handleLogin = () => {
       router.push('/');
     }
   } else {
-    // Bilingual error message (雙語錯誤訊息)
-    errorMessage.value = 'Invalid account or password. (帳號或密碼錯誤)';
+    // Use i18n for error message (使用 i18n 錯誤訊息)
+    errorMessage.value = t('login.error_invalid');
   }
 };
 </script>
@@ -41,26 +42,26 @@ const handleLogin = () => {
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h2>Login (登入)</h2>
+      <h2>{{ $t('login.title') }}</h2>
       
       <div class="form-group">
-        <label for="username">Account (帳號)</label>
+        <label for="username">{{ $t('login.account_label') }}</label>
         <input 
           id="username" 
           v-model="username" 
           type="text" 
-          placeholder="Enter Account (請輸入帳號)" 
+          :placeholder="$t('login.account_placeholder')" 
           @keyup.enter="handleLogin"
         />
       </div>
       
       <div class="form-group">
-        <label for="password">Password (密碼)</label>
+        <label for="password">{{ $t('login.password_label') }}</label>
         <input 
           id="password" 
           v-model="password" 
           type="password" 
-          placeholder="Enter Password (請輸入密碼)" 
+          :placeholder="$t('login.password_placeholder')" 
           @keyup.enter="handleLogin"
         />
       </div>
@@ -70,17 +71,16 @@ const handleLogin = () => {
       </div>
       
       <div class="actions">
-        <!-- Using existing Button component (使用現有的 Button 組件) -->
         <AppButton 
-          label="Login (登入)" 
+          :label="$t('common.login')" 
           class="login-btn" 
           @click="handleLogin" 
         />
       </div>
       
       <div class="hint">
-        <p>Employee (員工): Y9999 / 888888</p>
-        <p>Customer (客戶): customer001 / 888888</p>
+        <p>{{ $t('login.hint_employee') }}</p>
+        <p>{{ $t('login.hint_customer') }}</p>
       </div>
     </div>
   </div>
@@ -100,6 +100,23 @@ const handleLogin = () => {
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.logo-area {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-area h1 {
+  color: var(--primary-color, #00a8e2);
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.logo-area .subtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
 }
 
 h2 {

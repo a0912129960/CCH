@@ -16,13 +16,13 @@ const handleLogout = () => {
 
 <template>
   <div class="dashboard-container">
-    <h1>Employee Dashboard (員工儀表板)</h1>
+    <h1>{{ $t('employee.title') }}</h1>
     <div class="welcome-card">
-      <p>Welcome, <strong>{{ username }}</strong>! (歡迎，{{ username }}！)</p>
-      <p>Role: <span class="badge">Dimerco Employee (Dimerco 員工)</span></p>
+      <p>{{ $t('common.welcome') }}, <strong>{{ username }}</strong>!</p>
+      <p>{{ $t('common.role') }}: <span class="badge">{{ $t('employee.role_name') }}</span></p>
       
       <div class="actions">
-        <button class="logout-btn" @click="handleLogout">Logout (登出)</button>
+        <button class="logout-btn" @click="handleLogout">{{ $t('common.logout') }}</button>
       </div>
     </div>
   </div>

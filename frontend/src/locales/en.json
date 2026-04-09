@@ -1,0 +1,33 @@
+{
+  "common": {
+    "app_name": "CCH",
+    "app_full_name": "Dimerco Customs Compliance Hub",
+    "login": "Login",
+    "logout": "Logout",
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "portal": "Portal",
+    "welcome": "Welcome",
+    "role": "Role",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "login": {
+    "title": "Login",
+    "account_label": "Account",
+    "password_label": "Password",
+    "account_placeholder": "Enter Account",
+    "password_placeholder": "Enter Password",
+    "error_invalid": "Invalid account or password.",
+    "hint_employee": "Employee: Y9999 / 888888",
+    "hint_customer": "Customer: customer001 / 888888"
+  },
+  "employee": {
+    "title": "Employee Dashboard",
+    "role_name": "Dimerco Employee"
+  },
+  "customer": {
+    "title": "Customer Portal",
+    "role_name": "External Customer"
+  }
+}
