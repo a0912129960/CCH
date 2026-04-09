@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { partService, type Part, PartStatus } from '../services/part';
-import Card from '../components/common/Card.vue';
-import Dot from '../components/common/Dot.vue';
+import { partService, type Part, PartStatus } from '../../services/part/part';
+import Card from '../../components/common/Card.vue';
+import Dot from '../../components/common/Dot.vue';
 
 /**
  * Part No Detail View (零件編號詳細頁面)

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { authService } from '../services/auth';
+import { authService } from '../../services/auth/auth';
 import { useRouter } from 'vue-router';
-import { dashboardService, type StatusCount, type SLAItem } from '../services/dashboard';
-import Card from '../components/common/Card.vue';
-import Dot from '../components/common/Dot.vue';
+import { dashboardService, type StatusCount, type SLAItem } from '../../services/dashboard/dashboard';
+import Card from '../../components/common/Card.vue';
+import Dot from '../../components/common/Dot.vue';
 
 /**
  * Customer Dashboard View (客戶儀表板頁面)

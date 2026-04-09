@@ -2,9 +2,11 @@
 import { RouterView, RouterLink, useRoute } from 'vue-router'
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { authService, UserRole } from './services/auth';
+import { authService, UserRole } from './services/auth/auth';
 import { switchLanguage } from './locales';
 import Sidebar from './components/common/Sidebar.vue';
+import { useUIStore } from './stores/ui';
+import { storeToRefs } from 'pinia';
 
 /**
  * Main App Component (主應用程式組件)
@@ -12,6 +14,8 @@ import Sidebar from './components/common/Sidebar.vue';
  */
 const route = useRoute();
 const { locale } = useI18n();
+const uiStore = useUIStore();
+const { isSidebarCollapsed } = storeToRefs(uiStore);
 
 /**
  * Decide which layout to show (決定顯示哪種佈局)
@@ -38,7 +42,7 @@ const onLanguageChange = (event: Event) => {
     <Sidebar v-if="isCustomerLayout" />
 
     <!-- 2. Main Content Wrapper -->
-    <div :class="{ 'main-content': isCustomerLayout }">
+    <div :class="{ 'main-content': isCustomerLayout, 'is-collapsed': isSidebarCollapsed }">
       
       <!-- 3. Standard Header (for Employee or Unauthenticated) -->
       <header v-if="!isCustomerLayout && !isLogin">
@@ -81,6 +85,11 @@ const onLanguageChange = (event: Event) => {
 /* Sidebar push margin only when sidebar is present */
 .app-layout .main-content {
   margin-left: 260px;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-layout .main-content.is-collapsed {
+  margin-left: 80px;
 }
 
 header {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { dashboardService } from '../dashboard';
-import { PartStatus, MOCK_PARTS } from '../part';
+import { dashboardService } from "../../dashboard/dashboard";
+import { PartStatus, MOCK_PARTS } from "../../part/part";
 
 /**
  * Dashboard Service Unit Tests (儀表板服務單元測試)

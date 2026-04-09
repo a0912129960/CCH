@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { createTestingPinia } from '@pinia/testing';
 import Sidebar from '../Sidebar.vue';
 
 // 1. Partial mock vue-i18n to keep createI18n
@@ -31,7 +32,7 @@ vi.mock('../../locales', () => ({
 }));
 
 // 4. Mock auth service
-vi.mock('../../../services/auth', () => ({
+vi.mock('../../../services/auth/auth', () => ({
   authService: {
     logout: vi.fn(),
     isAuthenticated: vi.fn().mockReturnValue(true)
@@ -41,11 +42,14 @@ vi.mock('../../../services/auth', () => ({
 describe('Sidebar.vue', () => {
   const globalConfig = {
     global: {
+      plugins: [createTestingPinia({ createSpy: vi.fn })],
       mocks: {
         $t: (key: string) => key
       },
       stubs: {
-        RouterLink: { template: '<a><slot></slot></a>' }
+        RouterLink: { template: '<a><slot></slot></a>' },
+        'el-select': { template: '<div class="el-select"><slot></slot></div>' },
+        'el-option': { template: '<div class="el-option"></div>' }
       }
     }
   };

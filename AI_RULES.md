@@ -20,7 +20,11 @@
 ### 0.2 🛡️ Surgical Update Protocol (手術級更新協議)
 - **Read-Before-Edit**: 修改前必須重新讀取檔案內容，確保資訊不失真。
 - **Precision Replacement**: `replace` 時應僅包含變動核心區塊，避免冗餘碼包入。
-- **Atomic Verification Chain (原子驗證鏈)**: AI 執行 `replace` 後，**必須**緊接調用 `run_shell_command` 執行相關測試，不得延遲驗證。
+- **Atomic Verification Chain (原子驗證鏈)**: AI 執行 `replace` 後，**必須**執行以下鏈路：
+  1. **Visual Source Audit (視覺化源碼審計)**：強制調用 `read_file` 重新讀取修改後的區域，確認標籤成對性（如 `el-select` 內部必須全是 `el-option`）與語法正確性。
+  2. **Automated Testing**：執行相關測試指令，確保邏輯通過。
+  3. **Linting**：確保無格式錯誤。
+  不得延遲驗證。
 - **No Comment Stacking**: 嚴禁將已註解程式碼再次包入新的 `/* ... */` 註解中。
 
 ---
@@ -56,6 +60,7 @@
 
 ### 2.2 Testing Requirements
 - **Mandatory Test Cases**: Happy Path, Field Validation, Boundary, Side Effects.
+- **Anti-Over-Stubbing (嚴禁過度模擬)**: 對於關鍵的交互組件（如語言切換、表單提交），應減少對 UI 框架組件的 Stub，改用整合測試或增加對子組件類型的斷言，防止測試通過但 UI 報銷。
 - **Test Integrity**: Never modify business logic to "make tests pass."
 
 ---

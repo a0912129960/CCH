@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { partService } from '../services/part';
-import Card from '../components/common/Card.vue';
-import Button from '../components/common/Button.vue';
+import { partService } from '../../services/part/part';
+import Card from '../../components/common/Card.vue';
+import Button from '../../components/common/Button.vue';
+import { useUIStore } from '../../stores/ui';
 
 /**
  * Part No Creation View (新增零件編號頁面)
  * BR-08: HTS Format Validation | BR-21: Description Quality Scoring
  * 
  * Audit Update on 2026-04-09 by Gemini AI:
- * Ticket: UI-STRICT-INPUT-001
- * Intent: Strictly enforce HTS code format NNNN.NN.NNNN by filtering input and use standard Button component.
- * Impact: Improved data integrity and UI consistency.
- * (繁體中文) 2026-04-09 Gemini AI 更新：嚴格限制 HTS code 格式為 NNNN.NN.NNNN，過濾非法輸入並使用標準 Button 組件。
+ * Ticket: UI-SUPPLIER-FIELD-010
+ * Intent: Add Supplier dropdown field and integrate with partService.
+ * Impact: Enhanced part creation with supplier selection.
+ * (繁體中文) 2026-04-09 Gemini AI 更新：新增供應商下拉欄位並整合至服務層。
  */
 
 const router = useRouter();
@@ -21,7 +22,18 @@ const router = useRouter();
 const form = ref({
   partNo: '',
   description: '',
-  htsCode: ''
+  htsCode: '',
+  supplier: ''
+});
+
+const suppliers = ref<string[]>([]);
+
+onMounted(async () => {
+  try {
+    suppliers.value = await partService.getSuppliers();
+  } catch (error) {
+    console.error('Failed to load suppliers:', error);
+  }
 });
 
 // Strictly enforce HTS format: NNNN.NN.NNNN
@@ -57,7 +69,8 @@ watch(() => form.value.htsCode, (newVal) => {
 const errors = ref({
   partNo: '',
   description: '',
-  htsCode: ''
+  htsCode: '',
+  supplier: ''
 });
 
 // BR-08: HTS Code Format Validation (NNNN.NN.NNNN)
@@ -66,7 +79,7 @@ const isHtsValid = computed(() => !form.value.htsCode || htsRegex.test(form.valu
 
 const validateForm = () => {
   let valid = true;
-  errors.value = { partNo: '', description: '', htsCode: '' };
+  errors.value = { partNo: '', description: '', htsCode: '', supplier: '' };
 
   if (!form.value.partNo) {
     errors.value.partNo = 'part_create.validation.required';
@@ -74,6 +87,10 @@ const validateForm = () => {
   }
   if (!form.value.description) {
     errors.value.description = 'part_create.validation.required';
+    valid = false;
+  }
+  if (!form.value.supplier) {
+    errors.value.supplier = 'part_create.validation.required';
     valid = false;
   }
   if (!form.value.htsCode) {
@@ -92,8 +109,10 @@ const handleSubmit = async () => {
 
   try {
     await partService.createPart(form.value);
+    // Audit Update by Gemini AI: Use named route 'parts' instead of path.
+    // (繁體中文) Gemini AI 更新：改用具名路由 'parts' 取代路徑。
     alert(router.app.config.globalProperties.$t('part_create.success'));
-    router.push('/parts');
+    router.push({ name: 'parts' });
   } catch (error) {
     console.error('Failed to create part:', error);
   }
@@ -123,6 +142,27 @@ const handleSubmit = async () => {
                 data-test="part-no-input"
               />
               <span v-if="errors.partNo" class="error-text" data-test="part-no-error">{{ $t(errors.partNo) }}</span>
+            </div>
+
+            <!-- Supplier -->
+            <div class="form-group">
+              <label>{{ $t('common.supplier') }} <span class="required-asterisk">*</span></label>
+              <el-select 
+                v-model="form.supplier" 
+                :placeholder="$t('part_list.filter_supplier')"
+                class="form-select-el"
+                :class="{ 'is-invalid': errors.supplier }"
+                data-test="supplier-select"
+                filterable
+              >
+                <el-option
+                  v-for="s in suppliers"
+                  :key="s"
+                  :label="s"
+                  :value="s"
+                />
+              </el-select>
+              <span v-if="errors.supplier" class="error-text" data-test="supplier-error">{{ $t(errors.supplier) }}</span>
             </div>
 
             <!-- HTS Code (BR-08) -->
@@ -231,14 +271,34 @@ h1 {
   margin-left: 2px;
 }
 
-.form-input, .form-textarea {
+.form-input, .form-textarea, .form-select-el {
   width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
   font-family: inherit;
   outline: none;
   transition: border-color 0.2s;
+}
+
+/* Remove outer border for el-select wrapper */
+.form-select-el {
+  border: none !important;
+  padding: 0 !important;
+}
+
+.form-input, .form-textarea {
+  padding: 0.8rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background-color: white;
+}
+
+.form-select-el :deep(.el-input__wrapper) {
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #dee2e6 inset !important; /* Standardize with other inputs */
+}
+
+.form-select-el :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
 }
 
 .form-textarea {
@@ -246,7 +306,7 @@ h1 {
   resize: vertical;
 }
 
-.form-input:focus, .form-textarea:focus {
+.form-input:focus, .form-textarea:focus, .form-select:focus {
   border-color: var(--primary-color);
 }
 

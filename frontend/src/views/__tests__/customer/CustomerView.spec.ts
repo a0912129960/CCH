@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import CustomerView from '../CustomerView.vue';
-import { dashboardService } from '../../services/dashboard';
-import { PartStatus } from '../../services/part';
+import CustomerView from '../../customer/CustomerView.vue';
+import { dashboardService } from '../../../services/dashboard/dashboard';
+import { PartStatus } from '../../../services/part/part';
 
 // Mock vue-i18n
 vi.mock('vue-i18n', () => ({
@@ -22,7 +22,7 @@ vi.mock('vue-router', () => ({
 }));
 
 // Mock dashboardService
-vi.mock('../../services/dashboard', () => ({
+vi.mock('../../../services/dashboard/dashboard', () => ({
   dashboardService: {
     getStatusSummary: vi.fn().mockResolvedValue([
       { status: 'ACTIVE', count: 10, labelKey: 'status.active', color: 'green' }
@@ -34,7 +34,7 @@ vi.mock('../../services/dashboard', () => ({
 }));
 
 // Mock PartStatus because it's used in template or logic
-vi.mock('../../services/part', () => ({
+vi.mock('../../../services/part/part', () => ({
   PartStatus: {
     UNKNOWN: 'UNKNOWN',
     PENDING_CUSTOMER: 'PENDING_CUSTOMER',

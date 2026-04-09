@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { partService, type Part, PartStatus } from '../services/part';
-import Card from '../components/common/Card.vue';
-import Dot from '../components/common/Dot.vue';
-import Button from '../components/common/Button.vue';
+import { partService, type Part, PartStatus } from '../../services/part/part';
+import Card from '../../components/common/Card.vue';
+import Dot from '../../components/common/Dot.vue';
+import Button from '../../components/common/Button.vue';
 
 /**
  * Part No List View (零件編號清單頁面)
@@ -113,21 +113,24 @@ const getStatusColor = (status: PartStatus) => {
           <!-- Status Filter -->
           <div class="filter-item">
             <label>{{ $t('part_list.filter_status') }}</label>
-            <select v-model="statusFilter" class="form-select">
-              <option value="">{{ $t('common.all') }}</option>
-              <option v-for="s in Object.values(PartStatus)" :key="s" :value="s">
-                {{ $t('status.' + s.toLowerCase()) }}
-              </option>
-            </select>
+            <el-select v-model="statusFilter" class="form-select-el" clearable>
+              <el-option :label="$t('common.all')" value="" />
+              <el-option 
+                v-for="s in Object.values(PartStatus)" 
+                :key="s" 
+                :label="$t('status.' + s.toLowerCase())" 
+                :value="s" 
+              />
+            </el-select>
           </div>
 
           <!-- Supplier Filter -->
           <div class="filter-item">
             <label>{{ $t('part_list.filter_supplier') }}</label>
-            <select v-model="supplierFilter" class="form-select">
-              <option value="">{{ $t('common.all') }}</option>
-              <option v-for="s in suppliers" :key="s" :value="s">{{ s }}</option>
-            </select>
+            <el-select v-model="supplierFilter" class="form-select-el" clearable filterable>
+              <el-option :label="$t('common.all')" value="" />
+              <el-option v-for="s in suppliers" :key="s" :label="s" :value="s" />
+            </el-select>
           </div>
         </div>
       </Card>
@@ -220,16 +223,28 @@ h1 {
   color: #8898aa;
 }
 
-.form-input, .form-select {
-  padding: 0.7rem;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
+.form-input, .form-select-el {
+  width: 100%;
   font-family: inherit;
   outline: none;
 }
 
-.form-input:focus, .form-select:focus {
+.form-input {
+  padding: 0.7rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+.form-select-el :deep(.el-input__wrapper) {
+  padding: 4px 12px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #dee2e6 inset !important;
+  height: 42px;
+}
+
+.form-input:focus, .form-select-el :deep(.el-input__wrapper.is-focus) {
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color) inset !important;
 }
 
 .action-row {

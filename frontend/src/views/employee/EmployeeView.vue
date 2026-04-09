@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { authService } from '../services/auth';
+import { authService } from '../../services/auth/auth';
 import { useRouter } from 'vue-router';
 
 /**

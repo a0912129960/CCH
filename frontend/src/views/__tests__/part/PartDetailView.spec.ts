@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import PartDetailView from '../PartDetailView.vue';
-import { partService, PartStatus } from '../../services/part';
+import PartDetailView from '../../part/PartDetailView.vue';
+import { partService, PartStatus } from '../../../services/part/part';
 
 // Mock vue-i18n
 vi.mock('vue-i18n', () => ({
@@ -26,8 +26,8 @@ vi.mock('vue-router', () => ({
 }));
 
 // Mock partService
-vi.mock('../../services/part', async () => {
-  const actual = await vi.importActual('../../services/part') as any;
+vi.mock('../../../services/part/part', async () => {
+  const actual = await vi.importActual('../../../services/part/part') as any;
   return {
     ...actual,
     partService: {

@@ -93,6 +93,18 @@ export const MOCK_PARTS: Part[] = [
   { id: '30', partNo: 'PN-2024-030', htsCode: '8471.50.00', status: PartStatus.UNKNOWN, supplier: 'Unknown Source', lastUpdated: '2026-04-07 09:00', history: generateHistory(PartStatus.UNKNOWN, '2026-04-07 09:00') }
 ];
 
+/**
+ * Expanded Mock data for Suppliers (供應商模擬資料)
+ */
+export const MOCK_SUPPLIERS = [
+  'TechCorp Solutions',
+  'Global Logistics Inc',
+  'Alpha Manufacturing',
+  'Beta Electronics',
+  'Delta Systems',
+  'Omega Industrial'
+];
+
 export const partService = {
   async getParts(): Promise<Part[]> {
     return MOCK_PARTS;
@@ -101,15 +113,15 @@ export const partService = {
     return MOCK_PARTS.find(p => p.id === id);
   },
   async getSuppliers(): Promise<string[]> {
-    return Array.from(new Set(MOCK_PARTS.map(p => p.supplier)));
+    return MOCK_SUPPLIERS;
   },
-  async createPart(data: { partNo: string; description: string; htsCode: string }): Promise<Part> {
+  async createPart(data: { partNo: string; description: string; htsCode: string; supplier: string }): Promise<Part> {
     const newPart: Part = {
       id: (MOCK_PARTS.length + 1).toString(),
       partNo: data.partNo,
       htsCode: data.htsCode,
       status: PartStatus.PENDING_REVIEW,
-      supplier: 'Customer A', // Default for now
+      supplier: data.supplier || 'Unknown Source',
       lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
       description: data.description,
       history: [

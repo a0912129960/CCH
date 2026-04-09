@@ -1,6 +1,29 @@
 # CCH Frontend Development Guidelines (CCH 前端開發規範)
 
-## ⚖️ 1. Core Philosophy (核心哲學)
+## 📁 2. Directory Structure & Categorization (目錄結構與分類)
+
+All files MUST be organized by **Business Domain** to ensure scalability. (所有檔案必須依據「業務領域」進行組織。)
+
+### 2.1 Views (`src/views/`)
+Group views by their primary business context:
+- `auth/`: Login, Registration, Password reset.
+- `part/`: All part-related management pages.
+- `customer/`: Customer-specific dashboards.
+- `employee/`: Employee-specific dashboards.
+
+### 2.2 Services (`src/services/`)
+Match the structure of views:
+- `auth/`: Authentication logic.
+- `part/`: Part-related API calls.
+- `dashboard/`: Analytics and summary data.
+
+### 2.3 Components (`src/components/`)
+- `common/`: Highly reusable UI elements (Button, Card, Dot).
+- `features/[domain]/`: UI components specific to a domain (e.g., `features/part/PartFilter.vue`).
+
+---
+
+## ⚖️ 3. Core Philosophy (核心哲學)
 除了遵循 SOLID 原則外，我們強調以下前端核心價值：
 In addition to SOLID principles, we emphasize the following frontend core values:
 

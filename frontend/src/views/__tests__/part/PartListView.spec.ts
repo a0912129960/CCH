@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import PartListView from '../PartListView.vue';
-import * as partModule from '../../services/part';
+import PartListView from '../../part/PartListView.vue';
+import * as partModule from '../../../services/part/part';
 
 /**
  * Part List View Component Tests (零件清單組件測試)
  */
-vi.mock('../../services/part', async () => {
-  const actual = await vi.importActual('../../services/part') as any;
+vi.mock('../../../services/part/part', async () => {
+  const actual = await vi.importActual('../../../services/part/part') as any;
   return {
     ...actual,
     partService: {

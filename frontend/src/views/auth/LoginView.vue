@@ -2,8 +2,8 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { authService, UserRole } from '../services/auth';
-import AppButton from '../components/common/Button.vue';
+import { authService, UserRole } from '../../services/auth/auth';
+import AppButton from '../../components/common/Button.vue';
 
 /**
  * Login View Component with i18n support (具備多國語系支援的登入頁面)

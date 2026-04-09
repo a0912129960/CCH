@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import LoginView from '../LoginView.vue';
-import { authService, UserRole } from '../../services/auth';
+import LoginView from '../../auth/LoginView.vue';
+import { authService } from '../../../services/auth/auth';
 import { useRouter } from 'vue-router';
 
 // Mock vue-i18n
@@ -17,7 +17,7 @@ vi.mock('vue-router', () => ({
 }));
 
 // Mock authService
-vi.mock('../../services/auth', () => ({
+vi.mock('../../../services/auth/auth', () => ({
   authService: {
     login: vi.fn(),
     state: {

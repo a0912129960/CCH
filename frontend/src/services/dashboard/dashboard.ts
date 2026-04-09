@@ -1,4 +1,4 @@
-import { PartStatus, MOCK_PARTS } from './part';
+import { PartStatus, MOCK_PARTS } from "../part/part";
 
 /**
  * Dashboard Service (儀表板服務)

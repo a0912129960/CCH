@@ -1,15 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import PartCreateView from '../PartCreateView.vue';
-import { partService } from '../../services/part';
+import PartCreateView from '../../part/PartCreateView.vue';
+import { partService } from '../../../services/part/part';
 
 /**
  * Part Creation View Component Tests (新增零件組件測試)
  * BR-08: HTS Format | BR-21: Description Quality
  */
-vi.mock('../../services/part', () => ({
+vi.mock('../../../services/part/part', () => ({
   partService: {
-    createPart: vi.fn().mockResolvedValue({ id: '999', partNo: 'TEST-PN' })
+    createPart: vi.fn().mockResolvedValue({ id: '999', partNo: 'TEST-PN' }),
+    getSuppliers: vi.fn().mockResolvedValue(['Supplier A', 'Supplier B'])
   }
 }));
 
@@ -27,7 +28,15 @@ describe('PartCreateView.vue', () => {
     global: {
       mocks: { $t: (key: string) => key },
       stubs: {
-        Card: { template: '<div class="card"><slot name="header"></slot><slot></slot></div>' }
+        Card: { template: '<div class="card"><slot name="header"></slot><slot></slot></div>' },
+        'el-select': { 
+          template: '<select :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)"><slot></slot></select>',
+          props: ['modelValue']
+        },
+        'el-option': { 
+          template: '<option :value="value">{{ label }}</option>',
+          props: ['value', 'label']
+        }
       }
     }
   };
@@ -79,12 +88,13 @@ describe('PartCreateView.vue', () => {
     
     await wrapper.find('[data-test="part-no-input"]').setValue('PN-001');
     await wrapper.find('[data-test="hts-code-input"]').setValue('1234.56.7890');
+    await wrapper.find('[data-test="supplier-select"]').setValue('Supplier A');
     await wrapper.find('[data-test="description-input"]').setValue('This is a strong description with enough words for the validation to pass.');
     
     await wrapper.find('form').trigger('submit.prevent');
     
     expect(partService.createPart).toHaveBeenCalled();
-    expect(pushSpy).toHaveBeenCalledWith('/parts');
+    expect(pushSpy).toHaveBeenCalledWith({ name: 'parts' });
     expect(alertMock).toHaveBeenCalled();
     
     vi.unstubAllGlobals();

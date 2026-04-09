@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import LoginView from '../views/LoginView.vue'
-import EmployeeView from '../views/EmployeeView.vue'
-import CustomerView from '../views/CustomerView.vue'
-import PartListView from '../views/PartListView.vue'
-import PartDetailView from '../views/PartDetailView.vue'
-import { authService, UserRole } from '../services/auth'
+import HomeView from '../views/home/HomeView.vue'
+import LoginView from '../views/auth/LoginView.vue'
+import EmployeeView from '../views/employee/EmployeeView.vue'
+import CustomerView from '../views/customer/CustomerView.vue'
+import PartListView from '../views/part/PartListView.vue'
+import PartDetailView from '../views/part/PartDetailView.vue'
+import { authService, UserRole } from '../services/auth/auth'
 
 /**
  * Router Configuration (路由配置)
@@ -45,7 +45,7 @@ const router = createRouter({
     {
       path: '/parts/new',
       name: 'part-create',
-      component: () => import('../views/PartCreateView.vue'),
+      component: () => import('../views/part/PartCreateView.vue'),
       meta: { requiresAuth: true, role: UserRole.CUSTOMER }
     },
     {
