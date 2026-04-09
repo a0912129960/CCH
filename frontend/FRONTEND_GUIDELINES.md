@@ -10,7 +10,7 @@ In addition to SOLID principles, we emphasize the following frontend core values
 
 ## 🌐 2. i18n & Text Mandate (多國語系規範)
 - **Zero Hardcoding**: 所有的模板文字 **絕不允許** 硬編碼。必須使用 `$t()` 或 `t()`。 (All template text **MUST NOT** be hardcoded. Use `$t()` or `t()`.)
-- **Bilingual Context**: 所有的 i18n 鍵名必須同步更新 `en.json`, `zh-TW.json`, `zh-CN.json`。 (All i18n keys must be updated synchronously in `en.json`, `zh-TW.json`, and `zh-CN.json`.)
+- **Trilingual Synchronicity (三語同步)**: 所有的 i18n 鍵名必須 **同時** 更新於 `en.json`, `zh-TW.json`, 與 `zh-CN.json`。缺少任一語系即視為開發未完成。 (All i18n keys **MUST** be updated simultaneously in `en.json`, `zh-TW.json`, and `zh-CN.json`. Missing any language is considered incomplete development.)
 
 ## 🏗️ 3. Vue 3 Composition API Best Practices
 - **Script Setup**: 優先使用 `<script setup>` 語法。 (Prioritize using `<script setup>` syntax.)
@@ -18,7 +18,7 @@ In addition to SOLID principles, we emphasize the following frontend core values
 - **Props/Emits Definition**: 必須使用 `defineProps<{...}>` 與 `defineEmits<{...}>` 進行強型別定義。 (Must use `defineProps` and `defineEmits` for strong typing.)
 
 ## 🧪 4. Testing SOP (測試標準作業程序)
-- **Coverage Requirement**: 每個頁面 (`Views`) 與複雜組件 (`Components`) 必須擁有對應的 `.spec.ts` 測試檔案。 (Every page and complex component must have a corresponding `.spec.ts` test file.)
+- **Atomic Delivery (原子化交付)**: 建立任何頁面 (`Views`) 或組件 (`Components`) 時，**必須同時** 建立對應的 `.spec.ts` 測試檔案。 (When creating any page (`Views`) or component (`Components`), a corresponding `.spec.ts` test file **MUST** be created at the same time.)
 - **Testing Rules**: 詳細規則請參閱 `TESTING_RULES.md`。 (Refer to `TESTING_RULES.md` for detailed rules.)
 
 ## 🎨 5. Style Guidelines (視覺風格規範)

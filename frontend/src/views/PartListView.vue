@@ -137,7 +137,13 @@ const getStatusColor = (status: PartStatus) => {
           </thead>
           <tbody>
             <tr v-if="loading"><td colspan="5" class="text-center">Loading...</td></tr>
-            <tr v-else v-for="part in filteredParts" :key="part.id">
+            <tr v-else v-for="part in filteredParts" :key="part.id" class="clickable-row" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
+              <!-- 
+                Update by Gemini AI on 2026-04-09: 
+                Added clickable-row class and @click handler for navigation.
+                (繁體中文) 2026-04-09 Gemini AI 更新：加入 clickable-row 類別與 @click 處理函式以實現導航功能。
+                /* <tr v-else v-for="part in filteredParts" :key="part.id"> */
+              -->
               <td class="part-no-cell">{{ part.partNo }}</td>
               <td><code>{{ part.htsCode }}</code></td>
               <td>{{ part.supplier }}</td>
@@ -242,6 +248,15 @@ h1 {
   text-transform: uppercase;
   cursor: pointer;
   user-select: none;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clickable-row:hover {
+  background-color: #f8f9fe;
 }
 
 .part-no-cell {

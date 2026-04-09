@@ -1,6 +1,8 @@
 # 🧪 CCH Frontend Testing Rules (CCH 前端測試規範)
 
 ## ⚖️ 1. Core Principles (核心原則)
+- **Atomic Requirement (原子化要求)**: Creating a View or Component is NOT complete without its corresponding test. 
+  - **原則**: 建立 View 或 Component 時，若無對應測試即視為未完工。
 - **Bilingual Mandate (雙語指令)**: All test descriptions (`describe`, `it`) MUST be in both **Traditional Chinese (繁體中文)** and **English**.
 - **Isolation**: Each test should be independent. Use `vi.mock` for external services.
 
@@ -28,4 +30,4 @@
 - **Routing**: Verify redirection on success/failure.
 
 ---
-*Created on 2026-04-09 by Gemini CLI*
+*Updated on 2026-04-09 by Gemini CLI (Mandatory Testing Policy)*

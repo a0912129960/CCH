@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import PartListView from '../PartListView.vue';
+import * as partModule from '../../services/part';
 
 /**
- * Optimized Mock Strategy for PartListView.vue
- * Using a simple factory to preserve MOCK_PARTS and PartStatus.
+ * Part List View Component Tests (零件清單組件測試)
  */
 vi.mock('../../services/part', async () => {
   const actual = await vi.importActual('../../services/part') as any;
@@ -17,16 +17,15 @@ vi.mock('../../services/part', async () => {
   };
 });
 
-// Mock vue-i18n
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }));
 
-// Mock vue-router
 const mockRoute = { query: { status: '' } };
+const pushSpy = vi.fn();
 vi.mock('vue-router', () => ({
   useRoute: () => mockRoute,
-  useRouter: () => ({ push: vi.fn() })
+  useRouter: () => ({ push: pushSpy })
 }));
 
 describe('PartListView.vue', () => {
@@ -43,6 +42,7 @@ describe('PartListView.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRoute.query.status = '';
+    pushSpy.mockClear();
   });
 
   it('renders correctly (正確渲染)', async () => {
@@ -61,5 +61,18 @@ describe('PartListView.vue', () => {
     
     const rows = wrapper.findAll('tbody tr');
     expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it('navigates to detail page when a row is clicked (點擊列時導航至詳情頁)', async () => {
+    const wrapper = mount(PartListView, globalConfig);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    const row = wrapper.find('tbody tr.clickable-row');
+    await row.trigger('click');
+    
+    expect(pushSpy).toHaveBeenCalled();
+    const callArgs = pushSpy.mock.calls[0][0];
+    expect(callArgs.name).toBe('part-detail');
+    expect(callArgs.params).toHaveProperty('id');
   });
 });

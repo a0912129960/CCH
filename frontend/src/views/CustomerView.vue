@@ -36,6 +36,10 @@ const goToPartList = (status?: string) => {
   const query = status ? { status } : {};
   router.push({ name: 'parts', query });
 };
+
+const goToPartDetail = (id: string) => {
+  router.push({ name: 'part-detail', params: { id } });
+};
 </script>
 
 <template>
@@ -87,7 +91,7 @@ const goToPartList = (status?: string) => {
             <h3>{{ $t('customer.sla_countdown') }}</h3>
           </div>
           <div class="sla-list">
-            <Card v-for="item in slaItems" :key="item.id" class="sla-card" @click="goToPartList(item.status)">
+            <Card v-for="item in slaItems" :key="item.id" class="sla-card" @click="goToPartDetail(item.id)">
               <div class="sla-main">
                 <div class="part-badge">
                   <span class="part-label">{{ $t('customer.part_no') }}</span>

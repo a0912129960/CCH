@@ -18,8 +18,12 @@
     "supplier": "供應商",
     "menu": {
       "dashboard": "儀表板",
-      "parts": "零件編號清單"
-    }
+      "parts": "零件清單"
+    },
+    "actions": "操作",
+    "accept": "接受",
+    "resubmit": "重新提交",
+    "back": "返回"
   },
   "login": {
     "title": "登入",
@@ -45,10 +49,21 @@
     "hts_code": "HTS Code"
   },
   "part_list": {
-    "title": "零件編號清單",
+    "title": "零件清單",
     "search_placeholder": "搜尋零件編號或 HTS Code...",
     "filter_status": "狀態篩選",
     "filter_supplier": "供應商篩選"
+  },
+  "part_detail": {
+    "title": "零件詳情",
+    "basic_info": "基本資訊",
+    "history": "分類歷史時間軸",
+    "dimerco_feedback": "中菲行反饋",
+    "reason": "退回理由",
+    "suggested_code": "建議 HTS Code",
+    "accept_confirm": "您確定要接受此 HTS Code 嗎？",
+    "resubmit_title": "重新提交資訊",
+    "resubmit_placeholder": "請輸入您的說明或補充資訊..."
   },
   "status": {
     "unknown": "未知",
