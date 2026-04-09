@@ -10,7 +10,8 @@
     "welcome": "Welcome",
     "role": "Role",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "status": "Status"
   },
   "login": {
     "title": "Login",
@@ -28,6 +29,19 @@
   },
   "customer": {
     "title": "Customer Portal",
-    "role_name": "External Customer"
+    "role_name": "External Customer",
+    "status_summary": "Part Status Summary",
+    "sla_countdown": "SLA Countdown (Pending Actions)",
+    "sla_remaining": "{min} min remaining",
+    "part_no": "Part No"
+  },
+  "status": {
+    "unknown": "Unknown",
+    "pending_customer": "Pending Customer",
+    "pending_review": "Pending Review",
+    "returned": "Returned",
+    "active": "Active",
+    "flagged": "Flagged",
+    "superseded": "Superseded"
   }
 }

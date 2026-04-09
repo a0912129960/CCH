@@ -10,7 +10,8 @@
     "welcome": "歡迎",
     "role": "角色",
     "save": "儲存",
-    "cancel": "取消"
+    "cancel": "取消",
+    "status": "狀態"
   },
   "login": {
     "title": "登入",
@@ -28,6 +29,19 @@
   },
   "customer": {
     "title": "客戶入口",
-    "role_name": "外部客戶"
+    "role_name": "外部客戶",
+    "status_summary": "零件狀態摘要",
+    "sla_countdown": "SLA 倒數 (待處理項目)",
+    "sla_remaining": "剩餘 {min} 分鐘",
+    "part_no": "零件編號"
+  },
+  "status": {
+    "unknown": "未知",
+    "pending_customer": "待客戶提交",
+    "pending_review": "待中菲行審核",
+    "returned": "退回 (待修正)",
+    "active": "生效中",
+    "flagged": "標記重估",
+    "superseded": "已取代"
   }
 }

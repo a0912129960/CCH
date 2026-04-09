@@ -19,9 +19,13 @@ In addition to SOLID principles, we emphasize the following frontend core values
 
 ## 🧪 4. Testing SOP (測試標準作業程序)
 - **Coverage Requirement**: 每個頁面 (`Views`) 與複雜組件 (`Components`) 必須擁有對應的 `.spec.ts` 測試檔案。 (Every page and complex component must have a corresponding `.spec.ts` test file.)
-- **Testing Tools**: 使用 `Vitest` 進行單元測試，`Vue Test Utils` 進行組件掛載測試。 (Use `Vitest` for unit tests and `Vue Test Utils` for component mounting tests.)
+- **Testing Rules**: 詳細規則請參閱 `TESTING_RULES.md`。 (Refer to `TESTING_RULES.md` for detailed rules.)
 
-## 📁 5. Directory Responsibility (目錄職責)
+## 🎨 5. Style Guidelines (視覺風格規範)
+- **Brand Consistency**: 視覺風格必須符合 MyDimerco 品牌語言。 (Visual style must comply with MyDimerco brand language.)
+- **Detailed Style Guide**: 詳細規格請參閱 `STYLE_GUIDELINES.md`。 (Refer to `STYLE_GUIDELINES.md` for detailed specifications.)
+
+## 📁 6. Directory Responsibility (目錄職責)
 - `src/views/`: 只負責頁面佈局與調度 Hooks。 (Only responsible for page layout and dispatching hooks.)
 - `src/services/`: 負責資料處理、API 呼叫、狀態轉換（不含 UI）。 (Responsible for data processing, API calls, and state transitions - no UI.)
 - `src/components/common/`: 高度抽象、無副作用的共用組件。 (Highly abstract, side-effect-free shared components.)
