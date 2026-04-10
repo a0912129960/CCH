@@ -130,12 +130,20 @@ export const partService = {
   async getCustomers(): Promise<{ id: string; name: string }[]> {
     return MOCK_CUSTOMERS;
   },
-  async createPart(data: { partNo: string; description: string; htsCode: string; supplier: string; customerId?: string; customerName?: string }): Promise<Part> {
+  async createPart(data: { 
+    partNo: string; 
+    description: string; 
+    htsCode: string; 
+    supplier: string; 
+    customerId?: string; 
+    customerName?: string;
+    status?: PartStatus;
+  }): Promise<Part> {
     const newPart: Part = {
       id: (MOCK_PARTS.length + 1).toString(),
       partNo: data.partNo,
       htsCode: data.htsCode,
-      status: PartStatus.PENDING_REVIEW,
+      status: data.status || PartStatus.PENDING_REVIEW,
       supplier: data.supplier || 'Unknown Source',
       customerId: data.customerId || 'customer001',
       customerName: data.customerName || 'Dimerco Electronics',
@@ -144,10 +152,10 @@ export const partService = {
       history: [
         {
           id: 'h-new',
-          status: PartStatus.PENDING_REVIEW,
-          updatedBy: 'Customer A',
+          status: data.status || PartStatus.PENDING_REVIEW,
+          updatedBy: data.status === PartStatus.ACTIVE ? 'Dimerco Employee' : 'Customer A',
           updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-          remark: 'Part created and submitted for review.'
+          remark: data.status === PartStatus.ACTIVE ? 'Part created and auto-approved by employee.' : 'Part created and submitted for review.'
         }
       ]
     };
@@ -189,7 +197,7 @@ export const partService = {
     document.body.removeChild(link);
   },
 
-  async uploadParts(_file: File, _supplier?: string, onProgress?: (percent: number) => void): Promise<ImportBatchReport> {
+  async uploadParts(file: File, customerId?: string, onProgress?: (percent: number) => void): Promise<ImportBatchReport> {
     // Simulate progress (模擬進度)
     if (onProgress) {
       for (let i = 0; i <= 100; i += 20) {
@@ -199,12 +207,12 @@ export const partService = {
     }
 
     // Mock processing logic (模擬處理邏輯)
-    // In real app, we would use a library to read Excel/CSV or send file to server.
-    // For now, we return a mock report.
+    // If customerId is provided (from Employee), parts should be NEW/UPDATED and ACTIVE
+    const defaultStatus = customerId ? 'ACTIVE' : 'PENDING_REVIEW';
     const mockRows: ImportRowReport[] = [
-      { partNo: 'PN-NEW-001', htsCode: '8517.12.00', status: ImportResultStatus.NEW, message: 'Successfully imported as PENDING_REVIEW' },
+      { partNo: 'PN-NEW-001', htsCode: '8517.12.00', status: ImportResultStatus.NEW, message: `Successfully imported as ${defaultStatus}` },
       { partNo: 'PN-2024-001', htsCode: '8517.12.00', status: ImportResultStatus.UNCHANGED, message: 'No changes detected' },
-      { partNo: 'PN-2024-002', htsCode: '9999.99.99', status: ImportResultStatus.UPDATED, message: 'HTS Code updated, status set to PENDING_REVIEW' },
+      { partNo: 'PN-2024-002', htsCode: '9999.99.99', status: ImportResultStatus.UPDATED, message: `HTS Code updated, status set to ${defaultStatus}` },
       { partNo: 'PN-ERR-999', htsCode: 'INVALID', status: ImportResultStatus.REJECTED, message: 'Invalid HTS Code format' }
     ];
 

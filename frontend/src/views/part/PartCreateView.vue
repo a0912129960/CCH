@@ -2,7 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { partService } from '../../services/part/part';
+import { authService } from '../../services/auth/auth';
+import { partService, PartStatus } from '../../services/part/part';
 import Card from '../../components/common/Card.vue';
 import Button from '../../components/common/Button.vue';
 import { ElMessage } from 'element-plus';
@@ -10,25 +11,36 @@ import { ElMessage } from 'element-plus';
 /**
  * Part No Creation View (新增零件編號頁面)
  * BR-08: HTS Format Validation | BR-21: Description Quality Scoring
+ * Updated: Mandatory Customer ID for Employees and Auto-Activation logic.
  */
 
 const router = useRouter();
 const { t } = useI18n();
 
+const { role, customerId: userCustomerId } = authService.state;
+const isEmployee = role === 'EMPLOYEE';
+
 const form = ref({
   partNo: '',
   description: '',
   htsCode: '',
-  supplier: ''
+  supplier: '',
+  customerId: isEmployee ? '' : userCustomerId || ''
 });
 
 const suppliers = ref<string[]>([]);
+const customers = ref<{ id: string; name: string }[]>([]);
 
 onMounted(async () => {
   try {
-    suppliers.value = await partService.getSuppliers();
+    const [suppliersData, customersData] = await Promise.all([
+      partService.getSuppliers(),
+      partService.getCustomers()
+    ]);
+    suppliers.value = suppliersData;
+    customers.value = customersData;
   } catch (error) {
-    console.error('Failed to load suppliers:', error);
+    console.error('Failed to load data:', error);
   }
 });
 
@@ -57,7 +69,8 @@ const errors = ref({
   partNo: '',
   description: '',
   htsCode: '',
-  supplier: ''
+  supplier: '',
+  customerId: ''
 });
 
 const htsRegex = /^\d{4}\.\d{2}\.\d{4}$/;
@@ -65,7 +78,7 @@ const isHtsValid = computed(() => !form.value.htsCode || htsRegex.test(form.valu
 
 const validateForm = () => {
   let valid = true;
-  errors.value = { partNo: '', description: '', htsCode: '', supplier: '' };
+  errors.value = { partNo: '', description: '', htsCode: '', supplier: '', customerId: '' };
 
   if (!form.value.partNo) {
     errors.value.partNo = 'part_create.validation.required';
@@ -77,6 +90,10 @@ const validateForm = () => {
   }
   if (!form.value.supplier) {
     errors.value.supplier = 'part_create.validation.required';
+    valid = false;
+  }
+  if (isEmployee && !form.value.customerId) {
+    errors.value.customerId = 'part_create.validation.required';
     valid = false;
   }
   if (!form.value.htsCode) {
@@ -94,7 +111,20 @@ const handleSubmit = async () => {
   if (!validateForm()) return;
 
   try {
-    await partService.createPart(form.value);
+    // BR: If employee adds part, status is ACTIVE (auto-approved)
+    const status = isEmployee ? PartStatus.ACTIVE : PartStatus.PENDING_REVIEW;
+    
+    // Find customer name for metadata
+    let customerName = undefined;
+    if (isEmployee) {
+      customerName = customers.value.find(c => c.id === form.value.customerId)?.name;
+    }
+
+    await partService.createPart({
+      ...form.value,
+      status,
+      customerName
+    });
     ElMessage.success(t('part_create.success'));
     router.push({ name: 'parts' });
   } catch (error) {
@@ -114,6 +144,27 @@ const handleSubmit = async () => {
       <div class="form-layout">
         <Card class="form-card">
           <form @submit.prevent="handleSubmit">
+            <!-- Customer Selection (Employee Only) - Mandatory -->
+            <div v-if="isEmployee" class="form-group">
+              <label>{{ $t('employee.customer_select') }} <span class="required-asterisk">*</span></label>
+              <el-select 
+                v-model="form.customerId" 
+                :placeholder="$t('employee.customer_select')"
+                class="form-select-el"
+                :class="{ 'is-invalid': errors.customerId }"
+                data-test="customer-select"
+                filterable
+              >
+                <el-option
+                  v-for="c in customers"
+                  :key="c.id"
+                  :label="c.name"
+                  :value="c.id"
+                />
+              </el-select>
+              <span v-if="errors.customerId" class="error-text">{{ $t(errors.customerId) }}</span>
+            </div>
+
             <div class="form-group">
               <label>{{ $t('customer.part_no') }} <span class="required-asterisk">*</span></label>
               <input 

@@ -36,7 +36,7 @@
     "hint_customer": "Customer: customer001 / 888888"
   },
   "employee": {
-    "title": "Employee Dashboard",
+    "title": "Dashboard",
     "role_name": "Dimerco Employee",
     "customer_select": "Select Customer",
     "all_customers": "All Customers",

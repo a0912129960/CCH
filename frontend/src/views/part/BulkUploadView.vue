@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { authService } from '../../services/auth/auth';
 import { partService, type ImportBatchReport, ImportResultStatus } from '../../services/part/part';
 import Card from '../../components/common/Card.vue';
 import Button from '../../components/common/Button.vue';
@@ -11,19 +12,30 @@ import { ElMessage, type UploadFile } from 'element-plus';
  * BR-16: Drag and drop Excel upload
  * BR-18: Progress display
  * BR-19: Import report
- * 
- * Audit Update on 2026-04-09 by Gemini AI:
- * Ticket: BR-UPLOAD-001
- * Intent: Implement bulk upload feature with drag-and-drop and reporting.
- * Impact: New page for parts bulk management.
- * (繁體中文) 2026-04-09 Gemini AI 更新：實作具備拖放與報告功能的批量上傳。
+ * Updated: Mandatory Customer ID for Employees and Auto-Activation logic.
  */
 
 const router = useRouter();
+const { role, customerId: userCustomerId } = authService.state;
+const isEmployee = role === 'EMPLOYEE';
+
 const uploadFile = ref<File | null>(null);
 const uploading = ref(false);
 const progress = ref(0);
 const report = ref<ImportBatchReport | null>(null);
+
+const customers = ref<{ id: string; name: string }[]>([]);
+const selectedCustomerId = ref(isEmployee ? '' : userCustomerId || '');
+
+onMounted(async () => {
+  if (isEmployee) {
+    try {
+      customers.value = await partService.getCustomers();
+    } catch (error) {
+      console.error('Failed to load customers:', error);
+    }
+  }
+});
 
 const handleFileChange = (file: UploadFile) => {
   if (file.raw) {
@@ -34,6 +46,10 @@ const handleFileChange = (file: UploadFile) => {
 };
 
 const handleUpload = async () => {
+  if (isEmployee && !selectedCustomerId.value) {
+    ElMessage.warning('Please select a customer first.');
+    return;
+  }
   if (!uploadFile.value) {
     ElMessage.warning('Please select a file first.');
     return;
@@ -43,7 +59,8 @@ const handleUpload = async () => {
   progress.value = 0;
   
   try {
-    const result = await partService.uploadParts(uploadFile.value, undefined, (p) => {
+    // Pass selectedCustomerId. If provided, backend (mock) will set status to ACTIVE
+    const result = await partService.uploadParts(uploadFile.value, selectedCustomerId.value, (p) => {
       progress.value = p;
     });
     report.value = result;
@@ -88,6 +105,24 @@ const getStatusType = (status: ImportResultStatus) => {
             <Button type="secondary" @click="handleDownloadTemplate">
               {{ $t('part_upload.download_template') }}
             </Button>
+          </div>
+
+          <!-- Customer Selection (Employee Only) - Mandatory -->
+          <div v-if="isEmployee" class="customer-selection-row mb-6">
+            <label class="block text-sm text-gray-600 mb-2">{{ $t('employee.customer_select') }} <span class="text-red-500">*</span></label>
+            <el-select 
+              v-model="selectedCustomerId" 
+              :placeholder="$t('employee.customer_select')"
+              class="w-full max-w-md"
+              filterable
+            >
+              <el-option
+                v-for="c in customers"
+                :key="c.id"
+                :label="c.name"
+                :value="c.id"
+              />
+            </el-select>
           </div>
 
           <el-upload
@@ -192,6 +227,13 @@ h1 {
   justify-content: flex-end;
 }
 
+.customer-selection-row {
+  background: #f8f9fe;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
 .upload-dragger {
   width: 100%;
 }
@@ -238,4 +280,16 @@ h1 {
   color: #8898aa;
   font-size: 0.85rem;
 }
+
+.mb-6 { margin-bottom: 1.5rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mr-4 { margin-right: 1rem; }
+.w-full { width: 100%; }
+.max-w-md { max-width: 28rem; }
+.block { display: block; }
+.text-sm { font-size: 0.875rem; }
+.text-gray-600 { color: #4b5563; }
+.text-red-500 { color: #ef4444; }
 </style>

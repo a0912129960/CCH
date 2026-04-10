@@ -239,7 +239,7 @@ h1 {
 
 .filter-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 1.5rem;
 }
 

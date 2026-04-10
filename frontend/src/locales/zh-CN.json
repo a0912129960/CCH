@@ -36,7 +36,7 @@
     "hint_customer": "客户: customer001 / 888888"
   },
   "employee": {
-    "title": "员工仪表板",
+    "title": "仪表板",
     "role_name": "Dimerco 员工",
     "customer_select": "选择客户",
     "all_customers": "所有客户",

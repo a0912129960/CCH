@@ -70,13 +70,6 @@ const formatDate = (dateStr: string) => {
         </div>
         
         <div class="header-right">
-          <div class="customer-selector">
-            <label>{{ $t('employee.customer_select') }}</label>
-            <select v-model="selectedCustomerId" class="app-select">
-              <option value="all">{{ $t('employee.all_customers') }}</option>
-              <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
-          </div>
           <div class="user-info">
             <span class="welcome-text">{{ $t('common.welcome') }},</span>
             <span class="username">{{ username }}</span>
@@ -89,6 +82,17 @@ const formatDate = (dateStr: string) => {
       </div>
       
       <div v-else class="dashboard-content">
+        <!-- Customer Selector (客戶選擇器) - Moved here -->
+        <div class="customer-selector-container">
+          <div class="customer-selector">
+            <label>{{ $t('employee.customer_select') }}</label>
+            <select v-model="selectedCustomerId" class="app-select">
+              <option value="all">{{ $t('employee.all_customers') }}</option>
+              <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+        </div>
+
         <!-- Status Summary (狀態摘要) -->
         <section class="summary-section">
           <div class="section-header">
@@ -191,10 +195,20 @@ h1 {
   margin: 0;
 }
 
+.customer-selector-container {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
 .customer-selector {
   display: flex;
   align-items: center;
   gap: 1rem;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .customer-selector label {
