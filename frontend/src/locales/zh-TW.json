@@ -37,7 +37,17 @@
   },
   "employee": {
     "title": "員工儀表板",
-    "role_name": "Dimerco 員工"
+    "role_name": "Dimerco 員工",
+    "customer_select": "選擇客戶",
+    "all_customers": "所有客戶",
+    "status_summary": "零件狀態摘要",
+    "pending_audit": "待審核零件",
+    "no_pending": "目前無待審核零件",
+    "review": "審核",
+    "part_no": "零件編號",
+    "hts_code": "HTS Code",
+    "supplier": "供應商",
+    "last_updated": "最後更新"
   },
   "customer": {
     "title": "客戶儀表板",

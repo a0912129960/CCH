@@ -12,7 +12,8 @@ vi.mock('../../../services/part/part', async () => {
     ...actual,
     partService: {
       getParts: vi.fn().mockResolvedValue(actual.MOCK_PARTS),
-      getSuppliers: vi.fn().mockResolvedValue(['Supplier A', 'Supplier B'])
+      getSuppliers: vi.fn().mockResolvedValue(['Supplier A', 'Supplier B']),
+      getCustomers: vi.fn().mockResolvedValue([{ id: 'customer001', name: 'Test Customer' }])
     }
   };
 });

@@ -53,7 +53,7 @@ Ensure all classification-related logic respects these states:
 ## 4. Engineering Standards (工程標準)
 
 ### 4.1 Legacy Code Preservation (舊程式碼保存)
-**NEVER DELETE** old logic. Comment it out using `/* ... */` and add a remark. (絕不刪除舊邏輯。使用 `/* ... */` 將其註解掉並加上註釋。)
+**NEVER DELETE** old logic. Comment it out using context-appropriate syntax: `/* ... */` for Script/Style, `<!-- ... -->` for Template. (絕不刪除舊邏輯。使用適當語法：Script/Style 使用 `/* ... */`，Template 使用 `<!-- ... -->`。)
 
 ### 4.2 N-Tier Architecture Enforcement
 - **Backend**: C# 14 / .NET 10. Follow Controller -> Service -> Repository pattern.
@@ -64,28 +64,8 @@ Ensure all classification-related logic respects these states:
 
 ## 5. Verification (驗證)
 - **Constitutional Verification (憲法級驗證)**: Testing is a MANDATORY part of verifying the correctness of the results. (測試是驗證結果正確性不可或缺的強制性環節。)
+- **Self-Audit Authorized (授權自我審核)**: AI is authorized to independently validate changes against rules without requiring a separate role or agent. (AI 獲授權可獨立驗證變更是否符合規範，無需額外角色或代理人。)
 - **Test-Driven Delivery**: No code change is complete without corresponding unit/integration tests.
 - **New Component Mandate**: For every new view, component, or service, a corresponding test file MUST be created. (針對新視圖/組件/服務必須建立對應的測試檔案。)
 - **Linting**: Run `npm run lint` (frontend) or `dotnet build` (backend) after changes.
-
----
-
-## 6. Peer Review & Independent Validation (同行評審與獨立驗證)
-
-### 6.1 The "Four-Eyes Principle" (四眼原則)
-Every code modification MUST be reviewed by a separate role/agent to ensure compliance with the Project Constitution and AI Rules. (每項程式碼修改必須由另一獨立角色/代理人進行評審。)
-- **The Surgeon (修改者)**: Executes the surgical edit and provides implementation details. (執行外科手術式修改並提供實作細節。)
-- **The Sentinel (審核者)**: Independently validates the change against `gemini.md`, `AI_RULES.md`, and business logic. The Sentinel MUST NOT be the same role/agent as the Surgeon. (獨立驗證修改是否符合規範。審核者不得與修改者為同一角色/代理人。)
-
-### 6.2 Review Criteria (評審標準)
-The Sentinel MUST verify with a **Devil's Advocate (反對者)** mindset, assuming the Surgeon **HAS ALREADY FAILED**:
-1.  **Separation of Truth (事實來源分離)**: The Sentinel MUST NOT rely on the Surgeon's chat output (Claim). A fresh `read_file` MUST be executed to audit the code directly from disk (Source of Truth). (哨兵嚴禁依賴調整者的「宣稱事實」，必須執行 `read_file` 直接讀取「硬碟事實」。)
-2.  **Skepticism & Evidence-Based Audit (懷疑論與證據導向)**: The Sentinel MUST identify specific evidence. Do not just say "it looks good". Cite specific line numbers and tag pairs. (不准只說「看起來正確」，必須包含「我從第 X 行讀取到 Y 標籤，確認其成對」的具體事實。)
-3.  **Compliance (合規性)**: Are there Audit Blocks, Bilingual remarks, and Trilingual i18n?
-4.  **Integrity (完整性)**: Are tests updated and passing?
-5.  **Syntax Verification (語法驗證)**: **MANDATORY QUESTION** - The Sentinel must explicitly state: "I have personally inspected every line of the modified tags for correct syntax and pairing based on a fresh file read, assuming the modifier made a mistake." (哨兵必須明確表示：「我已基於硬碟事實，在假設修改者出錯的前提下，親自檢查修改後的每一行標籤語法。」)
-
-### 6.3 Sub-Agent Isolation (子代理人隔離)
-For high-risk changes (e.g., core logic, large refactoring, or third-party component updates), the Sentinel role **SHOULD** be delegated to a separate Sub-Agent (e.g., `generalist`) to ensure cognitive and environmental isolation. (針對高風險變更，應將哨兵職責委派給獨立子代理人以確保認知隔離。)
-If the Sentinel identifies any breach, the change is considered **FAILED**. The Surgeon MUST rectify all issues before the next review cycle. (若審核者發現任何違反規範之處，該次變更即為**不通過**。修改者必須在下一次評審前修正所有問題。)
 

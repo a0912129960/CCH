@@ -17,6 +17,7 @@ interface AuthState {
   isLoggedIn: boolean;
   role: UserRole;
   username: string;
+  customerId?: string; // Optional customer identifier (選填的客戶識別碼)
 }
 
 /**
@@ -25,7 +26,8 @@ interface AuthState {
 const authState = reactive<AuthState>({
   isLoggedIn: false,
   role: UserRole.GUEST,
-  username: ''
+  username: '',
+  customerId: undefined
 });
 
 /**
@@ -56,6 +58,7 @@ export const authService = {
       authState.isLoggedIn = true;
       authState.role = UserRole.EMPLOYEE;
       authState.username = username;
+      authState.customerId = undefined;
       return true;
     }
 
@@ -64,6 +67,7 @@ export const authService = {
       authState.isLoggedIn = true;
       authState.role = UserRole.CUSTOMER;
       authState.username = username;
+      authState.customerId = 'customer001';
       return true;
     }
 
@@ -77,6 +81,7 @@ export const authService = {
     authState.isLoggedIn = false;
     authState.role = UserRole.GUEST;
     authState.username = '';
+    authState.customerId = undefined;
   },
 
   /**

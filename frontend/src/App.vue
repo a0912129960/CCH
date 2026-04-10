@@ -19,10 +19,12 @@ const { isSidebarCollapsed } = storeToRefs(uiStore);
 
 /**
  * Decide which layout to show (決定顯示哪種佈局)
+ * Updated by AI - 2026-04-10: Use sidebar layout for both Customer and Employee roles.
  */
-const isCustomerLayout = computed(() => {
+const isSidebarLayout = computed(() => {
   const state = authService.state;
-  return state && authService.isAuthenticated() && state.role === UserRole.CUSTOMER;
+  return state && authService.isAuthenticated() && 
+    (state.role === UserRole.CUSTOMER || state.role === UserRole.EMPLOYEE);
 });
 
 const isLogin = computed(() => route.name === 'login');
@@ -37,15 +39,16 @@ const onLanguageChange = (event: Event) => {
 </script>
 
 <template>
-  <div :class="{ 'app-layout': isCustomerLayout }">
-    <!-- 1. Customer Sidebar (客戶側邊欄佈局) -->
-    <Sidebar v-if="isCustomerLayout" />
+  <div :class="{ 'app-layout': isSidebarLayout }">
+    <!-- 1. Shared Sidebar Layout (共用側邊欄佈局) -->
+    <Sidebar v-if="isSidebarLayout" />
 
     <!-- 2. Main Content Wrapper -->
-    <div :class="{ 'main-content': isCustomerLayout, 'is-collapsed': isSidebarCollapsed }">
+    <div :class="{ 'main-content': isSidebarLayout, 'is-collapsed': isSidebarCollapsed }">
       
-      <!-- 3. Standard Header (for Employee or Unauthenticated) -->
-      <header v-if="!isCustomerLayout && !isLogin">
+      <!-- 3. Standard Header (for unauthenticated pages only, if any) -->
+      <!-- 
+      <header v-if="!isSidebarLayout && !isLogin">
         <div class="header-content">
           <nav v-if="authService.isAuthenticated()">
             <RouterLink to="/">{{ $t('common.home') }}</RouterLink>
@@ -61,6 +64,7 @@ const onLanguageChange = (event: Event) => {
           </div>
         </div>
       </header>
+      -->
 
       <!-- 4. Router View -->
       <main>

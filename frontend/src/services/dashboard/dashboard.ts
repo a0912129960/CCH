@@ -41,8 +41,9 @@ export const dashboardService = {
   /**
    * Get status summary (動態計算狀態摘要)
    * BR-28: Counts are derived from MOCK_PARTS.
+   * @param {string} [customerId] - Filter by customer (按客戶篩選)
    */
-  async getStatusSummary(): Promise<StatusCount[]> {
+  async getStatusSummary(customerId?: string): Promise<StatusCount[]> {
     // 1. Initialize counts for all 7 states (初始化 7 種狀態的計數)
     const counts: Record<PartStatus, number> = {
       [PartStatus.UNKNOWN]: 0,
@@ -54,8 +55,12 @@ export const dashboardService = {
       [PartStatus.SUPERSEDED]: 0
     };
 
-    // 2. Count occurrences (計算出現次數)
-    MOCK_PARTS.forEach(part => {
+    // 2. Filter and count (篩選並計數)
+    const filteredParts = customerId && customerId !== 'all' 
+      ? MOCK_PARTS.filter(p => p.customerId === customerId)
+      : MOCK_PARTS;
+
+    filteredParts.forEach(part => {
       counts[part.status]++;
     });
 
@@ -71,11 +76,18 @@ export const dashboardService = {
   /**
    * Get SLA countdown items (獲取 SLA 倒數項目)
    * Derived from parts that require attention.
+   * @param {string} [customerId] - Filter by customer (按客戶篩選)
    */
-  async getSLAItems(): Promise<SLAItem[]> {
+  async getSLAItems(customerId?: string): Promise<SLAItem[]> {
     const now = new Date();
+    
+    // Filter parts by customer if provided (如果有提供則按客戶篩選)
+    const baseParts = customerId && customerId !== 'all' 
+      ? MOCK_PARTS.filter(p => p.customerId === customerId)
+      : MOCK_PARTS;
+
     // Filter parts that are PENDING_CUSTOMER or RETURNED (篩選待處理項目)
-    const pendingParts = MOCK_PARTS.filter(p => 
+    const pendingParts = baseParts.filter(p => 
       p.status === PartStatus.PENDING_CUSTOMER || p.status === PartStatus.RETURNED
     ).slice(0, 3); // Just show top 3 for demo
 
@@ -89,5 +101,17 @@ export const dashboardService = {
         remainingMinutes: offset
       };
     });
+  },
+
+  /**
+   * Get parts pending review (獲取待審核零件)
+   * @param {string} [customerId] - Filter by customer (按客戶篩選)
+   */
+  async getPendingReviewParts(customerId?: string): Promise<any[]> {
+    const baseParts = customerId && customerId !== 'all' 
+      ? MOCK_PARTS.filter(p => p.customerId === customerId)
+      : MOCK_PARTS;
+
+    return baseParts.filter(p => p.status === PartStatus.PENDING_REVIEW);
   }
 };

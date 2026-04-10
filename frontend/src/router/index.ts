@@ -34,31 +34,31 @@ const router = createRouter({
       path: '/customer',
       name: 'customer',
       component: CustomerView,
-      meta: { requiresAuth: true, role: UserRole.CUSTOMER }
+      meta: { requiresAuth: true, role: undefined } // Both roles (兩種角色皆可)
     },
     {
       path: '/parts',
       name: 'parts',
       component: PartListView,
-      meta: { requiresAuth: true, role: UserRole.CUSTOMER }
+      meta: { requiresAuth: true, role: undefined } // Both roles (兩種角色皆可)
     },
     {
       path: '/parts/new',
       name: 'part-create',
       component: () => import('../views/part/PartCreateView.vue'),
-      meta: { requiresAuth: true, role: UserRole.CUSTOMER }
+      meta: { requiresAuth: true, role: undefined } // Both roles (兩種角色皆可)
     },
     {
       path: '/parts/upload',
       name: 'part-upload',
       component: () => import('../views/part/BulkUploadView.vue'),
-      meta: { requiresAuth: true, role: UserRole.CUSTOMER }
+      meta: { requiresAuth: true, role: undefined } // Both roles (兩種角色皆可)
     },
     {
       path: '/parts/:id',
       name: 'part-detail',
       component: PartDetailView,
-      meta: { requiresAuth: true, role: UserRole.CUSTOMER }
+      meta: { requiresAuth: true, role: undefined } // Both roles (兩種角色皆可)
     }
   ]
 })

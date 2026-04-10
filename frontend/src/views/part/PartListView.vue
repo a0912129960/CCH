@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { authService } from '../../services/auth/auth';
 import { partService, type Part, PartStatus } from '../../services/part/part';
 import Card from '../../components/common/Card.vue';
 import Dot from '../../components/common/Dot.vue';
@@ -22,23 +23,30 @@ const router = useRouter();
 
 const parts = ref<Part[]>([]);
 const suppliers = ref<string[]>([]);
+const customers = ref<{ id: string; name: string }[]>([]);
 const loading = ref(true);
+
+const { role, customerId: userCustomerId } = authService.state;
+const isEmployee = role === 'EMPLOYEE';
 
 // Search and Filter states
 const searchQuery = ref('');
 const statusFilter = ref<string>((route.query.status as string) || '');
 const supplierFilter = ref('');
+const customerFilter = ref<string>((route.query.customerId as string) || (isEmployee ? '' : userCustomerId || ''));
 const sortBy = ref<'partNo' | 'lastUpdated'>('lastUpdated');
 const sortOrder = ref<'asc' | 'desc'>('desc');
 
 onMounted(async () => {
   try {
-    const [partsData, suppliersData] = await Promise.all([
+    const [partsData, suppliersData, customersData] = await Promise.all([
       partService.getParts(),
-      partService.getSuppliers()
+      partService.getSuppliers(),
+      partService.getCustomers()
     ]);
     parts.value = partsData;
     suppliers.value = suppliersData;
+    customers.value = customersData;
   } finally {
     loading.value = false;
   }
@@ -46,6 +54,12 @@ onMounted(async () => {
 
 const filteredParts = computed(() => {
   let result = [...parts.value];
+  
+  // Role-based restriction (角色存取限制)
+  if (!isEmployee && userCustomerId) {
+    result = result.filter(p => p.customerId === userCustomerId);
+  }
+
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
     result = result.filter(p => 
@@ -58,6 +72,9 @@ const filteredParts = computed(() => {
   }
   if (supplierFilter.value) {
     result = result.filter(p => p.supplier === supplierFilter.value);
+  }
+  if (isEmployee && customerFilter.value) {
+    result = result.filter(p => p.customerId === customerFilter.value);
   }
   result.sort((a, b) => {
     const valA = a[sortBy.value];
@@ -135,6 +152,15 @@ const getStatusColor = (status: PartStatus) => {
               <el-option v-for="s in suppliers" :key="s" :label="s" :value="s" />
             </el-select>
           </div>
+
+          <!-- Customer Filter (Employee Only) -->
+          <div v-if="isEmployee" class="filter-item">
+            <label>{{ $t('employee.customer_select') }}</label>
+            <el-select v-model="customerFilter" class="form-select-el" clearable filterable>
+              <el-option :label="$t('employee.all_customers')" value="" />
+              <el-option v-for="c in customers" :key="c.id" :label="c.name" :value="c.id" />
+            </el-select>
+          </div>
         </div>
       </Card>
 
@@ -145,6 +171,7 @@ const getStatusColor = (status: PartStatus) => {
               <th @click="sortBy = 'partNo'; sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
                 {{ $t('customer.part_no') }} {{ sortBy === 'partNo' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
               </th>
+              <th v-if="isEmployee && !customerFilter">{{ $t('employee.customer_select') }}</th>
               <th>{{ $t('customer.hts_code') }}</th>
               <th>{{ $t('common.supplier') }}</th>
               <th>{{ $t('common.status') }}</th>
@@ -161,6 +188,7 @@ const getStatusColor = (status: PartStatus) => {
                   {{ part.partNo }}
                 </a>
               </td>
+              <td v-if="isEmployee && !customerFilter">{{ part.customerName }}</td>
               <td><code>{{ part.htsCode }}</code></td>
               <td>{{ part.supplier }}</td>
               <td>

@@ -37,7 +37,17 @@
   },
   "employee": {
     "title": "Employee Dashboard",
-    "role_name": "Dimerco Employee"
+    "role_name": "Dimerco Employee",
+    "customer_select": "Select Customer",
+    "all_customers": "All Customers",
+    "status_summary": "Part Status Summary",
+    "pending_audit": "Waiting for Audit",
+    "no_pending": "No parts waiting for audit",
+    "review": "Review",
+    "part_no": "Part No",
+    "hts_code": "HTS Code",
+    "supplier": "Supplier",
+    "last_updated": "Last Updated"
   },
   "customer": {
     "title": "Customer Dashboard",

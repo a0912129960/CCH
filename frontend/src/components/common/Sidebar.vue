@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { RouterLink, useRouter } from 'vue-router';
-import { authService } from '../../services/auth/auth';
+import { authService, UserRole } from '../../services/auth/auth';
 import { useI18n } from 'vue-i18n';
 import { switchLanguage } from '../../locales';
 import { useUIStore } from '../../stores/ui';
 import { storeToRefs } from 'pinia';
+import { computed } from 'vue';
 
 const router = useRouter();
 const { locale } = useI18n();
 const uiStore = useUIStore();
 const { isSidebarCollapsed: isCollapsed } = storeToRefs(uiStore);
+
+const userRole = computed(() => authService.state.role);
+const dashboardPath = computed(() => {
+  return userRole.value === UserRole.EMPLOYEE ? '/employee' : '/customer';
+});
 
 const handleLogout = () => {
   authService.logout();
@@ -40,7 +46,7 @@ const toggleSidebar = () => {
     </div>
 
     <nav class="sidebar-nav">
-      <RouterLink to="/customer" class="nav-item" :title="$t('common.menu.dashboard')">
+      <RouterLink :to="dashboardPath" class="nav-item" :title="$t('common.menu.dashboard')">
         <i class="icon">📊</i>
         <span v-if="!isCollapsed">{{ $t('common.menu.dashboard') }}</span>
       </RouterLink>

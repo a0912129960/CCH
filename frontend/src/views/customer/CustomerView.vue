@@ -13,7 +13,7 @@ import Dot from '../../components/common/Dot.vue';
  */
 
 const router = useRouter();
-const username = authService.state.username;
+const { username, customerId } = authService.state;
 
 const statusSummary = ref<StatusCount[]>([]);
 const slaItems = ref<SLAItem[]>([]);
@@ -22,8 +22,8 @@ const loading = ref(true);
 onMounted(async () => {
   try {
     const [summary, sla] = await Promise.all([
-      dashboardService.getStatusSummary(),
-      dashboardService.getSLAItems()
+      dashboardService.getStatusSummary(customerId),
+      dashboardService.getSLAItems(customerId)
     ]);
     statusSummary.value = summary;
     slaItems.value = sla;
@@ -33,7 +33,8 @@ onMounted(async () => {
 });
 
 const goToPartList = (status?: string) => {
-  const query = status ? { status } : {};
+  const query: any = status ? { status } : {};
+  if (customerId) query.customerId = customerId;
   router.push({ name: 'parts', query });
 };
 
