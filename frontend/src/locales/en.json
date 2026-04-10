@@ -16,21 +16,23 @@
     "all": "All",
     "last_updated": "Last Updated",
     "supplier": "Supplier",
+    "customer": "Customer",
     "menu": {
       "dashboard": "Dashboard",
-      "parts": "Part List"
+      "parts": "Parts List"
     },
     "actions": "Actions",
     "accept": "Accept",
     "resubmit": "Resubmit",
-    "back": "Back"
+    "back": "Back",
+    "confirm": "Confirm"
   },
   "login": {
     "title": "Login",
     "account_label": "Account",
     "password_label": "Password",
-    "account_placeholder": "Enter Account",
-    "password_placeholder": "Enter Password",
+    "account_placeholder": "Please enter account",
+    "password_placeholder": "Please enter password",
     "error_invalid": "Invalid account or password.",
     "hint_employee": "Employee: Y9999 / 888888",
     "hint_customer": "Customer: customer001 / 888888"
@@ -41,8 +43,8 @@
     "customer_select": "Select Customer",
     "all_customers": "All Customers",
     "status_summary": "Part Status Summary",
-    "pending_audit": "Waiting for Audit",
-    "no_pending": "No parts waiting for audit",
+    "pending_audit": "Pending Review Parts",
+    "no_pending": "No parts pending review",
     "review": "Review",
     "part_no": "Part No",
     "hts_code": "HTS Code",
@@ -53,13 +55,13 @@
     "title": "Customer Dashboard",
     "role_name": "External Customer",
     "status_summary": "Part Status Summary",
-    "sla_countdown": "SLA Countdown (Pending Actions)",
-    "sla_remaining": "{min} min remaining",
+    "sla_countdown": "SLA Countdown (Pending Items)",
+    "sla_remaining": "{min} mins remaining",
     "part_no": "Part No",
     "hts_code": "HTS Code"
   },
   "part_list": {
-    "title": "Part List",
+    "title": "Parts List",
     "search_placeholder": "Search Part No or HTS Code...",
     "filter_status": "Status Filter",
     "filter_supplier": "Supplier Filter",
@@ -67,17 +69,17 @@
     "bulk_upload": "Bulk Upload"
   },
   "part_upload": {
-    "title": "Bulk Upload Part",
+    "title": "Bulk Upload Parts",
     "dragger_text": "Click or drag file to this area to upload",
-    "dragger_hint": "Support for single or bulk upload. Only .csv, .xls, .xlsx files are allowed.",
+    "dragger_hint": "Support for a single or bulk upload. Strictly for .csv, .xls, .xlsx files.",
     "download_template": "Download Excel Template",
     "upload_button": "Start Upload",
-    "progress": "Uploading progress",
+    "progress": "Upload Progress",
     "report_title": "Import Report",
     "table": {
       "part_no": "Part No",
       "hts_code": "HTS Code",
-      "status": "Result",
+      "status": "Import Result",
       "message": "Message"
     },
     "result": {
@@ -89,33 +91,37 @@
   },
   "part_create": {
     "title": "Create New Part",
-    "part_no_placeholder": "Enter Part No",
+    "part_no_placeholder": "Enter part number",
     "description": "Product Description",
     "description_placeholder": "Enter detailed product description...",
     "hts_code_placeholder": "NNNN.NN.NNNN",
     "suggested_hts": "Suggested USHTS Code",
     "quality_score": "Description Quality Score",
     "score": {
-      "weak": "Weak (Needs more detail)",
+      "weak": "Weak (Need more details)",
       "adequate": "Adequate",
       "strong": "Strong"
     },
     "validation": {
-      "hts_format": "Invalid HTS Code format (must be NNNN.NN.NNNN)",
+      "hts_format": "HTS Code format error (must be NNNN.NN.NNNN)",
       "required": "This field is required"
     },
     "success": "Part created successfully"
   },
   "part_detail": {
-    "title": "Part Details",
+    "title": "Part Detail",
     "basic_info": "Basic Information",
-    "history": "Classification History",
+    "history": "Classification History Timeline",
     "dimerco_feedback": "Dimerco Feedback",
-    "reason": "Reason",
+    "reason": "Return Reason",
     "suggested_code": "Suggested HTS Code",
-    "accept_confirm": "Are you sure you want to accept this HTS code?",
+    "accept_confirm": "Are you sure you want to accept this HTS Code?",
     "resubmit_title": "Resubmit Information",
-    "resubmit_placeholder": "Enter your response or additional info..."
+    "resubmit_placeholder": "Please enter your explanation or supplementary info...",
+    "review_action": "Review Action",
+    "return_reason_label": "Return Reason",
+    "return_placeholder": "Please explain why this part is being returned to the customer...",
+    "btn_return_customer": "Return to Customer"
   },
   "status": {
     "unknown": "Unknown",

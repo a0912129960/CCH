@@ -115,7 +115,11 @@
     "suggested_code": "建議 HTS Code",
     "accept_confirm": "您確定要接受此 HTS Code 嗎？",
     "resubmit_title": "重新提交資訊",
-    "resubmit_placeholder": "請輸入您的說明或補充資訊..."
+    "resubmit_placeholder": "請輸入您的說明或補充資訊...",
+    "review_action": "審核操作",
+    "return_reason_label": "退回原因",
+    "return_placeholder": "請說明退回給客戶的原因...",
+    "btn_return_customer": "退回給客戶"
   },
   "status": {
     "unknown": "未知",

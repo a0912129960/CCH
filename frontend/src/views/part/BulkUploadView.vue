@@ -12,7 +12,7 @@ import { ElMessage, type UploadFile } from 'element-plus';
  * BR-16: Drag and drop Excel upload
  * BR-18: Progress display
  * BR-19: Import report
- * Updated: Mandatory Customer ID for Employees and Auto-Activation logic.
+ * Updated: Mandatory Customer ID for Employees and Breadcrumb Navigation.
  */
 
 const router = useRouter();
@@ -59,7 +59,6 @@ const handleUpload = async () => {
   progress.value = 0;
   
   try {
-    // Pass selectedCustomerId. If provided, backend (mock) will set status to ACTIVE
     const result = await partService.uploadParts(uploadFile.value, selectedCustomerId.value, (p) => {
       progress.value = p;
     });
@@ -90,13 +89,15 @@ const getStatusType = (status: ImportResultStatus) => {
 <template>
   <div class="page-wrapper">
     <div class="page-container">
+      <!-- Breadcrumb Navigation -->
+      <nav class="breadcrumb">
+        <a href="#" @click.prevent="router.back()">{{ $t('common.menu.parts') }}</a>
+        <span class="separator">/</span>
+        <span class="current">{{ $t('part_upload.title') }}</span>
+      </nav>
+
       <header class="page-header">
-        <div class="header-content">
-          <a href="#" class="back-link mr-4" @click.prevent="router.back()">
-            &larr; {{ $t('common.back') }}
-          </a>
-          <h1>{{ $t('part_upload.title') }}</h1>
-        </div>
+        <h1>{{ $t('part_upload.title') }}</h1>
       </header>
 
       <div class="upload-section">
@@ -160,27 +161,31 @@ const getStatusType = (status: ImportResultStatus) => {
 
       <div v-if="report" class="report-section mt-6">
         <Card>
-          <h3>{{ $t('part_upload.report_title') }}</h3>
-          <div class="summary-banner">
-            <el-tag type="info">Total: {{ report.totalRows }}</el-tag>
-            <el-tag type="success">New: {{ report.newCount }}</el-tag>
-            <el-tag type="warning">Updated: {{ report.updatedCount }}</el-tag>
-            <el-tag type="info" effect="plain">Unchanged: {{ report.unchangedCount }}</el-tag>
-            <el-tag type="danger">Rejected: {{ report.rejectedCount }}</el-tag>
+          <div class="card-header-padding">
+            <h3>{{ $t('part_upload.report_title') }}</h3>
           </div>
+          <div class="card-body-padding">
+            <div class="summary-banner">
+              <el-tag type="info">Total: {{ report.totalRows }}</el-tag>
+              <el-tag type="success">New: {{ report.newCount }}</el-tag>
+              <el-tag type="warning">Updated: {{ report.updatedCount }}</el-tag>
+              <el-tag type="info" effect="plain">Unchanged: {{ report.unchangedCount }}</el-tag>
+              <el-tag type="danger">Rejected: {{ report.rejectedCount }}</el-tag>
+            </div>
 
-          <el-table :data="report.rows" style="width: 100%" class="report-table mt-4">
-            <el-table-column prop="partNo" :label="$t('part_upload.table.part_no')" width="180" />
-            <el-table-column prop="htsCode" :label="$t('part_upload.table.hts_code')" width="180" />
-            <el-table-column prop="status" :label="$t('part_upload.table.status')" width="120">
-              <template #default="scope">
-                <el-tag :type="getStatusType(scope.row.status)">
-                  {{ $t('part_upload.result.' + scope.row.status.toLowerCase()) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="message" :label="$t('part_upload.table.message')" />
-          </el-table>
+            <el-table :data="report.rows" style="width: 100%" class="report-table mt-4">
+              <el-table-column prop="partNo" :label="$t('part_upload.table.part_no')" width="180" />
+              <el-table-column prop="htsCode" :label="$t('part_upload.table.hts_code')" width="180" />
+              <el-table-column prop="status" :label="$t('part_upload.table.status')" width="120">
+                <template #default="scope">
+                  <el-tag :type="getStatusType(scope.row.status)">
+                    {{ $t('part_upload.result.' + scope.row.status.toLowerCase()) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="message" :label="$t('part_upload.table.message')" />
+            </el-table>
+          </div>
         </Card>
       </div>
     </div>
@@ -189,26 +194,37 @@ const getStatusType = (status: ImportResultStatus) => {
 
 <style scoped>
 .page-wrapper {
-  background-color: var(--dashboard-bg);
+  background-color: #f4f7fc;
   min-height: 100vh;
+  padding: 2rem 0;
 }
 
 .page-container {
-  padding: 2.5rem;
-  max-width: 1000px;
+  padding: 0 3rem;
+  max-width: 1200px;
   margin: 0 auto;
   font-family: "MyDimerco-WorkSansBold", sans-serif;
 }
 
-.page-header {
-  margin-bottom: 2.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-.header-content {
+/* Breadcrumb */
+.breadcrumb {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.breadcrumb a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.breadcrumb .separator { color: #adb5bd; }
+.breadcrumb .current { color: #6c757d; }
+
+.page-header {
+  margin-bottom: 2.5rem;
 }
 
 h1 {
@@ -219,6 +235,7 @@ h1 {
 
 .upload-card {
   padding: 2rem;
+  border-radius: 12px;
 }
 
 .template-action {
@@ -230,7 +247,7 @@ h1 {
 .customer-selection-row {
   background: #f8f9fe;
   padding: 1.5rem;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #e9ecef;
 }
 
@@ -270,9 +287,10 @@ h1 {
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
-  padding: 1rem;
+  padding: 1.2rem;
   background: #f8f9fe;
-  border-radius: 8px;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
 }
 
 .report-table :deep(th) {
@@ -280,6 +298,9 @@ h1 {
   color: #8898aa;
   font-size: 0.85rem;
 }
+
+.card-body-padding { padding: 1.5rem 2rem; }
+.card-header-padding { padding: 1.2rem 2rem; border-bottom: 1px solid #f1f3f5; }
 
 .mb-6 { margin-bottom: 1.5rem; }
 .mb-2 { margin-bottom: 0.5rem; }

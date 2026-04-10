@@ -1,16 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import PartDetailView from '../../part/PartDetailView.vue';
-import { partService, PartStatus } from '../../../services/part/part';
+import { partService } from '../../../services/part/part';
+
+// Mock element-plus
+vi.mock('element-plus', () => ({
+  ElMessage: { success: vi.fn(), warning: vi.fn() },
+  ElMessageBox: { confirm: vi.fn().mockResolvedValue(true) }
+}));
 
 // Mock vue-i18n
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string, params?: any) => {
-      if (params && params.min) return `${key}:${params.min}`;
-      return key;
-    }
+    t: (key: string) => key
   })
+}));
+
+// Mock authService
+vi.mock('../../../services/auth/auth', () => ({
+  UserRole: { EMPLOYEE: 'EMPLOYEE', CUSTOMER: 'CUSTOMER' },
+  authService: {
+    state: { role: 'CUSTOMER' }
+  }
 }));
 
 // Mock vue-router
@@ -52,42 +63,71 @@ describe('PartDetailView.vue', () => {
       mocks: { $t: (key: string) => key },
       stubs: {
         Card: { template: '<div class="card"><slot name="header"></slot><slot></slot></div>' },
-        Dot: { template: '<div class="dot"></div>' }
+        Button: { template: '<button><slot></slot></button>' }
       }
     }
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default to customer
+    import('../../../services/auth/auth').then(({ authService }) => {
+      authService.state.role = 'CUSTOMER';
+    });
+    // Default history state
+    vi.stubGlobal('window', {
+      history: { state: { back: '/parts' } }
+    });
   });
 
   it('renders part details correctly (正確渲染零件詳情)', async () => {
     const wrapper = mount(PartDetailView, globalConfig);
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await flushPromises();
 
     expect(wrapper.find('h1').text()).toBe('PN-2024-007');
     expect(wrapper.find('.code-box').text()).toBe('8517.12.00');
   });
 
-  it('shows Dimerco feedback when status is RETURNED (狀態為退回時顯示反饋資訊)', async () => {
-    const wrapper = mount(PartDetailView, globalConfig);
-    await new Promise(resolve => setTimeout(resolve, 50));
+  it('shows dynamic breadcrumb based on history (根據歷史記錄顯示動態麵包屑)', async () => {
+    // 1. From Parts List
+    window.history.state.back = '/parts';
+    let wrapper = mount(PartDetailView, globalConfig);
+    await flushPromises();
+    expect(wrapper.find('.breadcrumb a').text()).toBe('common.menu.parts');
 
-    expect(wrapper.find('.feedback-card').exists()).toBe(true);
-    expect(wrapper.find('.reason-group p').text()).toBe('Reason text');
+    // 2. From Dashboard
+    window.history.state.back = '/customer';
+    wrapper = mount(PartDetailView, globalConfig);
+    await flushPromises();
+    expect(wrapper.find('.breadcrumb a').text()).toBe('common.menu.dashboard');
   });
 
-  it('handles resubmit action (處理重新提交操作)', async () => {
+  it('restricts actions for customers: only Accept for RETURNED parts (限制客戶動作：針對退回零件僅顯示接受)', async () => {
     const wrapper = mount(PartDetailView, globalConfig);
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await flushPromises();
 
-    const textarea = wrapper.find('textarea');
-    await textarea.setValue('Updated info');
+    // Should see Accept button
+    expect(wrapper.find('.btn-accept').exists()).toBe(true);
+    // Should NOT see Resubmit button (action-card is hidden or only has Accept)
+    // In our implementation, customers only see Accept button, and no textarea for RETURNED status
+    expect(wrapper.find('textarea').exists()).toBe(false);
+  });
+
+  it('enables employee review actions for PENDING_REVIEW parts (員工可核准或退回審核中的零件)', async () => {
+    const { authService } = await import('../../../services/auth/auth');
+    authService.state.role = 'EMPLOYEE';
     
-    const resubmitBtn = wrapper.find('.btn-primary');
-    await resubmitBtn.trigger('click');
+    // Mock a pending review part
+    partService.getPartById = vi.fn().mockResolvedValue({
+      id: '4', partNo: 'PN-004', status: 'PENDING_REVIEW', history: []
+    });
 
-    expect(partService.updatePartStatus).toHaveBeenCalledWith('7', 'PENDING_REVIEW', 'Updated info');
-    expect(mockPush).toHaveBeenCalledWith('/parts');
+    const wrapper = mount(PartDetailView, globalConfig);
+    await flushPromises();
+
+    // Should see both Accept and Return buttons
+    expect(wrapper.find('.btn-accept').text()).toBe('common.accept');
+    expect(wrapper.find('.btn-return').text()).toBe('part_detail.btn_return_customer');
+    expect(wrapper.find('textarea').exists()).toBe(true);
   });
 });

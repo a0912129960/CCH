@@ -115,7 +115,11 @@
     "suggested_code": "建议 HTS Code",
     "accept_confirm": "您确定要接受此 HTS Code 吗？",
     "resubmit_title": "重新提交信息",
-    "resubmit_placeholder": "请输入您的说明或补充信息..."
+    "resubmit_placeholder": "请输入您的说明或补充信息...",
+    "review_action": "审核操作",
+    "return_reason_label": "退回原因",
+    "return_placeholder": "请说明退回给客户的原因...",
+    "btn_return_customer": "退回给客户"
   },
   "status": {
     "unknown": "未知",

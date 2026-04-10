@@ -136,8 +136,14 @@ const handleSubmit = async () => {
 <template>
   <div class="page-wrapper">
     <div class="page-container">
+      <!-- Breadcrumb Navigation -->
+      <nav class="breadcrumb">
+        <a href="#" @click.prevent="router.back()">{{ $t('common.menu.parts') }}</a>
+        <span class="separator">/</span>
+        <span class="current">{{ $t('part_create.title') }}</span>
+      </nav>
+
       <header class="page-header">
-        <a href="#" class="back-link" @click.prevent="router.back()">← {{ $t('common.back') }}</a>
         <h1>{{ $t('part_create.title') }}</h1>
       </header>
 
@@ -246,16 +252,35 @@ const handleSubmit = async () => {
 }
 
 .page-container {
-  padding: 2.5rem;
+  padding: 2.5rem 3rem;
   max-width: 1200px;
   margin: 0 auto;
   font-family: "MyDimerco-WorkSansBold", sans-serif;
 }
 
-.page-header {
+/* Breadcrumb */
+.breadcrumb {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+}
+
+.breadcrumb a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.breadcrumb .separator {
+  color: #adb5bd;
+}
+
+.breadcrumb .current {
+  color: #6c757d;
+}
+
+.page-header {
   margin-bottom: 2.5rem;
 }
 
