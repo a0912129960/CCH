@@ -2,13 +2,13 @@ import { reactive } from 'vue';
 
 /**
  * User Role Types (使用者角色類型)
- * @enum {string}
  */
-export enum UserRole {
-  GUEST = 'GUEST',
-  EMPLOYEE = 'EMPLOYEE',
-  CUSTOMER = 'CUSTOMER'
-}
+export const UserRole = {
+  GUEST: 'GUEST',
+  EMPLOYEE: 'EMPLOYEE',
+  CUSTOMER: 'CUSTOMER'
+} as const;
+export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 /**
  * Authentication State Interface (驗證狀態介面)

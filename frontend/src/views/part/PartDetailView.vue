@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { partService, type Part, PartStatus } from '../../services/part/part';
 import Card from '../../components/common/Card.vue';
-import Dot from '../../components/common/Dot.vue';
 
 /**
  * Part No Detail View (零件編號詳細頁面)
@@ -12,6 +12,7 @@ import Dot from '../../components/common/Dot.vue';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const partId = route.params.id as string;
 
 const part = ref<Part | null>(null);
@@ -33,7 +34,7 @@ onMounted(async () => {
 
 const handleAccept = async () => {
   if (!part.value) return;
-  if (confirm(router.app.config.globalProperties.$t('part_detail.accept_confirm'))) {
+  if (confirm(t('part_detail.accept_confirm'))) {
     const success = await partService.updatePartStatus(partId, PartStatus.ACTIVE, 'Accepted by Customer');
     if (success) {
       router.push('/parts');
@@ -70,7 +71,7 @@ const getStatusColor = (status: PartStatus) => {
     <div v-else-if="part" class="page-container">
       <header class="page-header">
         <div class="header-left">
-          <button class="back-link" @click="router.back()">← {{ $t('common.back') }}</button>
+          <a href="#" class="back-link" @click.prevent="router.back()">← {{ $t('common.back') }}</a>
           <h1>{{ part.partNo }}</h1>
           <span class="status-pill" :style="{ backgroundColor: getStatusColor(part.status) }">
             {{ $t('status.' + part.status.toLowerCase()) }}
@@ -82,7 +83,6 @@ const getStatusColor = (status: PartStatus) => {
       </header>
 
       <div class="detail-grid">
-        <!-- 1. Left: Info & Action -->
         <div class="main-info">
           <Card class="info-card">
             <template #header>
@@ -107,7 +107,6 @@ const getStatusColor = (status: PartStatus) => {
             </div>
           </Card>
 
-          <!-- BR-29: Returned Feedback Section -->
           <Card v-if="part.status === PartStatus.RETURNED" class="feedback-card">
             <div class="feedback-header">
               <span class="alert-icon">⚠️</span>
@@ -125,7 +124,6 @@ const getStatusColor = (status: PartStatus) => {
             </div>
           </Card>
 
-          <!-- BR-30: Action Input -->
           <Card v-if="part.status === PartStatus.RETURNED" class="action-card">
             <template #header>
               <h3>{{ $t('part_detail.resubmit_title') }}</h3>
@@ -147,7 +145,6 @@ const getStatusColor = (status: PartStatus) => {
           </Card>
         </div>
 
-        <!-- 2. Right: Timeline (BR-14) -->
         <div class="timeline-container">
           <Card class="timeline-card">
             <template #header>
@@ -189,7 +186,6 @@ const getStatusColor = (status: PartStatus) => {
   font-family: "MyDimerco-WorkSansBold", sans-serif;
 }
 
-/* Header */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -201,14 +197,6 @@ const getStatusColor = (status: PartStatus) => {
   display: flex;
   align-items: center;
   gap: 1.5rem;
-}
-
-.back-link {
-  background: none;
-  border: none;
-  color: var(--primary-color);
-  cursor: pointer;
-  font-weight: 500;
 }
 
 h1 {
@@ -224,7 +212,6 @@ h1 {
   font-size: 0.85rem;
 }
 
-/* Layout Grid */
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 400px;
@@ -237,7 +224,6 @@ h1 {
   gap: 1.5rem;
 }
 
-/* Cards */
 .card-header {
   display: flex;
   align-items: center;
@@ -261,7 +247,6 @@ h3 {
   margin: 0;
 }
 
-/* Info List */
 .info-list {
   display: flex;
   flex-direction: column;
@@ -290,7 +275,6 @@ h3 {
   font-weight: bold;
 }
 
-/* Feedback Section */
 .feedback-card {
   background-color: #fff5f5;
   border: 1px solid #feb2b2;
@@ -315,17 +299,12 @@ h3 {
   color: #4a5568;
 }
 
-.suggest-group {
-  margin-top: 1rem;
-}
-
 .suggested-code {
   font-size: 1.2rem;
   color: #2f855a;
   font-weight: bold;
 }
 
-/* Action Section */
 .remark-input {
   width: 100%;
   height: 120px;
@@ -342,7 +321,6 @@ h3 {
   justify-content: flex-end;
 }
 
-/* Timeline */
 .timeline {
   position: relative;
   padding-left: 20px;
@@ -405,7 +383,6 @@ h3 {
   border-radius: 4px;
 }
 
-/* Buttons */
 .btn {
   padding: 8px 20px;
   border-radius: 6px;

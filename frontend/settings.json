@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "AfterTool": [
+      {
+        "matcher": "write_file|replace",
+        "hooks": [
+          {
+            "name": "rule-audit",
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"gemini -p '[Role: 檢查者 (Checker)] \n 請根據規則檢查這次對 {{args.file_path}} 的修改是否正確。' --yolo --approval-mode yolo\""
+          }
+        ]
+      }
+    ]
+  }
+}

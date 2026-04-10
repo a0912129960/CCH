@@ -53,7 +53,29 @@
     "search_placeholder": "Search Part No or HTS Code...",
     "filter_status": "Status Filter",
     "filter_supplier": "Supplier Filter",
-    "add_new": "Add New Part"
+    "add_new": "Add New Part",
+    "bulk_upload": "Bulk Upload"
+  },
+  "part_upload": {
+    "title": "Bulk Upload Part",
+    "dragger_text": "Click or drag file to this area to upload",
+    "dragger_hint": "Support for single or bulk upload. Only .csv, .xls, .xlsx files are allowed.",
+    "download_template": "Download Excel Template",
+    "upload_button": "Start Upload",
+    "progress": "Uploading progress",
+    "report_title": "Import Report",
+    "table": {
+      "part_no": "Part No",
+      "hts_code": "HTS Code",
+      "status": "Result",
+      "message": "Message"
+    },
+    "result": {
+      "new": "New",
+      "updated": "Updated",
+      "unchanged": "Unchanged",
+      "rejected": "Rejected"
+    }
   },
   "part_create": {
     "title": "Create New Part",

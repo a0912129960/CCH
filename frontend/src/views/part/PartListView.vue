@@ -105,7 +105,10 @@ const getStatusColor = (status: PartStatus) => {
             />
             <div class="action-row">
               <Button @click="router.push({ name: 'part-create' })">
-                + {{ $t('part_list.add_new') }}
+                {{ $t('part_list.add_new') }}
+              </Button>
+              <Button type="secondary" class="ml-4" @click="router.push({ name: 'part-upload' })">
+                <i class="el-icon-upload"></i> {{ $t('part_list.bulk_upload') }}
               </Button>
             </div>
           </div>
@@ -249,6 +252,9 @@ h1 {
 
 .action-row {
   margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 /* Table Styles */

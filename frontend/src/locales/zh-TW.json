@@ -53,7 +53,29 @@
     "search_placeholder": "搜尋零件編號或 HTS Code...",
     "filter_status": "狀態篩選",
     "filter_supplier": "供應商篩選",
-    "add_new": "新增零件"
+    "add_new": "新增零件",
+    "bulk_upload": "批量上傳"
+  },
+  "part_upload": {
+    "title": "批量上傳零件",
+    "dragger_text": "點擊或將檔案拖拽到此區域上傳",
+    "dragger_hint": "支援單個或批量上傳。僅限 .csv, .xls, .xlsx 檔案。",
+    "download_template": "下載 Excel 範本",
+    "upload_button": "開始上傳",
+    "progress": "上傳進度",
+    "report_title": "匯入報告",
+    "table": {
+      "part_no": "零件編號",
+      "hts_code": "HTS Code",
+      "status": "匯入結果",
+      "message": "訊息"
+    },
+    "result": {
+      "new": "新增",
+      "updated": "更新",
+      "unchanged": "無變動",
+      "rejected": "拒絕"
+    }
   },
   "part_create": {
     "title": "建立新零件",

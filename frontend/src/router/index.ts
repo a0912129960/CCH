@@ -49,6 +49,12 @@ const router = createRouter({
       meta: { requiresAuth: true, role: UserRole.CUSTOMER }
     },
     {
+      path: '/parts/upload',
+      name: 'part-upload',
+      component: () => import('../views/part/BulkUploadView.vue'),
+      meta: { requiresAuth: true, role: UserRole.CUSTOMER }
+    },
+    {
       path: '/parts/:id',
       name: 'part-detail',
       component: PartDetailView,
@@ -61,7 +67,7 @@ const router = createRouter({
  * Navigation Guard (導航守衛)
  * Bilingual comments following CCH constitution.
  */
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const isAuthenticated = authService.isAuthenticated();
   const userRole = authService.state.role;
 

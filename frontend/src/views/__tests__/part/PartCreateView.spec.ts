@@ -3,6 +3,22 @@ import { mount } from '@vue/test-utils';
 import PartCreateView from '../../part/PartCreateView.vue';
 import { partService } from '../../../services/part/part';
 
+// Mock element-plus
+vi.mock('element-plus', () => ({
+  ElMessage: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn()
+  }
+}));
+
+// Mock vue-i18n
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  })
+}));
+
 /**
  * Part Creation View Component Tests (新增零件組件測試)
  * BR-08: HTS Format | BR-21: Description Quality
@@ -80,10 +96,6 @@ describe('PartCreateView.vue', () => {
     });
 
     it('submits form successfully (成功提交表單)', async () => {
-    // Mock global alert
-    const alertMock = vi.fn();
-    vi.stubGlobal('alert', alertMock);
-    
     const wrapper = mount(PartCreateView, globalConfig);
     
     await wrapper.find('[data-test="part-no-input"]').setValue('PN-001');
@@ -95,8 +107,8 @@ describe('PartCreateView.vue', () => {
     
     expect(partService.createPart).toHaveBeenCalled();
     expect(pushSpy).toHaveBeenCalledWith({ name: 'parts' });
-    expect(alertMock).toHaveBeenCalled();
     
-    vi.unstubAllGlobals();
+    const { ElMessage } = await import('element-plus');
+    expect(ElMessage.success).toHaveBeenCalled();
   });
 });

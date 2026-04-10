@@ -1,15 +1,16 @@
 /**
- * Part Status Enum (零件狀態枚舉)
+ * Part Status (零件狀態)
  */
-export enum PartStatus {
-  UNKNOWN = 'UNKNOWN',
-  PENDING_CUSTOMER = 'PENDING_CUSTOMER',
-  PENDING_REVIEW = 'PENDING_REVIEW',
-  RETURNED = 'RETURNED',
-  ACTIVE = 'ACTIVE',
-  FLAGGED = 'FLAGGED',
-  SUPERSEDED = 'SUPERSEDED'
-}
+export const PartStatus = {
+  UNKNOWN: 'UNKNOWN',
+  PENDING_CUSTOMER: 'PENDING_CUSTOMER',
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  RETURNED: 'RETURNED',
+  ACTIVE: 'ACTIVE',
+  FLAGGED: 'FLAGGED',
+  SUPERSEDED: 'SUPERSEDED'
+} as const;
+export type PartStatus = typeof PartStatus[keyof typeof PartStatus];
 
 export interface PartHistory {
   id: string;
@@ -154,5 +155,79 @@ export const partService = {
       return true;
     }
     return false;
+  },
+  
+  /**
+   * Bulk Upload Methods (批量上傳方法)
+   */
+  async downloadTemplate(): Promise<void> {
+    // Mock template download (模擬範本下載)
+    const headers = ['Part No', 'HTS Code', 'Description', 'Supplier'];
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "part_upload_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  },
+
+  async uploadParts(_file: File, _supplier?: string, onProgress?: (percent: number) => void): Promise<ImportBatchReport> {
+    // Simulate progress (模擬進度)
+    if (onProgress) {
+      for (let i = 0; i <= 100; i += 20) {
+        onProgress(i);
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+
+    // Mock processing logic (模擬處理邏輯)
+    // In real app, we would use a library to read Excel/CSV or send file to server.
+    // For now, we return a mock report.
+    const mockRows: ImportRowReport[] = [
+      { partNo: 'PN-NEW-001', htsCode: '8517.12.00', status: ImportResultStatus.NEW, message: 'Successfully imported as PENDING_REVIEW' },
+      { partNo: 'PN-2024-001', htsCode: '8517.12.00', status: ImportResultStatus.UNCHANGED, message: 'No changes detected' },
+      { partNo: 'PN-2024-002', htsCode: '9999.99.99', status: ImportResultStatus.UPDATED, message: 'HTS Code updated, status set to PENDING_REVIEW' },
+      { partNo: 'PN-ERR-999', htsCode: 'INVALID', status: ImportResultStatus.REJECTED, message: 'Invalid HTS Code format' }
+    ];
+
+    return {
+      batchId: 'batch-' + Date.now(),
+      totalRows: mockRows.length,
+      newCount: 1,
+      updatedCount: 1,
+      unchangedCount: 1,
+      rejectedCount: 1,
+      rows: mockRows
+    };
   }
 };
+
+/**
+ * Import Result Status (匯入結果狀態)
+ */
+export const ImportResultStatus = {
+  NEW: 'NEW',
+  UPDATED: 'UPDATED',
+  UNCHANGED: 'UNCHANGED',
+  REJECTED: 'REJECTED'
+} as const;
+export type ImportResultStatus = typeof ImportResultStatus[keyof typeof ImportResultStatus];
+
+export interface ImportRowReport {
+  partNo: string;
+  htsCode: string;
+  status: ImportResultStatus;
+  message?: string;
+}
+
+export interface ImportBatchReport {
+  batchId: string;
+  totalRows: number;
+  newCount: number;
+  updatedCount: number;
+  unchangedCount: number;
+  rejectedCount: number;
+  rows: ImportRowReport[];
+}
