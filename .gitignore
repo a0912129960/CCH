@@ -1,3 +1,11 @@
 /.idea
 /backend/CCH/.idea
 /backend/CCH/docs
+/backend/CCH/CCH.API/bin
+/backend/CCH/CCH.API/obj
+/backend/CCH/CCH.Core/bin
+/backend/CCH/CCH.Core/obj
+/backend/CCH/CCH.Services/bin
+/backend/CCH/CCH.Services/obj
+/backend/CCH/CCH.Tests/bin
+/backend/CCH/CCH.Tests/obj
