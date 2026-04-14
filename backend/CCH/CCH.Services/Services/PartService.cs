@@ -8,7 +8,7 @@ namespace CCH.Services.Services;
 /// Mock part service.
 /// (繁體中文) 模擬零件服務。
 /// </summary>
-public class PartService : IPartService
+public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelService
 {
     public PartListResponseDto SearchParts(string? customerId, string? status, string? partNo, string? supplier, int page, int pageSize) => new()
     {
