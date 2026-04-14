@@ -6,7 +6,7 @@ namespace CCH.Core.DTOs;
 /// </summary>
 public class PartListItemDto
 {
-    public string Id { get; set; } = string.Empty;
+    public int Id { get; set; }
     public string Customer { get; set; } = string.Empty;
     public string PartNo { get; set; } = string.Empty;
     public string PartDesc { get; set; } = string.Empty;
@@ -80,9 +80,9 @@ public class PartDetailDto
 /// </summary>
 public class PartSaveRequest
 {
-    public string? CustomerId { get; set; }
+    public int? CustomerId { get; set; }
     public string PartNo { get; set; } = string.Empty;
-    public string CountryId { get; set; } = string.Empty;
+    public int? CountryId { get; set; }
     public string Division { get; set; } = string.Empty;
     public string Supplier { get; set; } = string.Empty;
     public string PartDesc { get; set; } = string.Empty;
@@ -105,10 +105,8 @@ public class PartSaveRequest
 /// </summary>
 public class BulkUploadResponseDto
 {
-    public int Inserted { get; set; }
-    public int Updated { get; set; }
-    public int Skipped { get; set; }
-    public IEnumerable<string> Errors { get; set; } = Enumerable.Empty<string>();
+    public int PartId { get; set; }
+    public string Error { get; set; } = string.Empty;
 }
 
 /// <summary>

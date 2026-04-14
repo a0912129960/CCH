@@ -10,16 +10,16 @@ public interface IPartService
 {
     PartListResponseDto SearchParts(string? customerId, string? status, string? partNo, string? supplier, int page, int pageSize);
     byte[] ExportParts(string? customerId, string? status, string? partNo, string? supplier);
-    object BatchAccept(IEnumerable<string> partIds);
-    BulkUploadResponseDto BulkUpload(Stream fileStream);
+    object BatchAccept(IEnumerable<int> partIds);
+    List<BulkUploadResponseDto> BulkUpload(Stream fileStream);
     byte[] GetUploadTemplate();
-    PartDetailResponseDto GetPartDetail(string partId);
+    PartDetailResponseDto GetPartDetail(int partId);
     object CreatePart(PartSaveRequest request, string status);
-    object UpdatePart(string partId, PartSaveRequest request);
-    object SubmitPart(string partId, PartSaveRequest request);
-    object AcceptPart(string partId);
-    object ReturnPart(string partId, string returnReason);
-    object InactivatePart(string partId);
-    IEnumerable<MilestoneDto> GetMilestones(string partId);
-    IEnumerable<PartDetailDto> GetHistory(string partId);
+    object UpdatePart(int partId, PartSaveRequest request);
+    object SubmitPart(int partId, PartSaveRequest request);
+    object AcceptPart(int partId);
+    object ReturnPart(int partId, string returnReason);
+    object InactivatePart(int partId);
+    IEnumerable<MilestoneDto> GetMilestones(int partId);
+    IEnumerable<PartDetailDto> GetHistory(int partId);
 }

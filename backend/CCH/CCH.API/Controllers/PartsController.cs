@@ -32,14 +32,14 @@ public class PartsController : ControllerBase
     }
 
     [HttpPost("batch-accept")]
-    public ActionResult<ApiResponse<object>> BatchAccept([FromBody] IEnumerable<string> partIds) =>
+    public ActionResult<ApiResponse<object>> BatchAccept([FromBody] IEnumerable<int> partIds) =>
         Ok(ApiResponse<object>.SuccessResponse(_partService.BatchAccept(partIds)));
 
     [HttpPost("bulk-upload")]
-    public ActionResult<ApiResponse<BulkUploadResponseDto>> BulkUpload(IFormFile file)
+    public ActionResult<ApiResponse<List<BulkUploadResponseDto>>> BulkUpload(IFormFile file)
     {
         using var stream = file.OpenReadStream();
-        return Ok(ApiResponse<BulkUploadResponseDto>.SuccessResponse(_partService.BulkUpload(stream)));
+        return Ok(ApiResponse<List<BulkUploadResponseDto>>.SuccessResponse(_partService.BulkUpload(stream)));
     }
 
     [HttpGet("bulk-upload/template")]
@@ -58,34 +58,34 @@ public class PartsController : ControllerBase
         Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_partService.CreatePart(request, "S02")));
 
     [HttpGet("{partId}")]
-    public ActionResult<ApiResponse<PartDetailResponseDto>> GetPartDetail(string partId) =>
+    public ActionResult<ApiResponse<PartDetailResponseDto>> GetPartDetail(int partId) =>
         Ok(ApiResponse<PartDetailResponseDto>.SuccessResponse(_partService.GetPartDetail(partId)));
 
     [HttpPut("{partId}")]
-    public ActionResult<ApiResponse<object>> UpdatePart(string partId, [FromBody] PartSaveRequest request) =>
+    public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request) =>
         Ok(ApiResponse<object>.SuccessResponse(_partService.UpdatePart(partId, request)));
 
     [HttpPost("{partId}/submit")]
-    public ActionResult<ApiResponse<object>> SubmitPart(string partId, [FromBody] PartSaveRequest request) =>
+    public ActionResult<ApiResponse<object>> SubmitPart(int partId, [FromBody] PartSaveRequest request) =>
         Ok(ApiResponse<object>.SuccessResponse(_partService.SubmitPart(partId, request)));
 
     [HttpPost("{partId}/accept")]
-    public ActionResult<ApiResponse<object>> AcceptPart(string partId) =>
+    public ActionResult<ApiResponse<object>> AcceptPart(int partId) =>
         Ok(ApiResponse<object>.SuccessResponse(_partService.AcceptPart(partId)));
 
     [HttpPost("{partId}/return")]
-    public ActionResult<ApiResponse<object>> ReturnPart(string partId, [FromBody] string returnReason) =>
+    public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] string returnReason) =>
         Ok(ApiResponse<object>.SuccessResponse(_partService.ReturnPart(partId, returnReason)));
 
     [HttpPost("{partId}/inactive")]
-    public ActionResult<ApiResponse<object>> InactivatePart(string partId) =>
+    public ActionResult<ApiResponse<object>> InactivatePart(int partId) =>
         Ok(ApiResponse<object>.SuccessResponse(_partService.InactivatePart(partId)));
 
     [HttpGet("{partId}/milestones")]
-    public ActionResult<ApiResponse<IEnumerable<MilestoneDto>>> GetMilestones(string partId) =>
+    public ActionResult<ApiResponse<IEnumerable<MilestoneDto>>> GetMilestones(int partId) =>
         Ok(ApiResponse<IEnumerable<MilestoneDto>>.SuccessResponse(_partService.GetMilestones(partId)));
 
     [HttpGet("{partId}/history")]
-    public ActionResult<ApiResponse<IEnumerable<PartDetailDto>>> GetHistory(string partId) =>
+    public ActionResult<ApiResponse<IEnumerable<PartDetailDto>>> GetHistory(int partId) =>
         Ok(ApiResponse<IEnumerable<PartDetailDto>>.SuccessResponse(_partService.GetHistory(partId)));
 }

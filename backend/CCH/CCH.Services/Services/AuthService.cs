@@ -1,7 +1,7 @@
 using CCH.Core.DTOs;
 using CCH.Core.Interfaces;
 
-namespace CCH.Services.Implementations;
+namespace CCH.Services.Services;
 
 /// <summary>
 /// Mock authentication service.
