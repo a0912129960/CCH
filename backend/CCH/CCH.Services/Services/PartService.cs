@@ -63,8 +63,31 @@ public class PartService : IPartService
 
     public IEnumerable<PartDetailDto> GetHistory(int partId) => new[]
     {
-        new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "Old Desc", HtsCode = "8471.30", Rate = 0 },
-        new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "New Desc", HtsCode = "8471.31", Rate = 10 },
-        new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP2", PartDesc = "New Desc", HtsCode = "8471.30", Rate = 10 }
+        new PartDetailDto 
+        { 
+            PartNo = "PART-001", 
+            Country = "TW",
+            Division = "DIV1",
+            Supplier = "SUP1",
+            PartDesc = "Version 2 (Current)", 
+            HtsCode = "8471.30",
+            Rate = 0,
+            Remark = "Updated HTS description",
+            UpdatedBy = "Customer001",
+            UpdatedDate = DateTime.Now.AddDays(-1)
+        },
+        new PartDetailDto 
+        { 
+            PartNo = "PART-001", 
+            Country = "TW",
+            Division = "DIV1",
+            Supplier = "SUP1",
+            PartDesc = "Version 1 (Initial)", 
+            HtsCode = "8471.30",
+            Rate = 0,
+            Remark = "Initial entry",
+            UpdatedBy = "Customer001",
+            UpdatedDate = DateTime.Now.AddDays(-5)
+        }
     };
 }
