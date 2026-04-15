@@ -31,11 +31,7 @@ const onLanguageChange = (lang: string) => {
 <template>
   <header class="app-header">
     <div class="header-left">
-      <!-- Menu Toggle -->
-      <div class="collapse-btn" @click="uiStore.toggleSidebar">
-        <i class="el-icon-menu"></i>
-      </div>
-      <!-- Welcome Text Removed (已移除歡迎文字) -->
+      <!-- Left side empty as requested -->
     </div>
 
     <div class="header-right">
@@ -87,14 +83,6 @@ const onLanguageChange = (lang: string) => {
 .header-left {
   display: flex;
   align-items: center;
-  
-  .collapse-btn {
-    font-size: 20px;
-    cursor: pointer;
-    color: #909399;
-    transition: color 0.2s;
-    &:hover { color: #00a8e2; }
-  }
 }
 
 .header-right {
