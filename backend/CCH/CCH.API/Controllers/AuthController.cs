@@ -32,7 +32,7 @@ public class AuthController : ControllerBase
         // (繁體中文) 由 AI 更新 (2026-04-15)：若登入失敗則回傳 Unauthorized
         if (response == null)
         {
-            return Unauthorized(ApiResponse<LoginResponse>.ErrorResponse("Invalid username or password"));
+            return Unauthorized(ApiResponse<LoginResponse>.FailureResponse("Invalid username or password"));
         }
         return Ok(ApiResponse<LoginResponse>.SuccessResponse(response));
     }
