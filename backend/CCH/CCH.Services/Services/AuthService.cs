@@ -67,9 +67,4 @@ public class AuthService : IAuthService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-
-    public bool Logout()
-    {
-        return true;
-    }
 }
