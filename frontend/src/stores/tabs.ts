@@ -21,6 +21,9 @@ export const useTabStore = defineStore('tabs', () => {
 
   // Add a new tab (新增標籤)
   function addTab(tab: TabItem) {
+    // Never add dashboard (/) to the tab list (永遠不將儀表板加入頁籤列表)
+    if (tab.path === '/') return;
+
     const exists = openTabs.value.find(t => t.path === tab.path);
     if (!exists) {
       openTabs.value.push(tab);
@@ -36,15 +39,17 @@ export const useTabStore = defineStore('tabs', () => {
     const isRemovingActive = activeTabPath.value === targetPath;
     openTabs.value.splice(index, 1);
 
-    // If removing active, jump to the last tab or home
-    // 如果關閉的是目前頁面，跳轉至最後一個標籤或首頁
+    // If no tabs left, redirect to home (如果沒有標籤剩餘，導向首頁)
+    if (openTabs.value.length === 0) {
+      activeTabPath.value = '';
+      router.push('/');
+      return;
+    }
+
+    // If removing active, jump to the last tab (如果關閉的是目前頁面，跳轉至最後一個標籤)
     if (isRemovingActive) {
-      if (openTabs.value.length > 0) {
-        const nextTab = openTabs.value[openTabs.value.length - 1];
-        router.push(nextTab.path);
-      } else {
-        router.push('/');
-      }
+      const nextTab = openTabs.value[openTabs.value.length - 1];
+      router.push(nextTab.path);
     }
   }
 

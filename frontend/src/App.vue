@@ -34,7 +34,8 @@ const isSidebarLayout = computed(() => {
 watch(
   () => route.path,
   () => {
-    if (isSidebarLayout.value && route.meta.requiresAuth) {
+    // Only add tab if it's not the root path (僅在非根目錄時新增頁籤)
+    if (isSidebarLayout.value && route.meta.requiresAuth && route.path !== '/') {
       tabStore.addTab({
         title: (route.meta.title as string) || 'common.home',
         path: route.path,

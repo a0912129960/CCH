@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n';
 import { authService } from '../../services/auth/auth';
 import { switchLanguage } from '../../locales';
 import { useRouter } from 'vue-router';
-import { useUIStore } from '../../stores/ui';
 
 // Import SVG Assets
 import EarthIcon from '@/assets/images/earth.svg';
@@ -14,9 +12,7 @@ import ChevronIcon from '@/assets/images/chervon.svg';
  * AppHeader Component (上方區塊：精簡化與圖示更換)
  */
 
-const { locale } = useI18n();
 const router = useRouter();
-const uiStore = useUIStore();
 
 const handleLogout = () => {
   authService.logout();
