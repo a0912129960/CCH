@@ -74,7 +74,7 @@ const onLanguageChange = (lang: string) => {
 
 <style scoped lang="scss">
 .app-header {
-  height: 64px;
+  height: 50px;
   background: white;
   display: flex;
   justify-content: space-between;
@@ -145,6 +145,7 @@ const onLanguageChange = (lang: string) => {
     }
 
     .username {
+      color: #777e89;
       font-size: 16px;
       font-weight: 600;
     }
