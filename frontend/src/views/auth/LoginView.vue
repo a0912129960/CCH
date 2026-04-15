@@ -4,24 +4,22 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { authService, UserRole } from '../../services/auth/auth';
 import AppButton from '../../components/common/Button.vue';
+import DimercoLogo from '@/assets/images/DimLogo_Color_background_Transparent.png';
 
 /**
- * Login View Component with i18n support (具備多國語系支援的登入頁面)
+ * Login View Component (具備視覺升級與多國語系的登入頁面)
+ * Update by Gemini AI on 2026-04-15
  */
 
 const { t } = useI18n();
 const router = useRouter();
 const username = ref('');
 const password = ref('');
-const errorMessage = ref('');
 
 /**
  * Handle login action (處理登入動作)
  */
 const handleLogin = async () => {
-  errorMessage.value = '';
-  
-  // Now login is an async function (現在 login 是非同步函式)
   const success = await authService.login(username.value, password.value);
   
   if (success) {
@@ -33,131 +31,218 @@ const handleLogin = async () => {
     } else {
       router.push('/');
     }
-  } else {
-    // Use i18n for error message (使用 i18n 錯誤訊息)
-    errorMessage.value = t('login.error_invalid');
   }
 };
 </script>
 
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <h2>{{ $t('login.title') }}</h2>
-      
-      <div class="form-group">
-        <label for="username">{{ $t('login.account_label') }}</label>
-        <input 
-          id="username" 
-          v-model="username" 
-          type="text" 
-          :placeholder="$t('login.account_placeholder')" 
-          @keyup.enter="handleLogin"
-        />
-      </div>
-      
-      <div class="form-group">
-        <label for="password">{{ $t('login.password_label') }}</label>
-        <input 
-          id="password" 
-          v-model="password" 
-          type="password" 
-          :placeholder="$t('login.password_placeholder')" 
-          @keyup.enter="handleLogin"
-        />
-      </div>
-      
-      <div v-if="errorMessage" class="error-msg">
-        {{ errorMessage }}
-      </div>
-      
-      <div class="actions">
-        <AppButton 
-          :label="$t('common.login')" 
-          class="login-btn" 
-          @click="handleLogin" 
-        />
-      </div>
-      
-      <div class="hint">
-        <p>{{ $t('login.hint_customer') }}</p>
-        <p>{{ $t('login.hint_dcb') }}</p>
-        <p>{{ $t('login.hint_dimerco') }}</p>
+  <div class="login-page">
+    <!-- Background Decoration -->
+    <div class="bg-decoration"></div>
+    
+    <div class="login-container">
+      <div class="login-card">
+        <!-- Logo Section -->
+        <div class="logo-section">
+          <img :src="DimercoLogo" alt="Dimerco Logo" class="brand-logo" />
+          <h1 class="app-title">{{ $t('common.app_display_name') }}</h1>
+        </div>
+
+        <div class="form-section">
+          <h2>{{ $t('login.title') }}</h2>
+          
+          <div class="form-group">
+            <label for="username">{{ $t('login.account_label') }}</label>
+            <input 
+              id="username" 
+              v-model="username" 
+              type="text" 
+              :placeholder="$t('login.account_placeholder')" 
+              @keyup.enter="handleLogin"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="password">{{ $t('login.password_label') }}</label>
+            <input 
+              id="password" 
+              v-model="password" 
+              type="password" 
+              :placeholder="$t('login.password_placeholder')" 
+              @keyup.enter="handleLogin"
+            />
+          </div>
+          
+          <div class="actions">
+            <AppButton 
+              :label="$t('common.login')" 
+              class="login-btn" 
+              @click="handleLogin" 
+            />
+          </div>
+        </div>
+        
+        <div class="hint-section">
+          <p class="hint-title">{{ $t('common.search') }} Quick Access (測試帳號):</p>
+          <p>{{ $t('login.hint_customer') }}</p>
+          <p>{{ $t('login.hint_dcb') }}</p>
+          <p>{{ $t('login.hint_dimerco') }}</p>
+        </div>
       </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="login-footer">
+      {{ $t('common.copyright') }}
+    </footer>
   </div>
 </template>
 
-<style scoped>
-.login-container {
+<style scoped lang="scss">
+.login-page {
+  position: relative;
+  min-height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
+  background: linear-gradient(135deg, #003366 0%, #00a8e2 100%);
+  overflow: hidden;
+}
+
+.bg-decoration {
+  position: absolute;
+  top: -10%;
+  right: -5%;
+  width: 500px;
+  height: 500px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.login-container {
+  z-index: 1;
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
 }
 
 .login-card {
-  width: 400px;
-  padding: 2rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.98);
+  padding: 3rem 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.logo-section {
+  text-align: center;
+  margin-bottom: 2.5rem;
+
+  .brand-logo {
+    width: 180px;
+    height: auto;
+    margin-bottom: 1rem;
+  }
+
+  .app-title {
+    font-size: 1.4rem;
+    color: #333;
+    font-weight: 600;
+    margin: 0.5rem 0 0.2rem;
+    white-space: nowrap;
+  }
 }
 
 h2 {
+  font-size: 1.2rem;
+  color: #444;
+  margin-bottom: 1.5rem;
   text-align: center;
-  margin-bottom: 2rem;
-  color: var(--sidebar-color, #465363);
+  position: relative;
+  
+  &::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: #00a8e2;
+    margin: 8px auto 0;
+    border-radius: 2px;
+  }
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
-}
+  margin-bottom: 1.25rem;
 
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: bold;
-  font-size: 14px;
-}
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #555;
+  }
 
-input {
-  width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 14px;
-}
+  input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
 
-input:focus {
-  border-color: var(--primary-color, #00a8e2);
-  outline: none;
-}
-
-.error-msg {
-  color: #ff0033;
-  font-size: 12px;
-  margin-bottom: 1rem;
-}
-
-.actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
+    &:focus {
+      border-color: #00a8e2;
+      box-shadow: 0 0 0 3px rgba(0, 168, 226, 0.1);
+      outline: none;
+    }
+  }
 }
 
 .login-btn {
   width: 100%;
-  height: 44px;
-  border-radius: 4px;
+  height: 48px;
+  margin-top: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: #00a8e2;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }
 
-.hint {
+.hint-section {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+  font-size: 0.75rem;
+  color: #888;
+  line-height: 1.6;
+
+  .hint-title {
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 0.4rem;
+  }
+}
+
+.login-footer {
   margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px dashed #ccc;
-  font-size: 12px;
-  color: #666;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  z-index: 1;
 }
 </style>

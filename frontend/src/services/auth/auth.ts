@@ -42,7 +42,7 @@ export const authService = {
       // 1. 发出实体 API 呼叫 (Make actual API call)
       const response = await api.post('/auth/login', { username, password });
       
-      // 2. 处理回应 - 修正为读取 response.data.data (Fix to read response.data.data)
+      // 2. 处理回应 - 读取 response.data.data (Handle response - read response.data.data)
       const apiResult = response.data;
       if (apiResult.success && apiResult.data && apiResult.data.token) {
         const authStore = useAuthStore();
@@ -56,10 +56,11 @@ export const authService = {
         authStore.setAuth(apiResult.data.token, userData);
         return true;
       }
-      return false;
+      
+      return false; // Error handled by interceptor (錯誤已由攔截器處理)
     } catch (error) {
       console.error('Login failed (登入失敗):', error);
-      return false;
+      return false; // Network error handled by interceptor (網路錯誤已由攔截器處理)
     }
   },
 

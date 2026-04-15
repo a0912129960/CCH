@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ElMessage } from 'element-plus';
 import { useAuthStore } from '../stores/auth';
 import { useUIStore } from '../stores/ui';
 
@@ -40,16 +41,25 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     const uiStore = useUIStore();
-    // Hide Loading (隱藏 Loading)
     uiStore.setLoading(false);
+
+    // Global Success/Error Handling (全域成功/錯誤處理)
+    const apiResult = response.data;
+    if (apiResult && typeof apiResult.success === 'boolean' && !apiResult.success) {
+      // If success is false, show error message via ElMessage (如果 success 為 false，顯示錯誤訊息)
+      ElMessage.error(apiResult.message || 'Unknown Error (未知錯誤)');
+    }
+
     return response;
   },
   (error) => {
     const authStore = useAuthStore();
     const uiStore = useUIStore();
-    
-    // Hide Loading (隱藏 Loading)
     uiStore.setLoading(false);
+    
+    // Handle Network/Server Errors (處理網路/伺服器錯誤)
+    const message = error.response?.data?.message || 'Network unstable, please try again later. (網路不穩定，請稍後再嘗試。)';
+    ElMessage.error(message);
     
     // Handle 401 Unauthorized (處理 401 未授權)
     if (error.response?.status === 401) {
