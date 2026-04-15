@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { authService, UserRole } from './services/auth/auth';
 import { switchLanguage } from './locales';
 import Sidebar from './components/common/Sidebar.vue';
+import Loading from './components/common/Loading.vue';
 import { useUIStore } from './stores/ui';
 import { storeToRefs } from 'pinia';
 
@@ -15,7 +16,7 @@ import { storeToRefs } from 'pinia';
 const route = useRoute();
 const { locale } = useI18n();
 const uiStore = useUIStore();
-const { isSidebarCollapsed } = storeToRefs(uiStore);
+const { isSidebarCollapsed, isLoading } = storeToRefs(uiStore);
 
 /**
  * Decide which layout to show (決定顯示哪種佈局)
@@ -40,6 +41,9 @@ const onLanguageChange = (event: Event) => {
 
 <template>
   <div :class="{ 'app-layout': isSidebarLayout }">
+    <!-- 0. Global Loading (全域 Loading) -->
+    <Loading v-if="isLoading" />
+
     <!-- 1. Shared Sidebar Layout (共用側邊欄佈局) -->
     <Sidebar v-if="isSidebarLayout" />
 

@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/auth';
+import { useUIStore } from '../stores/ui';
 
 /**
  * Base API instance with Interceptors (基礎 API 實例與攔截器)
- * Handles token attachment and global error handling. (處理 Token 附加與全域錯誤處理。)
+ * Handles token attachment, global error handling, and loading state. (處理 Token 附加、全域錯誤處理與 Loading 狀態。)
  * 
  * Update by Gemini AI on 2026-04-15
  */
@@ -18,19 +19,37 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore();
+    const uiStore = useUIStore();
+    
+    // Show Loading (顯示 Loading)
+    uiStore.setLoading(true);
+
     if (authStore.token) {
       config.headers.Authorization = `Bearer ${authStore.token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    const uiStore = useUIStore();
+    uiStore.setLoading(false);
+    return Promise.reject(error);
+  }
 );
 
 // Response Interceptor (回應攔截器)
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const uiStore = useUIStore();
+    // Hide Loading (隱藏 Loading)
+    uiStore.setLoading(false);
+    return response;
+  },
   (error) => {
     const authStore = useAuthStore();
+    const uiStore = useUIStore();
+    
+    // Hide Loading (隱藏 Loading)
+    uiStore.setLoading(false);
     
     // Handle 401 Unauthorized (處理 401 未授權)
     if (error.response?.status === 401) {
