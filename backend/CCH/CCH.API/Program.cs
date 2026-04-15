@@ -18,6 +18,10 @@ builder.Services.AddScoped<IPartExcelService, PartService>();
 
 builder.Services.AddControllers();
 
+// Add HttpContextAccessor and UserContext / 新增 HttpContextAccessor 與 UserContext
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserContext, UserContext>();
+
 // Add CORS configuration / 新增 CORS 配置
 builder.Services.AddCors(options =>
 {
