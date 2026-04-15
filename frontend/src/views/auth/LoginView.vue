@@ -18,14 +18,15 @@ const errorMessage = ref('');
 /**
  * Handle login action (處理登入動作)
  */
-const handleLogin = () => {
+const handleLogin = async () => {
   errorMessage.value = '';
   
-  const success = authService.login(username.value, password.value);
+  // Now login is an async function (現在 login 是非同步函式)
+  const success = await authService.login(username.value, password.value);
   
   if (success) {
     const role = authService.state.role;
-    if (role === UserRole.EMPLOYEE) {
+    if (role === UserRole.DIMERCO || role === UserRole.DCB) {
       router.push('/employee');
     } else if (role === UserRole.CUSTOMER) {
       router.push('/customer');
@@ -79,8 +80,9 @@ const handleLogin = () => {
       </div>
       
       <div class="hint">
-        <p>{{ $t('login.hint_employee') }}</p>
         <p>{{ $t('login.hint_customer') }}</p>
+        <p>{{ $t('login.hint_dcb') }}</p>
+        <p>{{ $t('login.hint_dimerco') }}</p>
       </div>
     </div>
   </div>
@@ -100,23 +102,6 @@ const handleLogin = () => {
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.logo-area {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.logo-area h1 {
-  color: var(--primary-color, #00a8e2);
-  font-size: 2.5rem;
-  margin: 0;
-}
-
-.logo-area .subtitle {
-  color: #666;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
 }
 
 h2 {

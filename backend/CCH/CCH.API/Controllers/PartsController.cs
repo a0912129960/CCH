@@ -1,6 +1,7 @@
 using CCH.Core.DTOs;
 using CCH.Core.Interfaces;
 using CCH.Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CCH.API.Controllers;
@@ -9,8 +10,9 @@ namespace CCH.API.Controllers;
 /// Parts management controller.
 /// (繁體中文) 零件管理控制器。
 /// </summary>
+[Authorize]
 [ApiController]
-[Route("api/parts")]
+[Route("api/[controller]")]
 public class PartsController : ControllerBase
 {
     private readonly IPartQueryService _queryService;

@@ -1,6 +1,7 @@
 using CCH.Core.DTOs;
 using CCH.Core.Interfaces;
 using CCH.Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CCH.API.Controllers;
@@ -9,8 +10,9 @@ namespace CCH.API.Controllers;
 /// Common data controller.
 /// (繁體中文) 共用資料控制器。
 /// </summary>
+[Authorize]
 [ApiController]
-[Route("api/common")]
+[Route("api/[controller]")]
 public class CommonController : ControllerBase
 {
     private readonly ICommonService _commonService;

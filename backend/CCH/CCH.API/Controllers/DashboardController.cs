@@ -1,6 +1,7 @@
 using CCH.Core.DTOs;
 using CCH.Core.Interfaces;
 using CCH.Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CCH.API.Controllers;
@@ -9,8 +10,9 @@ namespace CCH.API.Controllers;
 /// Dashboard controller.
 /// (繁體中文) 儀表板控制器。
 /// </summary>
+[Authorize]
 [ApiController]
-[Route("api/dashboard")]
+[Route("api/[controller]")]
 public class DashboardController : ControllerBase
 {
     private readonly IDashboardService _dashboardService;
