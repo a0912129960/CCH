@@ -24,53 +24,58 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, title: 'common.home' }
     },
     {
       path: '/employee',
       name: 'employee',
       component: EmployeeView,
-      meta: { requiresAuth: true, role: UserRole.DIMERCO }
+      meta: { requiresAuth: true, role: UserRole.DIMERCO, title: 'employee.title' }
     },
     {
       path: '/customer',
       name: 'customer',
       component: CustomerView,
-      meta: { requiresAuth: true, role: UserRole.CUSTOMER }
+      meta: { requiresAuth: true, role: UserRole.CUSTOMER, title: 'customer.title' }
     },
     {
       path: '/parts',
       name: 'parts',
       component: PartListView,
-      meta: { requiresAuth: true, role: undefined }
+      meta: { requiresAuth: true, title: 'part_list.title' }
+    },
+    {
+      path: '/parts/new',
+      name: 'part-create',
+      component: () => import('../views/part/PartCreateView.vue'),
+      meta: { requiresAuth: true, title: 'part_create.title' }
+    },
+    {
+      path: '/parts/upload',
+      name: 'part-upload',
+      component: () => import('../views/part/BulkUploadView.vue'),
+      meta: { requiresAuth: true, title: 'part_upload.title' }
     },
     {
       path: '/parts/:id',
       name: 'part-detail',
       component: PartDetailView,
-      meta: { requiresAuth: true, role: undefined }
+      meta: { requiresAuth: true, title: 'part_detail.title' }
     }
   ]
 })
 
-/**
- * Navigation Guard (導航守衛)
- * Bilingual comments following CCH constitution.
- */
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
   const isAuthenticated = authStore.isAuthenticated;
   const userRole = authStore.userRole;
 
-  // 1. Check if route requires authentication (檢查路由是否需要驗證)
   if (to.meta.requiresAuth && !isAuthenticated) {
     next({ name: 'login' });
   } 
-  // 2. Check Role-Based Access Control (檢查角色存取控制)
   else if (to.meta.role && to.meta.role !== userRole) {
     next({ name: 'home' });
   }
-  // 3. Prevent logged-in users from accessing login page (防止已登入使用者存取登入頁)
   else if (to.name === 'login' && isAuthenticated) {
     if (userRole === UserRole.DIMERCO || userRole === UserRole.DCB) {
       next({ name: 'employee' });

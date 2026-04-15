@@ -1,132 +1,113 @@
 <script setup lang="ts">
-import { RouterView, RouterLink, useRoute } from 'vue-router'
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { RouterView, useRoute } from 'vue-router'
+import { computed, watch } from 'vue';
 import { authService, UserRole } from './services/auth/auth';
-import { switchLanguage } from './locales';
 import Sidebar from './components/common/Sidebar.vue';
+import AppHeader from './components/common/AppHeader.vue';
+import AppTabs from './components/common/AppTabs.vue';
+import AppFooter from './components/common/AppFooter.vue';
+import Loading from './components/common/Loading.vue';
 import { useUIStore } from './stores/ui';
+import { useTabStore } from './stores/tabs';
 import { storeToRefs } from 'pinia';
 
 /**
  * Main App Component (主應用程式組件)
- * Fixed: Explicitly import RouterLink and added defensive checks.
+ * Integrated Multi-Tab Layout and Global Header.
+ * Update by Gemini AI on 2026-04-15
  */
 const route = useRoute();
-const { locale } = useI18n();
 const uiStore = useUIStore();
-const { isSidebarCollapsed } = storeToRefs(uiStore);
+const tabStore = useTabStore();
+const { isSidebarCollapsed, isLoading } = storeToRefs(uiStore);
 
 /**
  * Decide which layout to show (決定顯示哪種佈局)
- * Updated by AI - 2026-04-10: Use sidebar layout for both Customer and Employee roles.
  */
 const isSidebarLayout = computed(() => {
-  const state = authService.state;
-  return state && authService.isAuthenticated() && 
-    (state.role === UserRole.CUSTOMER || state.role === UserRole.EMPLOYEE);
+  return authService.isAuthenticated() && route.name !== 'login';
 });
 
-const isLogin = computed(() => route.name === 'login');
-
 /**
- * Handle language change (處理語系切換)
+ * Watch route changes to add tabs (監聽路由變動以新增標籤)
  */
-const onLanguageChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  switchLanguage(target.value);
-};
+watch(
+  () => route.path,
+  () => {
+    // Only add tab if it's not the root path (僅在非根目錄時新增頁籤)
+    if (isSidebarLayout.value && route.meta.requiresAuth && route.path !== '/') {
+      tabStore.addTab({
+        title: (route.meta.title as string) || 'common.home',
+        path: route.path,
+        name: (route.name as string) || ''
+      });
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <div :class="{ 'app-layout': isSidebarLayout }">
-    <!-- 1. Shared Sidebar Layout (共用側邊欄佈局) -->
+    <!-- 0. Global Loading -->
+    <Loading v-if="isLoading" />
+
+    <!-- 1. Sidebar -->
     <Sidebar v-if="isSidebarLayout" />
 
-    <!-- 2. Main Content Wrapper -->
-    <div :class="{ 'main-content': isSidebarLayout, 'is-collapsed': isSidebarCollapsed }">
+    <!-- 2. Main Container -->
+    <div :class="{ 'main-container': isSidebarLayout, 'is-collapsed': isSidebarCollapsed }">
       
-      <!-- 3. Standard Header (for unauthenticated pages only, if any) -->
-      <!-- 
-      <header v-if="!isSidebarLayout && !isLogin">
-        <div class="header-content">
-          <nav v-if="authService.isAuthenticated()">
-            <RouterLink to="/">{{ $t('common.home') }}</RouterLink>
-            <RouterLink v-if="authService.state?.role === UserRole.EMPLOYEE" to="/employee">{{ $t('common.dashboard') }}</RouterLink>
-          </nav>
-          
-          <div class="lang-switcher">
-            <select :value="locale" @change="onLanguageChange">
-              <option value="en">English</option>
-              <option value="zh-TW">繁體中文</option>
-              <option value="zh-CN">简体中文</option>
-            </select>
-          </div>
-        </div>
-      </header>
-      -->
+      <!-- 3. Header & Tabs (Framework) -->
+      <template v-if="isSidebarLayout">
+        <AppHeader />
+        <AppTabs />
+      </template>
 
-      <!-- 4. Router View -->
-      <main>
-        <RouterView />
+      <!-- 4. Content Area -->
+      <main class="content-area">
+        <RouterView v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" :key="route.fullPath" />
+          </keep-alive>
+        </RouterView>
       </main>
+
+      <!-- 5. Footer (Based on mydimercolayout.png) -->
+      <AppFooter v-if="isSidebarLayout" />
     </div>
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .app-layout {
   display: flex;
   min-height: 100vh;
+  background-color: #f0f2f5;
 }
 
-.main-content {
+.main-container {
   flex: 1;
-  background-color: var(--dashboard-bg, #f3f6f8);
-  min-height: 100vh;
-}
-
-/* Sidebar push margin only when sidebar is present */
-.app-layout .main-content {
-  margin-left: 260px;
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.app-layout .main-content.is-collapsed {
-  margin-left: 80px;
-}
-
-header {
-  line-height: 1.5;
-  padding: 1rem;
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  height: 100vh; /* Fixed height to support internal scroll */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  
+  // Account for sidebar fixed width
+  margin-left: 260px;
+  
+  &.is-collapsed {
+    margin-left: 80px;
+  }
 }
 
-nav a.router-link-exact-active {
-  color: var(--primary-color, #00a8e2);
-  font-weight: bold;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  text-decoration: none;
-  color: #666;
-}
-
-.lang-switcher select {
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
+.content-area {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background-color: #f5f7f9;
+  position: relative;
 }
 
 main {

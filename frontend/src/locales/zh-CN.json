@@ -2,6 +2,9 @@
   "common": {
     "app_name": "CCH",
     "app_full_name": "中菲行报关合规中心",
+    "app_display_name": "Dimerco Customs Compliance Hub",
+    "copyright": "© 2026 Dimerco Data System. All Rights Reserved.",
+
     "login": "登录",
     "logout": "登出",
     "home": "仪表板",
@@ -23,7 +26,9 @@
     "actions": "操作",
     "accept": "接受",
     "resubmit": "重新提交",
-    "back": "返回"
+    "back": "返回",
+    "close_all": "关闭全部",
+    "close_others": "关闭其他"
   },
   "login": {
     "title": "登录",
@@ -32,6 +37,7 @@
     "account_placeholder": "请输入账号",
     "password_placeholder": "请输入密码",
     "error_invalid": "账号或密码错误。",
+    "error_network": "网络不稳定，请稍后再尝试。",
     "hint_employee": "员工: Y9999 / 888888",
     "hint_customer": "客户: customer001 / 888888"
   },

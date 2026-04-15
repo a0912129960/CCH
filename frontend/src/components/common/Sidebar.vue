@@ -1,30 +1,30 @@
 <script setup lang="ts">
 import { RouterLink, useRouter } from 'vue-router';
 import { authService, UserRole } from '../../services/auth/auth';
-import { useI18n } from 'vue-i18n';
-import { switchLanguage } from '../../locales';
 import { useUIStore } from '../../stores/ui';
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 
+// Import SVG Assets
+import MyDimercoLogo from '@/assets/images/circle-logo.svg';
+import HomeIcon from '@/assets/images/home.svg';
+import SearchIcon from '@/assets/images/search_icon.svg';
+import ChevronIcon from '@/assets/images/chervon.svg';
+
+/**
+ * Sidebar Component (左側區塊：包含 Hover 觸發的收合箭頭)
+ * Update by Gemini AI on 2026-04-15
+ */
+
 const router = useRouter();
-const { locale } = useI18n();
 const uiStore = useUIStore();
 const { isSidebarCollapsed: isCollapsed } = storeToRefs(uiStore);
 
 const userRole = computed(() => authService.state.role);
 const dashboardPath = computed(() => {
-  return userRole.value === UserRole.EMPLOYEE ? '/employee' : '/customer';
+  if (userRole.value === UserRole.DIMERCO || userRole.value === UserRole.DCB) return '/employee';
+  return '/customer';
 });
-
-const handleLogout = () => {
-  authService.logout();
-  router.push('/login');
-};
-
-const onLanguageChange = (val: string) => {
-  switchLanguage(val);
-};
 
 const toggleSidebar = () => {
   uiStore.toggleSidebar();
@@ -33,54 +33,53 @@ const toggleSidebar = () => {
 
 <template>
   <aside class="sidebar" :class="{ 'is-collapsed': isCollapsed }">
-    <!-- Floating Toggle Button -->
-    <button class="floating-toggle" @click="toggleSidebar" :title="isCollapsed ? 'Expand' : 'Collapse'">
-      <i class="icon">{{ isCollapsed ? '›' : '‹' }}</i>
-    </button>
+    <!-- Hover Toggle Button (滑鼠滑過時出現的收合箭頭) -->
+    <div class="hover-toggle-container" @click="toggleSidebar">
+      <div class="toggle-circle">
+        <img 
+          :src="ChevronIcon" 
+          alt="Toggle" 
+          class="toggle-chevron"
+          :class="{ 'is-collapsed': isCollapsed }"
+        />
+      </div>
+    </div>
 
+    <!-- Sidebar Header: Dimerco CCH Logo -->
     <div class="sidebar-header">
       <div class="brand">
-        <img src="../../assets/images/circle-logo.svg" alt="Logo" class="brand-logo" />
-        <span v-if="!isCollapsed" class="brand-name">CCH</span>
+        <img :src="MyDimercoLogo" alt="Logo" class="brand-logo" />
+        <transition name="fade">
+          <span v-if="!isCollapsed" class="brand-name">Dimerco CCH</span>
+        </transition>
       </div>
     </div>
 
+    <!-- Navigation Menu -->
     <nav class="sidebar-nav">
-      <RouterLink :to="dashboardPath" class="nav-item" :title="$t('common.menu.dashboard')">
-        <i class="icon">📊</i>
-        <span v-if="!isCollapsed">{{ $t('common.menu.dashboard') }}</span>
+      <!-- 1. Dashboard -->
+      <RouterLink :to="dashboardPath" class="nav-item">
+        <img :src="HomeIcon" alt="Home" class="nav-icon-svg" />
+        <transition name="fade">
+          <span v-if="!isCollapsed" class="nav-text">{{ $t('common.menu.dashboard') }}</span>
+        </transition>
       </RouterLink>
-      <RouterLink to="/parts" class="nav-item" :title="$t('common.menu.parts')">
-        <i class="icon">📦</i>
-        <span v-if="!isCollapsed">{{ $t('common.menu.parts') }}</span>
+      
+      <!-- 2. Part List -->
+      <RouterLink to="/parts" class="nav-item">
+        <img :src="SearchIcon" alt="Search" class="nav-icon-svg" />
+        <transition name="fade">
+          <span v-if="!isCollapsed" class="nav-text">{{ $t('common.menu.parts') }}</span>
+        </transition>
       </RouterLink>
     </nav>
-
-    <div class="sidebar-footer">
-      <div class="lang-switcher" v-if="!isCollapsed">
-        <el-select 
-          :model-value="locale" 
-          @change="onLanguageChange" 
-          class="lang-select" 
-          size="small"
-        >
-          <el-option value="en" label="English" />
-          <el-option value="zh-TW" label="繁體中文" />
-          <el-option value="zh-CN" label="简体中文" />
-        </el-select>
-      </div>
-      <button class="logout-link" @click="handleLogout" :title="$t('common.logout')">
-        <i class="icon">🚪</i>
-        <span v-if="!isCollapsed">{{ $t('common.logout') }}</span>
-      </button>
-    </div>
   </aside>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .sidebar {
   width: 260px;
-  background-color: var(--sidebar-color, #465363);
+  background-color: #344759;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -90,155 +89,148 @@ const toggleSidebar = () => {
   color: white;
   z-index: 1000;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+
+  // When hovering the sidebar, show the toggle button (滑鼠滑過側邊欄時顯示切換按鈕)
+  &:hover {
+    .hover-toggle-container {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
 }
 
 .sidebar.is-collapsed {
   width: 80px;
 }
 
-/* Floating Toggle Button Style */
-.floating-toggle {
+/* Hover Toggle Styles */
+.hover-toggle-container {
   position: absolute;
   right: -12px;
   top: 32px;
   width: 24px;
   height: 24px;
-  background: var(--primary-color);
-  border: none;
-  border-radius: 50%;
-  color: white;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  z-index: 1001;
-  transition: transform 0.3s ease;
-}
+  z-index: 1002;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
 
-.floating-toggle:hover {
-  transform: scale(1.1);
-  background: #00b8f2;
+  .toggle-circle {
+    width: 24px;
+    height: 24px;
+    background-color: #00a8e2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border: 2px solid white;
+
+    .toggle-chevron {
+      width: 10px;
+      height: 10px;
+      filter: brightness(0) invert(1);
+      transition: transform 0.3s;
+      transform: rotate(90deg); // Facing left by default
+
+      &.is-collapsed {
+        transform: rotate(-90deg); // Facing right
+      }
+    }
+  }
+
+  &:hover .toggle-circle {
+    background-color: #00b8f2;
+    transform: scale(1.1);
+  }
 }
 
 .sidebar-header {
-  padding: 2.5rem 1.5rem;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.is-collapsed .sidebar-header {
-  padding: 2.5rem 0;
+  height: 64px;
   display: flex;
-  justify-content: center;
+  align-items: center;
+  padding: 0 20px;
+  background-color: #344759;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 12px;
 }
 
 .brand-logo {
-  width: 36px;
-  height: 36px;
-  transition: all 0.3s ease;
+  width: 32px;
+  height: 32px;
 }
 
 .brand-name {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: 1px;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: white;
+  letter-spacing: -0.5px;
   white-space: nowrap;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 1.5rem 0;
+  padding-top: 10px;
 }
 
 .nav-item {
+  height: 50px;
   display: flex;
   align-items: center;
-  gap: 1.2rem;
-  padding: 0.9rem 1.5rem;
-  color: rgba(255,255,255,0.8);
+  padding: 0 20px;
+  color: #fff;
   text-decoration: none;
   transition: all 0.2s ease;
-  margin: 4px 12px;
-  border-radius: 8px;
-}
-
-.is-collapsed .nav-item {
-  margin: 4px 8px;
-  padding: 0.9rem 0;
-  justify-content: center;
-}
-
-.nav-item:hover {
-  background-color: rgba(255,255,255,0.1);
-  color: white;
-}
-
-.nav-item.router-link-active {
-  background-color: var(--primary-color);
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 168, 226, 0.3);
-}
-
-.icon {
-  font-style: normal;
-  font-size: 1.25rem;
-}
-
-.sidebar-footer {
-  padding: 1.5rem;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-}
-
-.is-collapsed .sidebar-footer {
-  padding: 1.5rem 0;
-  align-items: center;
-}
-
-.lang-select :deep(.el-input__wrapper) {
-  background-color: rgba(255,255,255,0.08) !important;
-  box-shadow: none !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
-}
-
-.lang-select :deep(.el-input__inner) {
-  color: rgba(255,255,255,0.9) !important;
-  font-size: 12px;
-}
-
-.logout-link {
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
-  background: none;
-  border: none;
-  color: #ff8a8a;
   cursor: pointer;
-  padding: 0.6rem 1.5rem;
-  font-size: 0.95rem;
-  width: 100%;
-  text-align: left;
-  transition: all 0.2s;
+
+  .nav-icon-svg {
+    width: 20px;
+    height: 20px;
+    margin-right: 15px;
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+  }
+
+  .nav-text {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    .nav-icon-svg { opacity: 1; }
+  }
+
+  &.router-link-active {
+    background-color: #00a8e2;
+    color: white;
+    .nav-icon-svg { opacity: 1; }
+  }
 }
 
-.is-collapsed .logout-link {
-  padding: 0.6rem 0;
-  justify-content: center;
+.is-collapsed {
+  .nav-item {
+    justify-content: center;
+    padding: 0;
+    .nav-icon-svg {
+      margin-right: 0;
+    }
+  }
 }
 
-.logout-link:hover {
-  background: rgba(245, 108, 108, 0.1);
-  color: #f56c6c;
+/* Fade Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

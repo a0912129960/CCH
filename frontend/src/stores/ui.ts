@@ -7,6 +7,7 @@ import { ref } from 'vue';
  */
 export const useUIStore = defineStore('ui', () => {
   const isSidebarCollapsed = ref(false);
+  const isLoading = ref(false);
 
   const toggleSidebar = () => {
     isSidebarCollapsed.value = !isSidebarCollapsed.value;
@@ -16,9 +17,15 @@ export const useUIStore = defineStore('ui', () => {
     isSidebarCollapsed.value = state;
   };
 
+  const setLoading = (state: boolean) => {
+    isLoading.value = state;
+  };
+
   return {
     isSidebarCollapsed,
+    isLoading,
     toggleSidebar,
-    setSidebar
+    setSidebar,
+    setLoading
   };
 });

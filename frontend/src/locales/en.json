@@ -2,6 +2,8 @@
   "common": {
     "app_name": "CCH",
     "app_full_name": "Dimerco Customs Compliance Hub",
+    "app_display_name": "Dimerco Customs Compliance Hub",
+    "copyright": "© 2026 Dimerco Data System. All Rights Reserved.",
     "login": "Login",
     "logout": "Logout",
     "home": "Dashboard",
@@ -25,7 +27,9 @@
     "accept": "Accept",
     "resubmit": "Resubmit",
     "back": "Back",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "close_all": "Close All",
+    "close_others": "Close Others"
   },
   "login": {
     "title": "Login",
@@ -34,6 +38,7 @@
     "account_placeholder": "Please enter account",
     "password_placeholder": "Please enter password",
     "error_invalid": "Invalid account or password.",
+    "error_network": "Network is unstable, please try again later.",
     "hint_customer": "Customer: customer001 / 888888",
     "hint_dcb": "DCB: dcb001 / 888888",
     "hint_dimerco": "Dimerco: dimerco001 / 888888"
