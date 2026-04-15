@@ -5,12 +5,16 @@ import { switchLanguage } from '../../locales';
 import { useRouter } from 'vue-router';
 import { useUIStore } from '../../stores/ui';
 
+// Import SVG Assets
+import EarthIcon from '@/assets/images/earth.svg';
+import UserIcon from '@/assets/images/user.svg';
+import ChevronIcon from '@/assets/images/chervon.svg';
+
 /**
- * AppHeader Component (上方區塊：包含 Menu、多語系、User Name 與 Logout)
- * Update by Gemini AI on 2026-04-15
+ * AppHeader Component (上方區塊：精簡化與圖示更換)
  */
 
-const { locale, t } = useI18n();
+const { locale } = useI18n();
 const router = useRouter();
 const uiStore = useUIStore();
 
@@ -31,17 +35,14 @@ const onLanguageChange = (lang: string) => {
       <div class="collapse-btn" @click="uiStore.toggleSidebar">
         <i class="el-icon-menu"></i>
       </div>
-      <div class="welcome-text">
-        Welcome to Project <span class="project-name">CCH Compliance</span>
-      </div>
+      <!-- Welcome Text Removed (已移除歡迎文字) -->
     </div>
 
     <div class="header-right">
-      <!-- Language Switcher -->
+      <!-- Language Switcher (Earth Icon) -->
       <el-dropdown trigger="click" @command="onLanguageChange" class="lang-dropdown">
         <span class="el-dropdown-link">
-          <i class="el-icon-basketball" style="margin-right: 5px;"></i>
-          {{ locale.toUpperCase() }}
+          <img :src="EarthIcon" alt="Earth" class="header-icon-svg" />
         </span>
         <template #dropdown>
           <el-dropdown-menu>
@@ -52,16 +53,16 @@ const onLanguageChange = (lang: string) => {
         </template>
       </el-dropdown>
 
-      <!-- User Profile (User Name + Arrow -> Logout) -->
-      <el-dropdown trigger="click" @command="handleLogout">
+      <!-- User Profile (User Icon + Name + Chevron -> Logout Only) -->
+      <el-dropdown trigger="click" @command="(cmd) => cmd === 'logout' && handleLogout()">
         <div class="user-profile">
+          <img :src="UserIcon" alt="User" class="user-icon-svg" />
           <span class="username">{{ authService.state.username }}</span>
-          <i class="el-icon-arrow-down arrow-icon"></i>
+          <img :src="ChevronIcon" alt="Chevron" class="chevron-icon-svg" />
         </div>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item disabled class="role-display">{{ authService.state.role }}</el-dropdown-item>
-            <el-dropdown-item divided command="logout" class="logout-item">
+            <el-dropdown-item command="logout" class="logout-item">
               <i class="el-icon-switch-button"></i> {{ $t('common.logout') }}
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -80,12 +81,12 @@ const onLanguageChange = (lang: string) => {
   align-items: center;
   padding: 0 24px;
   border-bottom: 1px solid #e1e8ed;
+  flex-shrink: 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 20px;
   
   .collapse-btn {
     font-size: 20px;
@@ -94,15 +95,6 @@ const onLanguageChange = (lang: string) => {
     transition: color 0.2s;
     &:hover { color: #00a8e2; }
   }
-
-  .welcome-text {
-    font-size: 14px;
-    color: #606266;
-    .project-name {
-      color: #00a8e2;
-      font-weight: 700;
-    }
-  }
 }
 
 .header-right {
@@ -110,13 +102,26 @@ const onLanguageChange = (lang: string) => {
   align-items: center;
   gap: 24px;
 
+  .header-icon-svg {
+    width: 20px;
+    height: 20px;
+    margin-right: 6px;
+  }
+
   .lang-dropdown {
     cursor: pointer;
     color: #606266;
     font-weight: 600;
-    display: flex;
-    align-items: center;
-    &:hover { color: #00a8e2; }
+    
+    .el-dropdown-link {
+      display: flex;
+      align-items: center;
+      &:hover { color: #00a8e2; }
+    }
+
+    .lang-text {
+      font-size: 13px;
+    }
   }
 
   .user-profile {
@@ -133,25 +138,38 @@ const onLanguageChange = (lang: string) => {
       color: #00a8e2;
     }
 
+    .user-icon-svg {
+      width: 35px;
+      height: 35px;
+      opacity: 0.7;
+    }
+
     .username {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
     }
 
-    .arrow-icon {
-      font-size: 12px;
-      color: #909399;
+    .chevron-icon-svg {
+      width: 8px;
+      height: 8px;
+      opacity: 0.5;
+      transition: transform 0.3s;
     }
   }
 }
 
-.role-display {
-  font-size: 12px;
-  font-weight: bold;
-  color: #00a8e2 !important;
+/* Dropdown active state (選單開啟時旋轉小箭頭) */
+.el-dropdown-self-define[aria-expanded="true"] {
+  .chevron-icon-svg {
+    transform: rotate(180deg);
+  }
 }
 
 .logout-item {
   color: #f56c6c;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>
