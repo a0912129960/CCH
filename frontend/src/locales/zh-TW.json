@@ -32,8 +32,9 @@
     "account_placeholder": "請輸入帳號",
     "password_placeholder": "請輸入密碼",
     "error_invalid": "帳號或密碼錯誤。",
-    "hint_employee": "員工: Y9999 / 888888",
-    "hint_customer": "客戶: customer001 / 888888"
+    "hint_customer": "客戶 (Customer): customer001 / 888888",
+    "hint_dcb": "DCB: dcb001 / 888888",
+    "hint_dimerco": "中菲行 (Dimerco): dimerco001 / 888888"
   },
   "employee": {
     "title": "儀表板",

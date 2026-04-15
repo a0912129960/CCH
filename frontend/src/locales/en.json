@@ -34,8 +34,9 @@
     "account_placeholder": "Please enter account",
     "password_placeholder": "Please enter password",
     "error_invalid": "Invalid account or password.",
-    "hint_employee": "Employee: Y9999 / 888888",
-    "hint_customer": "Customer: customer001 / 888888"
+    "hint_customer": "Customer: customer001 / 888888",
+    "hint_dcb": "DCB: dcb001 / 888888",
+    "hint_dimerco": "Dimerco: dimerco001 / 888888"
   },
   "employee": {
     "title": "Dashboard",

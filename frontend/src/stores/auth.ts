@@ -17,7 +17,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters (計算屬性)
   const isAuthenticated = computed(() => !!token.value);
-  const userRole = computed(() => user.value?.role || UserRole.GUEST);
+  const userRole = computed(() => user.value?.role); // No default GUEST (不再提供預設的 GUEST)
 
   // Actions (動作)
   /**

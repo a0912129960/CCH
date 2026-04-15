@@ -35,7 +35,6 @@ api.interceptors.response.use(
     // Handle 401 Unauthorized (處理 401 未授權)
     if (error.response?.status === 401) {
       authStore.clearAuth();
-      // Only redirect if not on login page (僅在非登入頁時重新導向)
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
