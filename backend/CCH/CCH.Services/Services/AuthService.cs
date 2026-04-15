@@ -34,7 +34,7 @@ public class AuthService : IAuthService
                 Token = token,
                 User = new UserProfile
                 {
-                    Id = request.Username,
+                    UserId = request.Username,
                     Name = userInfo.Name,
                     Role = userInfo.Role
                 }
@@ -52,6 +52,7 @@ public class AuthService : IAuthService
         var claims = new[]
         {
             new Claim(ClaimTypes.Name, username),
+            new Claim(ClaimTypes.NameIdentifier, username), // Added UserId as NameIdentifier
             new Claim(ClaimTypes.Role, role),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
