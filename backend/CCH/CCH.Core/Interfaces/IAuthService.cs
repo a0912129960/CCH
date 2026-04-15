@@ -12,7 +12,7 @@ public interface IAuthService
     /// User login.
     /// (繁體中文) 使用者登入。
     /// </summary>
-    LoginResponse Login(LoginRequest request);
+    LoginResponse? Login(LoginRequest request);
 
     /// <summary>
     /// User logout.
