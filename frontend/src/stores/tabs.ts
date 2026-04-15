@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 
 export interface TabItem {
@@ -48,5 +48,33 @@ export const useTabStore = defineStore('tabs', () => {
     }
   }
 
-  return { openTabs, activeTabPath, addTab, removeTab };
+  // Close all tabs (關閉全部標籤)
+  function closeAll() {
+    openTabs.value = [];
+    activeTabPath.value = '';
+    // Redirect to default dashboard based on role (根據角色導向預設儀表板)
+    router.push('/');
+  }
+
+  // Close other tabs (關閉其他標籤)
+  function closeOthers(currentPath: string) {
+    const currentTab = openTabs.value.find(t => t.path === currentPath);
+    if (currentTab) {
+      openTabs.value = [currentTab];
+      activeTabPath.value = currentPath;
+      if (route.path !== currentPath) {
+        router.push(currentPath);
+      }
+    }
+  }
+
+  // Update a specific tab title (動態更新標籤標題)
+  function updateTabTitle(path: string, newTitle: string) {
+    const tab = openTabs.value.find(t => t.path === path);
+    if (tab) {
+      tab.title = newTitle;
+    }
+  }
+
+  return { openTabs, activeTabPath, addTab, removeTab, closeAll, closeOthers, updateTabTitle };
 });

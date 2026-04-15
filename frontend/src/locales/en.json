@@ -27,7 +27,9 @@
     "accept": "Accept",
     "resubmit": "Resubmit",
     "back": "Back",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "close_all": "Close All",
+    "close_others": "Close Others"
   },
   "login": {
     "title": "Login",

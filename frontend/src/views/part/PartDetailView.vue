@@ -4,8 +4,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { authService, UserRole } from '../../services/auth/auth';
 import { partService, type Part, PartStatus } from '../../services/part/part';
+import { useTabStore } from '../../stores/tabs';
 import Card from '../../components/common/Card.vue';
-import Button from '../../components/common/Button.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 /**
@@ -18,6 +18,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const tabStore = useTabStore();
 const partId = route.params.id as string;
 
 const part = ref<Part | null>(null);
@@ -25,7 +26,7 @@ const loading = ref(true);
 const actionRemark = ref('');
 
 const userRole = computed(() => authService.state.role);
-const isEmployee = computed(() => userRole.value === UserRole.EMPLOYEE);
+const isEmployee = computed(() => userRole.value === UserRole.DIMERCO || userRole.value === UserRole.DCB);
 const isCustomer = computed(() => userRole.value === UserRole.CUSTOMER);
 
 /**
@@ -33,7 +34,6 @@ const isCustomer = computed(() => userRole.value === UserRole.CUSTOMER);
  */
 const prevPageLabel = computed(() => {
   const backState = (window.history.state as any)?.back;
-  // If coming from dashboard routes (儀表板路徑入口)
   if (backState && (backState.includes('/customer') || backState.includes('/employee'))) {
     return t('common.menu.dashboard');
   }
@@ -45,6 +45,8 @@ onMounted(async () => {
     const data = await partService.getPartById(partId);
     if (data) {
       part.value = data;
+      // Update Tab Title with Part No (更新標籤標題為零件編號)
+      tabStore.updateTabTitle(route.path, data.partNo);
     } else {
       router.push('/parts');
     }
@@ -133,9 +135,7 @@ const getStatusColor = (status: PartStatus) => {
       </header>
 
       <div class="detail-content-grid">
-        <!-- Left Column: Information -->
         <div class="main-column">
-          <!-- Basic Info Card -->
           <Card class="info-card section-margin">
             <template #header>
               <div class="card-header">
@@ -169,7 +169,6 @@ const getStatusColor = (status: PartStatus) => {
             </div>
           </Card>
 
-          <!-- Feedback Section (Visible for both if RETURNED) -->
           <Card v-if="part.status === PartStatus.RETURNED" class="feedback-card section-margin">
             <template #header>
               <div class="feedback-header">
@@ -189,7 +188,6 @@ const getStatusColor = (status: PartStatus) => {
             </div>
           </Card>
 
-          <!-- Action Section (Consolidated) -->
           <Card 
             v-if="(isCustomer && part.status === PartStatus.RETURNED) || (isEmployee && part.status === PartStatus.PENDING_REVIEW)" 
             class="action-card section-margin"
@@ -202,7 +200,6 @@ const getStatusColor = (status: PartStatus) => {
             </template>
             
             <div class="card-body-padding action-body">
-              <!-- Remark only needed for Employee Return -->
               <div v-if="isEmployee" class="mb-4">
                 <label class="remark-label">{{ $t('part_detail.return_reason_label') }}</label>
                 <textarea 
@@ -213,28 +210,14 @@ const getStatusColor = (status: PartStatus) => {
               </div>
               
               <div class="action-buttons-group">
-                <!-- Customer: Only Accept for RETURNED parts -->
-                <button 
-                  v-if="isCustomer" 
-                  class="btn-cch btn-accept" 
-                  @click="handleAccept"
-                >
+                <button v-if="isCustomer" class="btn-cch btn-accept" @click="handleAccept">
                   {{ $t('common.accept') }}
                 </button>
-
-                <!-- Employee: Accept and Return for PENDING_REVIEW parts -->
                 <template v-if="isEmployee">
-                  <button 
-                    class="btn-cch btn-accept" 
-                    @click="handleApprove"
-                  >
+                  <button class="btn-cch btn-accept" @click="handleApprove">
                     {{ $t('common.accept') }}
                   </button>
-                  <button 
-                    class="btn-cch btn-return"
-                    :disabled="!actionRemark"
-                    @click="handleReturn"
-                  >
+                  <button class="btn-cch btn-return" :disabled="!actionRemark" @click="handleReturn">
                     {{ $t('part_detail.btn_return_customer') }}
                   </button>
                 </template>
@@ -243,7 +226,6 @@ const getStatusColor = (status: PartStatus) => {
           </Card>
         </div>
 
-        <!-- Right Column: Timeline -->
         <div class="side-column">
           <Card class="timeline-card">
             <template #header>
@@ -288,10 +270,8 @@ const getStatusColor = (status: PartStatus) => {
   padding: 0 3rem;
   max-width: 1400px;
   margin: 0 auto;
-  font-family: "MyDimerco-WorkSansBold", sans-serif;
 }
 
-/* Breadcrumb */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -308,7 +288,6 @@ const getStatusColor = (status: PartStatus) => {
 .breadcrumb .separator { color: #adb5bd; }
 .breadcrumb .current { color: #6c757d; }
 
-/* Header */
 .page-header {
   margin-bottom: 2.5rem;
 }
@@ -336,7 +315,6 @@ h1 {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Grid Layout */
 .detail-content-grid {
   display: grid;
   grid-template-columns: 1fr 420px;
@@ -348,7 +326,6 @@ h1 {
 .mt-6 { margin-top: 1.5rem; }
 .mb-4 { margin-bottom: 1rem; }
 
-/* Card Styling */
 .card-header {
   display: flex;
   align-items: center;
@@ -374,7 +351,6 @@ h3 {
   font-weight: 600;
 }
 
-/* Info Grid */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -416,7 +392,6 @@ h3 {
   border: 1px solid #f1f3f5;
 }
 
-/* Feedback Card */
 .feedback-card {
   background-color: #fff9f9;
   border: 1px solid #ffdada;
@@ -446,7 +421,6 @@ h3 {
   margin-top: 0.5rem;
 }
 
-/* Action Section */
 .action-card {
   border: 1px solid #ffe8cc;
 }
@@ -488,7 +462,6 @@ h3 {
   margin-top: 0.5rem;
 }
 
-/* CCH Standard Buttons */
 .btn-cch {
   padding: 12px 28px;
   border-radius: 10px;
@@ -532,7 +505,6 @@ h3 {
   cursor: not-allowed;
 }
 
-/* Timeline */
 .timeline-wrapper {
   padding: 0.5rem 0;
 }
@@ -598,7 +570,6 @@ h3 {
   line-height: 1.5;
 }
 
-/* Utils */
 .loading-overlay {
   display: flex;
   justify-content: center;

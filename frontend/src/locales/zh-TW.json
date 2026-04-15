@@ -25,7 +25,9 @@
     "actions": "操作",
     "accept": "接受",
     "resubmit": "重新提交",
-    "back": "返回"
+    "back": "返回",
+    "close_all": "關閉全部",
+    "close_others": "關閉其他"
   },
   "login": {
     "title": "登入",
