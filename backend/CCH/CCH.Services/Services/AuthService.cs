@@ -28,7 +28,7 @@ public class AuthService : IAuthService
         // (繁體中文) 由 AI 更新 (2026-04-15)：對照硬編碼使用者進行驗證並產生真實 JWT
         if (AuthConstants.Users.TryGetValue(request.Username, out var userInfo) && userInfo.Password == request.Password)
         {
-            var token = GenerateJwtToken(request.Username, userInfo.Role);
+            var token = GenerateJwtToken(request.Username, userInfo.Name, userInfo.Role);
             return new LoginResponse
             {
                 Token = token,
@@ -43,7 +43,7 @@ public class AuthService : IAuthService
         return null;
     }
 
-    private string GenerateJwtToken(string username, string role)
+    private string GenerateJwtToken(string userId, string username, string role)
     {
         var jwtSettings = _configuration.GetSection("Jwt");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
@@ -51,8 +51,8 @@ public class AuthService : IAuthService
 
         var claims = new[]
         {
+            new Claim(ClaimTypes.NameIdentifier, userId),
             new Claim(ClaimTypes.Name, username),
-            new Claim(ClaimTypes.NameIdentifier, username), // Added UserId as NameIdentifier
             new Claim(ClaimTypes.Role, role),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

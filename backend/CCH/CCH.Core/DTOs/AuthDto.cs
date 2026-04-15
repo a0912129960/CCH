@@ -26,7 +26,7 @@ public class LoginResponse
 /// </summary>
 public class UserProfile
 {
-    public string Id { get; set; } = "U001";
+    public string UserId { get; set; } = "U001";
     public string Name { get; set; } = "Mock User";
     public string Role { get; set; } = "DCB"; // DCB or Customer
 }
