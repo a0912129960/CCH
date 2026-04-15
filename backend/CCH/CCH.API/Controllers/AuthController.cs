@@ -54,15 +54,4 @@ public class AuthController : ControllerBase
             userContext.IsAuthenticated
         }));
     }
-
-    /// <summary>
-    /// User logout.
-    /// (繁體中文) 使用者登出。
-    /// </summary>
-    [HttpPost("logout")]
-    public ActionResult<ApiResponse<object>> Logout()
-    {
-        _authService.Logout();
-        return Ok(ApiResponse<object>.SuccessResponse(new { message = "Logged out" }));
-    }
 }
