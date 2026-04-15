@@ -1,6 +1,7 @@
 using CCH.Core.DTOs;
 using CCH.Core.Interfaces;
 using CCH.Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CCH.API.Controllers;
@@ -35,6 +36,23 @@ public class AuthController : ControllerBase
             return Unauthorized(ApiResponse<LoginResponse>.FailureResponse("Invalid username or password"));
         }
         return Ok(ApiResponse<LoginResponse>.SuccessResponse(response));
+    }
+
+    /// <summary>
+    /// Get current user information from token.
+    /// (繁體中文) 從 token 取得目前使用者資訊。
+    /// </summary>
+    [Authorize]
+    [HttpGet("whoami")]
+    public ActionResult<ApiResponse<object>> WhoAmI([FromServices] IUserContext userContext)
+    {
+        return Ok(ApiResponse<object>.SuccessResponse(new
+        {
+            userContext.UserId,
+            userContext.UserName,
+            userContext.Role,
+            userContext.IsAuthenticated
+        }));
     }
 
     /// <summary>
