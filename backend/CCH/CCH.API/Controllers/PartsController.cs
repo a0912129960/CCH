@@ -63,13 +63,41 @@ public class PartsController : ControllerBase
     public ActionResult<ApiResponse<object>> CreateAndSubmitPart([FromBody] PartSaveRequest request) =>
         Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(request, "S02")));
 
-    [HttpGet("{partId}")]
+    // INTERNAL-AI-20260416: Added 404 handling when part is not found.
+    // (INTERNAL-AI-20260416: 新增零件不存在時的 404 回應處理。)
+    /* [HttpGet("{partId}")]
     public ActionResult<ApiResponse<PartDetailResponseDto>> GetPartDetail(int partId) =>
-        Ok(ApiResponse<PartDetailResponseDto>.SuccessResponse(_queryService.GetPartDetail(partId)));
+        Ok(ApiResponse<PartDetailResponseDto>.SuccessResponse(_queryService.GetPartDetail(partId))); */
+    [HttpGet("{partId}")]
+    public ActionResult<ApiResponse<PartDetailResponseDto>> GetPartDetail(int partId)
+    {
+        // Attempt to retrieve part detail; return 404 if not found (嘗試取得零件詳細資料；若不存在則回傳 404)
+        var result = _queryService.GetPartDetail(partId);
+        if (result == null)
+            return NotFound(ApiResponse<object>.FailureResponse("Part not found. / 零件不存在。"));
+        return Ok(ApiResponse<PartDetailResponseDto>.SuccessResponse(result));
+    }
 
-    [HttpPut("{partId}")]
+    // INTERNAL-AI-20260416: Added Customer-only role restriction and 400 validation error handling.
+    // (INTERNAL-AI-20260416: 新增僅限 Customer 角色存取限制與 400 驗證錯誤處理。)
+    /* [HttpPut("{partId}")]
     public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request)));
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request))); */
+    [HttpPut("{partId}")]
+    [Authorize(Roles = "customer")]
+    public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request)
+    {
+        // Return 400 if any required fields or format validation fails (若驗證失敗則回傳 400)
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+            return BadRequest(ApiResponse<object>.FailureResponse(string.Join(" | ", errors)));
+        }
+
+        return Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request)));
+    }
 
     [HttpPost("{partId}/submit")]
     public ActionResult<ApiResponse<object>> SubmitPart(int partId, [FromBody] PartSaveRequest request) =>

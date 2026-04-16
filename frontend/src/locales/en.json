@@ -127,7 +127,14 @@
     "review_action": "Review Action",
     "return_reason_label": "Return Reason",
     "return_placeholder": "Please explain why this part is being returned to the customer...",
-    "btn_return_customer": "Return to Customer"
+    "btn_return_customer": "Return to Customer",
+    "country": "Country",
+    "division": "Division",
+    "rate": "Rate (%)",
+    "hts_and_rate": "HTS Code & Rate",
+    "remark": "Remark",
+    "updated_by": "Updated By",
+    "updated_date": "Updated Date"
   },
   "status": {
     "unknown": "Unknown",

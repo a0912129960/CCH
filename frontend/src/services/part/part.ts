@@ -1,3 +1,5 @@
+import api from '../api';
+
 /**
  * Part Status (零件狀態)
  */
@@ -227,6 +229,98 @@ export const partService = {
     };
   }
 };
+
+// INTERNAL-AI-20260416: New interfaces for the real GET /api/parts/{partId} response.
+// (INTERNAL-AI-20260416: 新增對應後端 GET /api/parts/{partId} 回應的 TypeScript 介面。)
+
+/**
+ * Part detail field set matching backend PartDetailDto.
+ * (對應後端 PartDetailDto 的零件詳細欄位集合。)
+ */
+export interface PartDetailFields {
+  partNo: string;
+  country: string;
+  division: string;
+  supplier: string;
+  partDesc: string;
+  htsCode: string;
+  rate: number;
+  htsCode1?: string | null;
+  rate1?: number | null;
+  htsCode2?: string | null;
+  rate2?: number | null;
+  htsCode3?: string | null;
+  rate3?: number | null;
+  htsCode4?: string | null;
+  rate4?: number | null;
+  remark: string;
+  updatedBy: string;
+  updatedDate: string;
+}
+
+/**
+ * Response for GET /api/parts/{partId} matching backend PartDetailResponseDto.
+ * (對應後端 PartDetailResponseDto 的零件詳細回應結構。)
+ */
+export interface PartDetailResponse {
+  before: PartDetailFields;
+  modified: PartDetailFields;
+}
+
+/**
+ * Fetch part detail from the real backend API.
+ * (從後端 API 取得零件詳細資料。)
+ * Returns null when the part is not found (404). (零件不存在時回傳 null。)
+ *
+ * INTERNAL-AI-20260416
+ */
+export async function getPartDetail(partId: number): Promise<PartDetailResponse | null> {
+  try {
+    const response = await api.get<{ success: boolean; data: PartDetailResponse }>(`/parts/${partId}`);
+    return response.data.data;
+  } catch (error: any) {
+    // 404 means part does not exist; caller should handle redirect. (404 表示零件不存在，由呼叫方處理跳轉。)
+    if (error?.response?.status === 404) return null;
+    throw error;
+  }
+}
+
+// INTERNAL-AI-20260416: Payload type for PUT /api/parts/{partId}.
+// (INTERNAL-AI-20260416: PUT /api/parts/{partId} 的請求資料型別。)
+
+/**
+ * Payload for saving/updating a part (PUT /api/parts/{partId}).
+ * (儲存/更新零件的請求資料，對應後端 PartSaveRequest。)
+ */
+export interface PartSavePayload {
+  partNo: string;
+  countryId: number | null;
+  division: string;
+  supplier: string;
+  partDesc: string;
+  htsCode: string;
+  rate: number;
+  htsCode1?: string | null;
+  rate1?: number | null;
+  htsCode2?: string | null;
+  rate2?: number | null;
+  htsCode3?: string | null;
+  rate3?: number | null;
+  htsCode4?: string | null;
+  rate4?: number | null;
+  remark?: string;
+}
+
+/**
+ * Call PUT /api/parts/{partId} to save part data.
+ * (呼叫 PUT /api/parts/{partId} 儲存零件資料。)
+ * Throws on validation error (400) or other errors. (驗證失敗 400 或其他錯誤時拋出例外。)
+ *
+ * INTERNAL-AI-20260416
+ */
+export async function updatePart(partId: number, payload: PartSavePayload): Promise<void> {
+  await api.put(`/parts/${partId}`, payload);
+}
 
 /**
  * Import Result Status (匯入結果狀態)

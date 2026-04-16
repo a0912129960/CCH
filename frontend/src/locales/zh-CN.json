@@ -125,7 +125,14 @@
     "review_action": "审核操作",
     "return_reason_label": "退回原因",
     "return_placeholder": "请说明退回给客户的原因...",
-    "btn_return_customer": "退回给客户"
+    "btn_return_customer": "退回给客户",
+    "country": "国家",
+    "division": "部门",
+    "rate": "税率 (%)",
+    "hts_and_rate": "HTS 代码与税率",
+    "remark": "备注",
+    "updated_by": "更新者",
+    "updated_date": "更新日期"
   },
   "status": {
     "unknown": "未知",
