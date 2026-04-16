@@ -133,10 +133,16 @@ public class PartsController : ControllerBase
     public ActionResult<ApiResponse<object>> AcceptPart(int partId) =>
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.AcceptPart(partId)));
 
-    [HttpPost("{partId}/return")]
+    // INTERNAL-AI-20260416: Changed body from raw string to ReturnReasonDto to avoid Content-Type issues.
+    // (INTERNAL-AI-20260416: 將請求主體從原始字串改為 ReturnReasonDto，避免 Content-Type 問題。)
+    /* [HttpPost("{partId}/return")]
     [Authorize(Roles = "dcb")]
     public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] string returnReason) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, returnReason)));
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, returnReason))); */
+    [HttpPost("{partId}/return")]
+    [Authorize(Roles = "dcb")]
+    public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] ReturnReasonDto body) =>
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, body.Reason)));
 
     [HttpPost("{partId}/inactive")]
     public ActionResult<ApiResponse<object>> InactivatePart(int partId) =>

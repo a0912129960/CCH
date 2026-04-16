@@ -343,6 +343,9 @@ export interface PartDetailFields {
  * (對應後端 PartDetailResponseDto 的零件詳細回應結構。)
  */
 export interface PartDetailResponse {
+  // INTERNAL-AI-20260416: Added status field for status badge display in the detail view.
+  // (INTERNAL-AI-20260416: 新增 status 欄位供詳細頁面顯示狀態標籤使用。)
+  status: string;
   before: PartDetailFields;
   modified: PartDetailFields;
 }
@@ -411,6 +414,45 @@ export async function updatePart(partId: number, payload: PartSavePayload): Prom
  */
 export async function submitPart(partId: number, payload: PartSavePayload): Promise<void> {
   await api.post(`/parts/${partId}/submit`, payload);
+}
+
+// INTERNAL-AI-20260416: Milestone types and API functions for the detail view timeline.
+// (INTERNAL-AI-20260416: 詳細頁面時間軸所需的里程碑型別與 API 函式。)
+
+/**
+ * Single milestone item matching backend MilestoneDto.
+ * (對應後端 MilestoneDto 的里程碑項目。)
+ */
+export interface Milestone {
+  action: string;
+  updatedBy: string;
+  updatedDate: string;
+  remark: string;
+}
+
+/**
+ * Fetch milestones for a part from GET /api/parts/{partId}/milestones.
+ * (從後端 GET /api/parts/{partId}/milestones 取得里程碑清單。)
+ */
+export async function getMilestones(partId: number): Promise<Milestone[]> {
+  const response = await api.get<{ success: boolean; data: Milestone[] }>(`/parts/${partId}/milestones`);
+  return response.data.data;
+}
+
+/**
+ * Accept a part classification via POST /api/parts/{partId}/accept (DCB only).
+ * (DCB 角色接受零件分類，呼叫 POST /api/parts/{partId}/accept。)
+ */
+export async function acceptPart(partId: number): Promise<void> {
+  await api.post(`/parts/${partId}/accept`);
+}
+
+/**
+ * Return a part to the customer via POST /api/parts/{partId}/return (DCB only).
+ * (DCB 角色退回零件給客戶，呼叫 POST /api/parts/{partId}/return。)
+ */
+export async function returnPart(partId: number, reason: string): Promise<void> {
+  await api.post(`/parts/${partId}/return`, { reason });
 }
 
 /**

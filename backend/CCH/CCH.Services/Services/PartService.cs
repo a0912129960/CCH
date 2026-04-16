@@ -67,26 +67,28 @@ public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelS
     public PartDetailResponseDto? GetPartDetail(int partId)
     {
         // Simulate 404: return null when partId is not in mock set (模擬 404：partId 不在 mock 集合時回傳 null)
+        // INTERNAL-AI-20260416: Added Status to mock tuple so frontend can display status badge.
+        // (INTERNAL-AI-20260416: 在 mock tuple 中加入 Status，供前端顯示狀態標籤。)
         var mock = partId switch
         {
-            1  => (PartNo: "PART-001", Country: "TW", Division: "DIV-A", Supplier: "Supplier Alpha", PartDesc: "5G Comm Module",          HtsCode: "8471.30.0000", Rate: 0m,   HtsCode1: "8517.12.0000", Rate1: (decimal?)5.5m,  Remark: "Updated HTS code"),
-            2  => (PartNo: "PART-002", Country: "CN", Division: "DIV-B", Supplier: "Supplier Beta",  PartDesc: "Portable Laptop Unit",    HtsCode: "8517.12.0000", Rate: 5m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Initial entry"),
-            3  => (PartNo: "PART-003", Country: "JP", Division: "DIV-A", Supplier: "Supplier Gamma", PartDesc: "Router Switch",           HtsCode: "8517.62.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Returned for correction"),
-            4  => (PartNo: "PART-004", Country: "US", Division: "DIV-C", Supplier: "Supplier Alpha", PartDesc: "Server Blade",            HtsCode: "8471.50.0000", Rate: 10m,  HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: ""),
-            5  => (PartNo: "PART-005", Country: "TW", Division: "DIV-B", Supplier: "Supplier Delta", PartDesc: "LCD Monitor",             HtsCode: "8528.52.0000", Rate: 3m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Pending review"),
-            6  => (PartNo: "PART-006", Country: "CN", Division: "DIV-C", Supplier: "Supplier Beta",  PartDesc: "Wireless Receiver",       HtsCode: "8517.62.0000", Rate: 7m,   HtsCode1: "8528.52.0000", Rate1: (decimal?)2.0m,  Remark: "Dual HTS classification"),
-            7  => (PartNo: "PART-007", Country: "TW", Division: "DIV-A", Supplier: "Supplier Alpha", PartDesc: "Network Adapter",         HtsCode: "8517.62.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: ""),
-            8  => (PartNo: "PART-008", Country: "CN", Division: "DIV-B", Supplier: "Supplier Gamma", PartDesc: "Base Station Component",  HtsCode: "8517.12.0000", Rate: 8m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: ""),
-            9  => (PartNo: "PART-009", Country: "US", Division: "DIV-C", Supplier: "Supplier Delta", PartDesc: "Power Supply Unit",       HtsCode: "8504.40.0000", Rate: 4m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Pending review"),
-            10 => (PartNo: "PART-010", Country: "JP", Division: "DIV-A", Supplier: "Supplier Beta",  PartDesc: "Cooling Fan Assembly",    HtsCode: "8414.59.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: ""),
-            11 => (PartNo: "PART-011", Country: "KR", Division: "DIV-B", Supplier: "Supplier Alpha", PartDesc: "SSD Storage Module",      HtsCode: "8471.70.0000", Rate: 2m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: ""),
-            12 => (PartNo: "PART-012", Country: "TW", Division: "DIV-C", Supplier: "Supplier Gamma", PartDesc: "GPU Accelerator Card",    HtsCode: "8473.30.0000", Rate: 12m,  HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Pending review"),
-            13 => (PartNo: "PART-013", Country: "CN", Division: "DIV-A", Supplier: "Supplier Delta", PartDesc: "Memory DIMM 32GB",        HtsCode: "8473.30.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: ""),
-            14 => (PartNo: "PART-014", Country: "US", Division: "DIV-B", Supplier: "Supplier Beta",  PartDesc: "PCIe Expansion Card",     HtsCode: "8473.30.0000", Rate: 6m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Returned for correction"),
-            15 => (PartNo: "PART-015", Country: "JP", Division: "DIV-C", Supplier: "Supplier Alpha", PartDesc: "USB Hub Controller",      HtsCode: "8473.30.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: ""),
-            16 => (PartNo: "PART-016", Country: "TW", Division: "DIV-A", Supplier: "Supplier Gamma", PartDesc: "Optical Drive Unit",      HtsCode: "8471.70.0000", Rate: 1m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Pending review"),
-            17 => (PartNo: "PART-017", Country: "CN", Division: "DIV-B", Supplier: "Supplier Delta", PartDesc: "Touchpad Module",         HtsCode: "8471.60.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: ""),
-            18 => (PartNo: "PART-018", Country: "KR", Division: "DIV-C", Supplier: "Supplier Beta",  PartDesc: "Display Panel 15.6 inch", HtsCode: "8524.11.0000", Rate: 9m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: ""),
+            1  => (PartNo: "PART-001", Country: "TW", Division: "DIV-A", Supplier: "Supplier Alpha", PartDesc: "5G Comm Module",          HtsCode: "8471.30.0000", Rate: 0m,   HtsCode1: "8517.12.0000", Rate1: (decimal?)5.5m,  Remark: "Updated HTS code",         Status: "S04"),
+            2  => (PartNo: "PART-002", Country: "CN", Division: "DIV-B", Supplier: "Supplier Beta",  PartDesc: "Portable Laptop Unit",    HtsCode: "8517.12.0000", Rate: 5m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Initial entry",             Status: "S02"),
+            3  => (PartNo: "PART-003", Country: "JP", Division: "DIV-A", Supplier: "Supplier Gamma", PartDesc: "Router Switch",           HtsCode: "8517.62.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Returned for correction",   Status: "S03"),
+            4  => (PartNo: "PART-004", Country: "US", Division: "DIV-C", Supplier: "Supplier Alpha", PartDesc: "Server Blade",            HtsCode: "8471.50.0000", Rate: 10m,  HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "",                          Status: "S01"),
+            5  => (PartNo: "PART-005", Country: "TW", Division: "DIV-B", Supplier: "Supplier Delta", PartDesc: "LCD Monitor",             HtsCode: "8528.52.0000", Rate: 3m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Pending review",            Status: "S02"),
+            6  => (PartNo: "PART-006", Country: "CN", Division: "DIV-C", Supplier: "Supplier Beta",  PartDesc: "Wireless Receiver",       HtsCode: "8517.62.0000", Rate: 7m,   HtsCode1: "8528.52.0000", Rate1: (decimal?)2.0m,  Remark: "Dual HTS classification",   Status: "S04"),
+            7  => (PartNo: "PART-007", Country: "TW", Division: "DIV-A", Supplier: "Supplier Alpha", PartDesc: "Network Adapter",         HtsCode: "8517.62.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "",                          Status: "S03"),
+            8  => (PartNo: "PART-008", Country: "CN", Division: "DIV-B", Supplier: "Supplier Gamma", PartDesc: "Base Station Component",  HtsCode: "8517.12.0000", Rate: 8m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "",                          Status: "S04"),
+            9  => (PartNo: "PART-009", Country: "US", Division: "DIV-C", Supplier: "Supplier Delta", PartDesc: "Power Supply Unit",       HtsCode: "8504.40.0000", Rate: 4m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Pending review",            Status: "S02"),
+            10 => (PartNo: "PART-010", Country: "JP", Division: "DIV-A", Supplier: "Supplier Beta",  PartDesc: "Cooling Fan Assembly",    HtsCode: "8414.59.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "",                          Status: "S01"),
+            11 => (PartNo: "PART-011", Country: "KR", Division: "DIV-B", Supplier: "Supplier Alpha", PartDesc: "SSD Storage Module",      HtsCode: "8471.70.0000", Rate: 2m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "",                          Status: "S04"),
+            12 => (PartNo: "PART-012", Country: "TW", Division: "DIV-C", Supplier: "Supplier Gamma", PartDesc: "GPU Accelerator Card",    HtsCode: "8473.30.0000", Rate: 12m,  HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Pending review",            Status: "S02"),
+            13 => (PartNo: "PART-013", Country: "CN", Division: "DIV-A", Supplier: "Supplier Delta", PartDesc: "Memory DIMM 32GB",        HtsCode: "8473.30.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "",                          Status: "S04"),
+            14 => (PartNo: "PART-014", Country: "US", Division: "DIV-B", Supplier: "Supplier Beta",  PartDesc: "PCIe Expansion Card",     HtsCode: "8473.30.0000", Rate: 6m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Returned for correction",   Status: "S03"),
+            15 => (PartNo: "PART-015", Country: "JP", Division: "DIV-C", Supplier: "Supplier Alpha", PartDesc: "USB Hub Controller",      HtsCode: "8473.30.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "",                          Status: "S01"),
+            16 => (PartNo: "PART-016", Country: "TW", Division: "DIV-A", Supplier: "Supplier Gamma", PartDesc: "Optical Drive Unit",      HtsCode: "8471.70.0000", Rate: 1m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "Pending review",            Status: "S02"),
+            17 => (PartNo: "PART-017", Country: "CN", Division: "DIV-B", Supplier: "Supplier Delta", PartDesc: "Touchpad Module",         HtsCode: "8471.60.0000", Rate: 0m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "",                          Status: "S04"),
+            18 => (PartNo: "PART-018", Country: "KR", Division: "DIV-C", Supplier: "Supplier Beta",  PartDesc: "Display Panel 15.6 inch", HtsCode: "8524.11.0000", Rate: 9m,   HtsCode1: (string?)null,  Rate1: (decimal?)null,  Remark: "",                          Status: "S02"),
             _  => default
         };
 
@@ -94,6 +96,7 @@ public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelS
 
         return new PartDetailResponseDto
         {
+            Status   = mock.Status,
             Before   = new PartDetailDto { PartNo = mock.PartNo, Country = mock.Country, Division = mock.Division, Supplier = mock.Supplier, PartDesc = mock.PartDesc + " (prev)", HtsCode = mock.HtsCode, Rate = mock.Rate,   Remark = "",           UpdatedBy = "customer001", UpdatedDate = DateTime.Now.AddDays(-5) },
             Modified = new PartDetailDto { PartNo = mock.PartNo, Country = mock.Country, Division = mock.Division, Supplier = mock.Supplier, PartDesc = mock.PartDesc,            HtsCode = mock.HtsCode, Rate = mock.Rate, HtsCode1 = mock.HtsCode1, Rate1 = mock.Rate1, Remark = mock.Remark, UpdatedBy = "customer001", UpdatedDate = DateTime.Now }
         };
