@@ -6,8 +6,8 @@ using System.Text.Json;
 namespace CCH.Services.Repositories;
 
 /// <summary>
-/// Implementation of Part repository using relational JSON files.
-/// (繁體中文) 使用關聯式 JSON 檔案的零件倉儲實作。
+/// Implementation of Part repository using relational JSON files with source path discovery.
+/// (繁體中文) 具備原始碼路徑自動偵測與關聯式 JSON 持久化的零件倉儲實作。
 /// </summary>
 public class PartRepository : IPartRepository
 {
@@ -21,12 +21,27 @@ public class PartRepository : IPartRepository
 
     private static readonly object _fileLock = new();
 
-    public PartRepository(string? basePath = null)
+    public PartRepository(string? overridePath = null)
     {
-        // Define directory for JSON data files
-        var dataDir = basePath != null ? Path.GetDirectoryName(basePath)! : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Repositories", "Data");
-        
-        _partsPath = basePath ?? Path.Combine(dataDir, "parts.json");
+        string dataDir;
+        if (!string.IsNullOrEmpty(overridePath))
+        {
+            dataDir = Path.GetDirectoryName(overridePath)!;
+            _partsPath = overridePath;
+        }
+        else
+        {
+            // Source Path Discovery: Navigate up 4 levels from bin/Debug/net10.0/ to reach project root
+            // (繁體中文) 原始碼路徑偵測：從 bin 目錄向上跳 4 層以到達專案根目錄
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var sourceDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", "CCH.Services", "Repositories", "Data"));
+            
+            // Fallback to local execution directory if source path doesn't exist (e.g., in production)
+            // (繁體中文) 若原始碼路徑不存在（例如正式環境），則退回到執行目錄
+            dataDir = Directory.Exists(sourceDir) ? sourceDir : Path.Combine(baseDir, "Repositories", "Data");
+            _partsPath = Path.Combine(dataDir, "parts.json");
+        }
+
         _customersPath = Path.Combine(dataDir, "customers.json");
         _countriesPath = Path.Combine(dataDir, "countries.json");
 
@@ -37,6 +52,10 @@ public class PartRepository : IPartRepository
     {
         lock (_fileLock)
         {
+            // Ensure directory exists (確保目錄存在)
+            var dir = Path.GetDirectoryName(_partsPath);
+            if (dir != null && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
             if (!File.Exists(_partsPath) || !File.Exists(_customersPath) || !File.Exists(_countriesPath))
             {
                 SeedData();
@@ -86,9 +105,6 @@ public class PartRepository : IPartRepository
             try
             {
                 var options = new JsonSerializerOptions { WriteIndented = true };
-                var dataDir = Path.GetDirectoryName(_partsPath);
-                if (dataDir != null && !Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
-
                 File.WriteAllText(_partsPath, JsonSerializer.Serialize(_parts, options));
                 File.WriteAllText(_customersPath, JsonSerializer.Serialize(_customers, options));
                 File.WriteAllText(_countriesPath, JsonSerializer.Serialize(_countries, options));
@@ -139,7 +155,6 @@ public class PartRepository : IPartRepository
                 query = query.Where(p => p.CustomerID == cId);
             else
             {
-                // Fallback: match customer name if ID is not provided
                 var customerIds = _customers.Where(c => c.Name.Contains(customerId, StringComparison.OrdinalIgnoreCase)).Select(c => c.ID);
                 query = query.Where(p => customerIds.Contains(p.CustomerID));
             }
