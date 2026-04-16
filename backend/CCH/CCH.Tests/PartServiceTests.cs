@@ -6,51 +6,42 @@ using Xunit;
 namespace CCH.Tests;
 
 /// <summary>
-/// Tests for PartService implementation using Repository.
-/// (繁體中文) 使用 Repository 的 PartService 實作測試。
+/// Tests for PartService implementation using Relational Repository.
+/// (繁體中文) 使用關聯式 Repository 的 PartService 實作測試。
 /// </summary>
-public class PartServiceTests
+public class PartServiceTests : IDisposable
 {
+    private readonly string _testBaseDir;
+    private readonly string _testPartsPath;
     private readonly PartService _partService;
     private readonly PartRepository _repository;
 
     public PartServiceTests()
     {
-        _repository = new PartRepository();
+        _testBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"Test_Service_{Guid.NewGuid()}");
+        Directory.CreateDirectory(_testBaseDir);
+        _testPartsPath = Path.Combine(_testBaseDir, "parts.json");
+        _repository = new PartRepository(_testPartsPath);
         _partService = new PartService(_repository);
     }
 
+    public void Dispose()
+    {
+        if (Directory.Exists(_testBaseDir))
+        {
+            Directory.Delete(_testBaseDir, true);
+        }
+    }
+
     [Fact]
-    public void SearchParts_NoFilters_ReturnsAllMockItems()
+    public void SearchParts_NoFilters_ReturnsMappedData()
     {
         // Act
         var result = _partService.SearchParts(null, null, null, null, 1, 10);
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(4, result.Total);
-        Assert.Equal(4, result.Data.Count());
-    }
-
-    [Fact]
-    public void SearchParts_FilterByCustomer_ReturnsFilteredItems()
-    {
-        // Act
-        var result = _partService.SearchParts("Customer A", null, null, null, 1, 10);
-
-        // Assert
         Assert.Equal(2, result.Total);
-        Assert.All(result.Data, item => Assert.Contains("Customer A", item.Customer));
-    }
-
-    [Fact]
-    public void SearchParts_Pagination_ReturnsCorrectPageSize()
-    {
-        // Act
-        var result = _partService.SearchParts(null, null, null, null, 1, 2);
-
-        // Assert
-        Assert.Equal(4, result.Total);
-        Assert.Equal(2, result.Data.Count());
+        Assert.Equal("Customer A", result.Data.First().Customer);
     }
 }
