@@ -1,25 +1,36 @@
 using CCH.Core.DTOs;
 using CCH.Core.Interfaces;
+using CCH.Core.Interfaces.Repositories;
 using System.Text;
 
 namespace CCH.Services.Services;
 
 /// <summary>
-/// Mock part service.
-/// (繁體中文) 模擬零件服務。
+/// Part service implementation.
+/// (繁體中文) 零件服務實作。
 /// </summary>
 public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelService
 {
-    public PartListResponseDto SearchParts(string? customerId, string? status, string? partNo, string? supplier, int page, int pageSize) => new()
+    private readonly IPartRepository _repository;
+
+    public PartService(IPartRepository repository)
     {
-        Total = 100,
-        Page = page,
-        Data = new[]
+        _repository = repository;
+    }
+
+    public PartListResponseDto SearchParts(string? customerId, string? status, string? partNo, string? supplier, int page, int pageSize)
+    {
+        var filtered = _repository.SearchParts(customerId, status, partNo, supplier);
+        var total = filtered.Count();
+        var data = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return new PartListResponseDto
         {
-            new PartListItemDto { Id = 1, Customer = "Customer A", PartNo = "PART-001", PartDesc = "Desc 001", Country = "TW", HtsCode = "8471.30", Rate = 0, Status = "S04", UpdatedBy = "Admin", UpdatedDate = DateTime.Now, SlaStatus = "green" },
-            new PartListItemDto { Id = 2, Customer = "Customer B", PartNo = "PART-002", PartDesc = "Desc 002", Country = "CN", HtsCode = "8471.41", Rate = 5, Status = "S02", UpdatedBy = "User X", UpdatedDate = DateTime.Now.AddDays(-1), SlaStatus = "yellow" }
-        }
-    };
+            Total = total,
+            Page = page,
+            Data = data
+        };
+    }
 
     public byte[] ExportParts(string? customerId, string? status, string? partNo, string? supplier) => 
         Encoding.UTF8.GetBytes("Mock Excel Content");
@@ -34,36 +45,46 @@ public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelS
 
     public byte[] GetUploadTemplate() => Encoding.UTF8.GetBytes("Mock Template Content");
 
-    // INTERNAL-AI-20260416: Returns null when partId <= 0 to simulate 404 not found scenario.
-    // (INTERNAL-AI-20260416: 當 partId <= 0 時回傳 null，模擬 404 找不到的情境。)
-    /* public PartDetailResponseDto GetPartDetail(int partId) => new()
-    {
-        Before = new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "Old Desc", HtsCode = "8471.30", Rate = 0 },
-        Modified = new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "New Desc", HtsCode = "8471.30", Rate = 0 }
-    }; */
-    public PartDetailResponseDto? GetPartDetail(int partId)
-    {
-        // Simulate 404: return null when partId is invalid (模擬 404：partId 無效時回傳 null)
-        if (partId <= 0) return null;
+    // INTERNAL-AI-20260416: Use IPartRepository for GetPartDetail.
+    // (INTERNAL-AI-20260416: GetPartDetail 改用 IPartRepository。)
+    public PartDetailResponseDto? GetPartDetail(int partId) => _repository.GetPartDetail(partId);
 
-        return new PartDetailResponseDto
-        {
-            Before = new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "Old Desc", HtsCode = "8471.30.0000", Rate = 0, Remark = "", UpdatedBy = "Customer001", UpdatedDate = DateTime.Now.AddDays(-5) },
-            Modified = new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "New Desc", HtsCode = "8471.30.0000", Rate = 0, HtsCode1 = "8517.12.0000", Rate1 = 5.5m, Remark = "Updated HTS code", UpdatedBy = "Customer001", UpdatedDate = DateTime.Now }
-        };
+    public object CreatePart(PartSaveRequest request, string status)
+    {
+        var partId = _repository.CreatePart(request, status);
+        return new { partId, partNo = request.PartNo, status };
     }
 
-    public object CreatePart(PartSaveRequest request, string status) => new { partId = 3, partNo = request.PartNo, status };
+    public object UpdatePart(int partId, PartSaveRequest request)
+    {
+        _repository.UpdatePart(partId, request);
+        return new { };
+    }
 
-    public object UpdatePart(int partId, PartSaveRequest request) => new { };
+    public object SubmitPart(int partId, PartSaveRequest request)
+    {
+        _repository.UpdatePart(partId, request);
+        _repository.UpdateStatus(partId, "S02");
+        return new { partId, status = "S02" };
+    }
 
-    public object SubmitPart(int partId, PartSaveRequest request) => new { partId, status = "S02" };
+    public object AcceptPart(int partId)
+    {
+        _repository.UpdateStatus(partId, "S04");
+        return new { partId, status = "S04" };
+    }
 
-    public object AcceptPart(int partId) => new { partId, status = "S04" };
+    public object ReturnPart(int partId, string returnReason)
+    {
+        _repository.UpdateStatus(partId, "S03");
+        return new { partId, status = "S03" };
+    }
 
-    public object ReturnPart(int partId, string returnReason) => new { partId, status = "S03" };
-
-    public object InactivatePart(int partId) => new { partId, status = "Inactive" };
+    public object InactivatePart(int partId)
+    {
+        _repository.UpdateStatus(partId, "Inactive");
+        return new { partId, status = "Inactive" };
+    }
 
     public IEnumerable<MilestoneDto> GetMilestones(int partId) => new[]
     {

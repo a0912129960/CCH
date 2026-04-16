@@ -6,17 +6,21 @@
 - **Read-Only Remarks**: Existing `Update by...` comments are READ-ONLY. AI is forbidden from deleting or overwriting them.
 - **Audit SOP (稽核標準程序)**: Before any modification, present the mandatory audit block (User, Date, Ticket, Intent, Impact) and obtain explicit user approval.
 
-## 🏗️ 2. Backend Architecture (後端架構 - Simplified 3-Layer)
+## 🏗️ 2. Backend Architecture (後端架構 - 4-Layer)
 - **Framework**: .NET 10.0 Web API (Controller-based).
 - **Layered Structure (分層架構)**:
   1. **CCH.API**: Controllers, JWT Auth Configuration, Middlewares.
   2. **CCH.Core**: 
      - **Entities**: Database models.
      - **DTOs**: Request/Response models for API.
-     - **Interfaces**: Service interfaces (e.g., `IPartService`).
+     - **Interfaces**: Service and **Repository** interfaces.
   3. **CCH.Services**: 
+     - **Services**: Business logic, orchestration, and DTO mapping.
+     - **Repositories**: Data access implementations (SQL, EF Core, or Mock).
      - **Data**: `AppDbContext` implementation.
-     - **Implementations**: Business logic implementing Core interfaces. **Services handle DbContext directly (no separate Repository layer).**
+- **Repository Mandate (Repository 強制規範)**: 
+  - All database CRUD operations MUST be handled by the Repository layer. 
+  - Services MUST NOT access `DbContext` or raw data storage directly.
 - **SOLID Principles**: Implementation must strictly adhere to SOLID principles.
 - **Auth (認證)**: Use **JWT Token-based authentication**. Secure controllers with `[Authorize]`.
 - **RESTful API**: 
