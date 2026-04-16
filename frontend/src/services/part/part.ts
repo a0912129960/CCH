@@ -38,12 +38,21 @@ export interface Part {
 }
 
 /**
+ * Customer Interface (客戶介面)
+ * From /api/common/customers
+ */
+export interface CustomerOption {
+  key: string;   // Customer ID
+  value: string; // Customer Name
+}
+
+/**
  * Mock data for Customers (客戶模擬資料)
  */
-export const MOCK_CUSTOMERS = [
-  { id: 'customer001', name: 'Dimerco Electronics' },
-  { id: 'customer002', name: 'Global Tech Solutions' },
-  { id: 'customer003', name: 'Alpha Systems Corp' }
+export const MOCK_CUSTOMERS: CustomerOption[] = [
+  { key: 'customer001', value: 'Dimerco Electronics' },
+  { key: 'customer002', value: 'Global Tech Solutions' },
+  { key: 'customer003', value: 'Alpha Systems Corp' }
 ];
 
 /**
@@ -129,8 +138,21 @@ export const partService = {
   async getSuppliers(): Promise<string[]> {
     return MOCK_SUPPLIERS;
   },
-  async getCustomers(): Promise<{ id: string; name: string }[]> {
-    return MOCK_CUSTOMERS;
+  /**
+   * Get Customers from Common API (從通用 API 獲取客戶)
+   * (繁體中文) 從 /api/common/customers 獲取客戶清單。
+   */
+  async getCustomers(): Promise<CustomerOption[]> {
+    try {
+      const response = await api.get<{ success: boolean; message: string; data: CustomerOption[] }>('/common/customers');
+      if (response.data.success) {
+        return response.data.data;
+      }
+      return MOCK_CUSTOMERS; // Fallback to mock (回退至模擬資料)
+    } catch (error) {
+      console.warn('API /common/customers failed, using mock data. (API 失敗，使用模擬資料。)');
+      return MOCK_CUSTOMERS;
+    }
   },
   async createPart(data: { 
     partNo: string; 
@@ -199,7 +221,7 @@ export const partService = {
     document.body.removeChild(link);
   },
 
-  async uploadParts(file: File, customerId?: string, onProgress?: (percent: number) => void): Promise<ImportBatchReport> {
+  async uploadParts( customerId?: string, onProgress?: (percent: number) => void): Promise<ImportBatchReport> {
     // Simulate progress (模擬進度)
     if (onProgress) {
       for (let i = 0; i <= 100; i += 20) {

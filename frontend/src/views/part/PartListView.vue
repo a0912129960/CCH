@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { authService } from '../../services/auth/auth';
-import { partService, type Part, PartStatus } from '../../services/part/part';
+import { authService, UserRole } from '../../services/auth/auth';
+import { partService, type Part, PartStatus, type CustomerOption } from '../../services/part/part';
 import Card from '../../components/common/Card.vue';
 import Dot from '../../components/common/Dot.vue';
 import Button from '../../components/common/Button.vue';
@@ -11,11 +11,11 @@ import Button from '../../components/common/Button.vue';
  * Part No List View (零件編號清單頁面)
  * Sidebar layout version.
  * 
- * Audit Update on 2026-04-09 by Gemini AI:
- * Ticket: UI-REFACTOR-001
- * Intent: Move "Add New Part" button to below search bar for better UX and apply project-standard Button style.
- * Impact: UI layout adjustment and component standardization.
- * (繁體中文) 2026-04-09 Gemini AI 更新：將「新增零件」按鈕移至搜尋列下方，並套用專案標準 Button 樣式。
+ * Audit Update on 2026-04-16 by Gemini AI:
+ * Ticket: UI-SEARCH-CUSTOMER-003
+ * Intent: Remove role restriction from customer dropdown and use /api/common/customers ({key, value}).
+ * Impact: UI accessibility and data binding update.
+ * (繁體中文) 2026-04-16 Gemini AI 更新：移除客戶下拉選單的角色限制，並改用 /api/common/customers ({key, value}) 格式。
  */
 
 const route = useRoute();
@@ -23,11 +23,11 @@ const router = useRouter();
 
 const parts = ref<Part[]>([]);
 const suppliers = ref<string[]>([]);
-const customers = ref<{ id: string; name: string }[]>([]);
+const customers = ref<CustomerOption[]>([]);
 const loading = ref(true);
 
 const { role, customerId: userCustomerId } = authService.state;
-const isEmployee = role === 'EMPLOYEE';
+const isEmployee = role && role !== UserRole.CUSTOMER;
 
 // Search and Filter states
 const searchQuery = ref('');
@@ -111,15 +111,34 @@ const getStatusColor = (status: PartStatus) => {
 
       <Card class="filter-card">
         <div class="filter-grid">
-          <!-- Search -->
+          <!-- Search & Customer Group -->
           <div class="filter-item search">
-            <label>{{ $t('common.search') }}</label>
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              :placeholder="$t('part_list.search_placeholder')"
-              class="form-input"
-            />
+            <div class="search-input-group">
+              <!-- Customer Filter - Always visible, removed role restriction -->
+              <div class="group-item">
+                <label>{{ $t('employee.customer_select') }}</label>
+                <el-select 
+                  v-model="customerFilter" 
+                  class="form-select-el customer-select" 
+                  clearable 
+                  filterable
+                  :placeholder="$t('employee.customer_select')"
+                >
+                  <el-option :label="$t('employee.all_customers')" value="" />
+                  <el-option v-for="c in customers" :key="c.key" :label="c.value" :value="c.key" />
+                </el-select>
+              </div>
+
+              <div class="group-item">
+                <label>{{ $t('common.search') }}</label>
+                <input 
+                  v-model="searchQuery" 
+                  type="text" 
+                  :placeholder="$t('part_list.search_placeholder')"
+                  class="form-input"
+                />
+              </div>
+            </div>
             <div class="action-row">
               <Button @click="router.push({ name: 'part-create' })">
                 {{ $t('part_list.add_new') }}
@@ -152,15 +171,6 @@ const getStatusColor = (status: PartStatus) => {
               <el-option v-for="s in suppliers" :key="s" :label="s" :value="s" />
             </el-select>
           </div>
-
-          <!-- Customer Filter (Employee Only) -->
-          <div v-if="isEmployee" class="filter-item">
-            <label>{{ $t('employee.customer_select') }}</label>
-            <el-select v-model="customerFilter" class="form-select-el" clearable filterable>
-              <el-option :label="$t('employee.all_customers')" value="" />
-              <el-option v-for="c in customers" :key="c.id" :label="c.name" :value="c.id" />
-            </el-select>
-          </div>
         </div>
       </Card>
 
@@ -171,7 +181,7 @@ const getStatusColor = (status: PartStatus) => {
               <th @click="sortBy = 'partNo'; sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
                 {{ $t('customer.part_no') }} {{ sortBy === 'partNo' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
               </th>
-              <th v-if="isEmployee && !customerFilter">{{ $t('employee.customer_select') }}</th>
+              <th v-if="!customerFilter">{{ $t('employee.customer_select') }}</th>
               <th>{{ $t('customer.hts_code') }}</th>
               <th>{{ $t('common.supplier') }}</th>
               <th>{{ $t('common.status') }}</th>
@@ -188,7 +198,7 @@ const getStatusColor = (status: PartStatus) => {
                   {{ part.partNo }}
                 </a>
               </td>
-              <td v-if="isEmployee && !customerFilter">{{ part.customerName }}</td>
+              <td v-if="!customerFilter">{{ part.customerName }}</td>
               <td><code>{{ part.htsCode }}</code></td>
               <td>{{ part.supplier }}</td>
               <td>
@@ -239,8 +249,25 @@ h1 {
 
 .filter-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: 1.5rem;
+}
+
+.search-input-group {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.group-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.customer-select {
+  width: 100%;
 }
 
 .filter-item {

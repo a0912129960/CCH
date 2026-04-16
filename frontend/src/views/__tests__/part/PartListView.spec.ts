@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import PartListView from '../../part/PartListView.vue';
-import * as partModule from '../../../services/part/part';
 
 /**
  * Part List View Component Tests (零件清單組件測試)
@@ -13,7 +13,22 @@ vi.mock('../../../services/part/part', async () => {
     partService: {
       getParts: vi.fn().mockResolvedValue(actual.MOCK_PARTS),
       getSuppliers: vi.fn().mockResolvedValue(['Supplier A', 'Supplier B']),
-      getCustomers: vi.fn().mockResolvedValue([{ id: 'customer001', name: 'Test Customer' }])
+      getCustomers: vi.fn().mockResolvedValue([{ key: 'customer001', value: 'Test Customer' }])
+    }
+  };
+});
+
+vi.mock('../../../services/auth/auth', async () => {
+  const actual = await vi.importActual('../../../services/auth/auth') as any;
+  return {
+    ...actual,
+    authService: {
+      state: {
+        role: 'DIMERCO',
+        customerId: undefined,
+        isLoggedIn: true,
+        username: 'test-admin'
+      }
     }
   };
 });
@@ -32,16 +47,20 @@ vi.mock('vue-router', () => ({
 describe('PartListView.vue', () => {
   const globalConfig = {
     global: {
+      plugins: [createPinia()],
       mocks: { $t: (key: string) => key },
       stubs: {
         Card: { template: '<div class="card"><slot></slot></div>' },
         Dot: { template: '<div class="dot"></div>' },
-        Button: { template: '<button class="app-button"><slot></slot></button>' }
+        Button: { template: '<button class="app-button"><slot></slot></button>' },
+        'el-select': { template: '<div class="el-select"><slot></slot></div>' },
+        'el-option': { template: '<div class="el-option"></div>' }
       }
     }
   };
 
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.clearAllMocks();
     mockRoute.query.status = '';
     pushSpy.mockClear();
@@ -51,6 +70,12 @@ describe('PartListView.vue', () => {
     const wrapper = mount(PartListView, globalConfig);
     await new Promise(resolve => setTimeout(resolve, 50));
     expect(wrapper.find('h1').text()).toBe('part_list.title');
+  });
+
+  it('renders customer select for employee (員工應看到客戶下拉選單)', async () => {
+    const wrapper = mount(PartListView, globalConfig);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(wrapper.find('.customer-select').exists()).toBe(true);
   });
 
   it('navigates to create page when add button is clicked (點擊新增按鈕時導航至建立頁)', async () => {

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
 import { authService, UserRole } from '../../services/auth/auth';
 import AppButton from '../../components/common/Button.vue';
 import DimercoLogo from '@/assets/images/DimLogo_Color_background_Transparent.png';
@@ -11,7 +10,6 @@ import DimercoLogo from '@/assets/images/DimLogo_Color_background_Transparent.pn
  * Update by Gemini AI on 2026-04-15
  */
 
-const { t } = useI18n();
 const router = useRouter();
 const username = ref('');
 const password = ref('');
