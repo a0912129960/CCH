@@ -3,31 +3,46 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { authService, UserRole } from '../../services/auth/auth';
-import { partService, type Part, PartStatus } from '../../services/part/part';
+// INTERNAL-AI-20260416: Import real API function and new types. Old mock imports preserved below.
+// (INTERNAL-AI-20260416: 匯入真實 API 函式與新型別。舊的 mock 匯入保留如下。)
+/* import { partService, type Part, PartStatus } from '../../services/part/part'; */
+import { partService, PartStatus, getPartDetail, type PartDetailResponse } from '../../services/part/part';
 import { useTabStore } from '../../stores/tabs';
 import Card from '../../components/common/Card.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 /**
  * Part No Detail View (零件編號詳細頁面)
- * Updated by AI - 2026-04-10: 
+ * Updated by AI - 2026-04-10:
  * 1. Dynamic breadcrumb based on referrer (Dashboard vs Parts List).
  * 2. Strictly limited actions based on role & latest requirements.
+ *
+ * INTERNAL-AI-20260416: Updated to call real GET /api/parts/{partId} and display backend data.
+ * (INTERNAL-AI-20260416: 更新為呼叫真實 GET /api/parts/{partId} API 並顯示後端資料。)
  */
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const tabStore = useTabStore();
-const partId = route.params.id as string;
 
-const part = ref<Part | null>(null);
+// partId from route is string; convert to number for the real API (路由 partId 為字串；轉換為數字供真實 API 使用)
+const partIdStr = route.params.id as string;
+const partId = Number(partIdStr);
+
+// INTERNAL-AI-20260416: New ref for real backend data. Old mock ref preserved below.
+// (INTERNAL-AI-20260416: 新增對應後端真實資料的 ref。舊 mock ref 保留如下。)
+/* const part = ref<Part | null>(null); */
+const partDetail = ref<PartDetailResponse | null>(null);
 const loading = ref(true);
 const actionRemark = ref('');
 
 const userRole = computed(() => authService.state.role);
 const isEmployee = computed(() => userRole.value === UserRole.DIMERCO || userRole.value === UserRole.DCB);
 const isCustomer = computed(() => userRole.value === UserRole.CUSTOMER);
+
+// Shorthand to access the "modified" data object (存取 modified 資料物件的簡便計算屬性)
+const modified = computed(() => partDetail.value?.modified ?? null);
 
 /**
  * Dynamic Breadcrumb Logic (動態麵包屑邏輯)
@@ -42,12 +57,23 @@ const prevPageLabel = computed(() => {
 
 onMounted(async () => {
   try {
-    const data = await partService.getPartById(partId);
+    // INTERNAL-AI-20260416: Call real API instead of mock.
+    // (INTERNAL-AI-20260416: 改呼叫真實 API，取代 mock 資料。)
+    /* const data = await partService.getPartById(partId);
     if (data) {
       part.value = data;
-      // Update Tab Title with Part No (更新標籤標題為零件編號)
       tabStore.updateTabTitle(route.path, data.partNo);
     } else {
+      router.push('/parts');
+    } */
+    const data = await getPartDetail(partId);
+    if (data) {
+      partDetail.value = data;
+      // Update tab title with the Part No from the modified object (用 modified 零件編號更新標籤標題)
+      tabStore.updateTabTitle(route.path, data.modified.partNo);
+    } else {
+      // Part not found (404): redirect to parts list (零件不存在 404：跳轉回零件清單)
+      ElMessage.error('Part not found. / 零件不存在。');
       router.push('/parts');
     }
   } finally {
@@ -55,14 +81,16 @@ onMounted(async () => {
   }
 });
 
-const handleAccept = async () => {
+// INTERNAL-AI-20260416: Action handlers below are preserved from old mock implementation.
+// (INTERNAL-AI-20260416: 以下操作處理函式保留自舊 mock 實作，供日後接 API 時參考。)
+/* const handleAccept = async () => {
   if (!part.value) return;
   try {
     await ElMessageBox.confirm(t('part_detail.accept_confirm'), t('common.confirm'), {
       confirmButtonClass: 'btn-confirm-orange',
       type: 'warning'
     });
-    const success = await partService.updatePartStatus(partId, PartStatus.ACTIVE, 'Accepted by Customer');
+    const success = await partService.updatePartStatus(partIdStr, PartStatus.ACTIVE, 'Accepted by Customer');
     if (success) {
       ElMessage.success('Part accepted successfully.');
       router.back();
@@ -77,7 +105,7 @@ const handleApprove = async () => {
       confirmButtonClass: 'btn-confirm-orange',
       type: 'warning'
     });
-    const success = await partService.updatePartStatus(partId, PartStatus.ACTIVE, 'Approved by Employee');
+    const success = await partService.updatePartStatus(partIdStr, PartStatus.ACTIVE, 'Approved by Employee');
     if (success) {
       ElMessage.success('Part approved successfully.');
       router.back();
@@ -90,12 +118,12 @@ const handleReturn = async () => {
     ElMessage.warning(t('part_detail.return_placeholder'));
     return;
   }
-  const success = await partService.updatePartStatus(partId, PartStatus.RETURNED, actionRemark.value);
+  const success = await partService.updatePartStatus(partIdStr, PartStatus.RETURNED, actionRemark.value);
   if (success) {
     ElMessage.success('Part returned to customer for correction.');
     router.back();
   }
-};
+}; */
 
 const getStatusColor = (status: PartStatus) => {
   const colors: Record<string, string> = {
@@ -117,25 +145,25 @@ const getStatusColor = (status: PartStatus) => {
       <div class="spinner"></div>
     </div>
     
-    <div v-else-if="part" class="page-container">
-      <!-- Dynamic Breadcrumb Navigation -->
+    <!-- INTERNAL-AI-20260416: Updated to render real backend data via `modified` computed property. -->
+    <!-- (INTERNAL-AI-20260416: 更新為使用 `modified` 計算屬性渲染後端真實資料。) -->
+    <div v-else-if="partDetail && modified" class="page-container">
+      <!-- Dynamic Breadcrumb Navigation (動態麵包屑導覽) -->
       <nav class="breadcrumb">
         <a href="#" @click.prevent="router.back()">{{ prevPageLabel }}</a>
         <span class="separator">/</span>
-        <span class="current">{{ part.partNo }}</span>
+        <span class="current">{{ modified.partNo }}</span>
       </nav>
 
       <header class="page-header">
         <div class="header-left">
-          <h1>{{ part.partNo }}</h1>
-          <span class="status-pill" :style="{ backgroundColor: getStatusColor(part.status) }">
-            {{ $t('status.' + part.status.toLowerCase()) }}
-          </span>
+          <h1>{{ modified.partNo }}</h1>
         </div>
       </header>
 
       <div class="detail-content-grid">
         <div class="main-column">
+          <!-- Basic Information Card (基本資料卡片) -->
           <Card class="info-card section-margin">
             <template #header>
               <div class="card-header">
@@ -147,86 +175,108 @@ const getStatusColor = (status: PartStatus) => {
               <div class="info-grid">
                 <div class="info-cell">
                   <label>{{ $t('customer.part_no') }}</label>
-                  <div class="value bold">{{ part.partNo }}</div>
+                  <div class="value code-box">{{ modified.partNo }}</div>
                 </div>
                 <div class="info-cell">
-                  <label>{{ $t('customer.hts_code') }}</label>
-                  <div class="value code-box">{{ part.htsCode }}</div>
+                  <label>{{ $t('part_detail.country') }}</label>
+                  <div class="value code-box">{{ modified.country }}</div>
+                </div>
+                <div class="info-cell">
+                  <label>{{ $t('part_detail.division') }}</label>
+                  <div class="value code-box">{{ modified.division }}</div>
                 </div>
                 <div class="info-cell">
                   <label>{{ $t('common.supplier') }}</label>
-                  <div class="value">{{ part.supplier }}</div>
-                </div>
-                <div class="info-cell">
-                  <label>{{ $t('common.last_updated') }}</label>
-                  <div class="value text-muted">{{ part.lastUpdated }}</div>
+                  <div class="value code-box">{{ modified.supplier }}</div>
                 </div>
               </div>
               <div class="info-cell full-width mt-6">
                 <label>{{ $t('part_create.description') }}</label>
-                <p class="description-text">{{ part.description || 'No description provided.' }}</p>
+                <p class="description-text">{{ modified.partDesc || 'No description provided.' }}</p>
               </div>
             </div>
           </Card>
 
-          <Card v-if="part.status === PartStatus.RETURNED" class="feedback-card section-margin">
+          <!-- HTS Code & Rate Card (HTS 代碼與稅率卡片) -->
+          <Card class="info-card section-margin">
             <template #header>
-              <div class="feedback-header">
-                <span class="alert-icon">⚠️</span>
-                <h3>{{ $t('part_detail.dimerco_feedback') }}</h3>
+              <div class="card-header">
+                <div class="decorator"></div>
+                <h3>{{ $t('part_detail.hts_and_rate') }}</h3>
               </div>
             </template>
             <div class="card-body-padding">
-              <div class="reason-group">
-                <label>{{ $t('part_detail.reason') }}</label>
-                <p class="reason-text">{{ part.dimercoRemark || 'N/A' }}</p>
-              </div>
-              <div class="suggest-group mt-6" v-if="part.replacementCode">
-                <label>{{ $t('part_detail.suggested_code') }}</label>
-                <div class="suggested-code">{{ part.replacementCode }}</div>
-              </div>
-            </div>
-          </Card>
-
-          <Card 
-            v-if="(isCustomer && part.status === PartStatus.RETURNED) || (isEmployee && part.status === PartStatus.PENDING_REVIEW)" 
-            class="action-card section-margin"
-          >
-            <template #header>
-              <div class="card-header">
-                <div class="decorator orange-decorator"></div>
-                <h3>{{ isEmployee ? $t('part_detail.review_action') : $t('common.actions') }}</h3>
-              </div>
-            </template>
-            
-            <div class="card-body-padding action-body">
-              <div v-if="isEmployee" class="mb-4">
-                <label class="remark-label">{{ $t('part_detail.return_reason_label') }}</label>
-                <textarea 
-                  v-model="actionRemark" 
-                  class="remark-textarea" 
-                  :placeholder="$t('part_detail.return_placeholder')"
-                ></textarea>
-              </div>
-              
-              <div class="action-buttons-group">
-                <button v-if="isCustomer" class="btn-cch btn-accept" @click="handleAccept">
-                  {{ $t('common.accept') }}
-                </button>
-                <template v-if="isEmployee">
-                  <button class="btn-cch btn-accept" @click="handleApprove">
-                    {{ $t('common.accept') }}
-                  </button>
-                  <button class="btn-cch btn-return" :disabled="!actionRemark" @click="handleReturn">
-                    {{ $t('part_detail.btn_return_customer') }}
-                  </button>
+              <div class="info-grid">
+                <div class="info-cell">
+                  <label>{{ $t('customer.hts_code') }}</label>
+                  <div class="value code-box">{{ modified.htsCode }}</div>
+                </div>
+                <div class="info-cell">
+                  <label>{{ $t('part_detail.rate') }}</label>
+                  <div class="value code-box">{{ modified.rate }}</div>
+                </div>
+                <template v-if="modified.htsCode1">
+                  <div class="info-cell">
+                    <label>{{ $t('customer.hts_code') }} 1</label>
+                    <div class="value code-box">{{ modified.htsCode1 }}</div>
+                  </div>
+                  <div class="info-cell">
+                    <label>{{ $t('part_detail.rate') }} 1</label>
+                    <div class="value code-box">{{ modified.rate1 ?? '-' }}</div>
+                  </div>
+                </template>
+                <template v-if="modified.htsCode2">
+                  <div class="info-cell">
+                    <label>{{ $t('customer.hts_code') }} 2</label>
+                    <div class="value code-box">{{ modified.htsCode2 }}</div>
+                  </div>
+                  <div class="info-cell">
+                    <label>{{ $t('part_detail.rate') }} 2</label>
+                    <div class="value code-box">{{ modified.rate2 ?? '-' }}</div>
+                  </div>
+                </template>
+                <template v-if="modified.htsCode3">
+                  <div class="info-cell">
+                    <label>{{ $t('customer.hts_code') }} 3</label>
+                    <div class="value code-box">{{ modified.htsCode3 }}</div>
+                  </div>
+                  <div class="info-cell">
+                    <label>{{ $t('part_detail.rate') }} 3</label>
+                    <div class="value code-box">{{ modified.rate3 ?? '-' }}</div>
+                  </div>
+                </template>
+                <template v-if="modified.htsCode4">
+                  <div class="info-cell">
+                    <label>{{ $t('customer.hts_code') }} 4</label>
+                    <div class="value code-box">{{ modified.htsCode4 }}</div>
+                  </div>
+                  <div class="info-cell">
+                    <label>{{ $t('part_detail.rate') }} 4</label>
+                    <div class="value code-box">{{ modified.rate4 ?? '-' }}</div>
+                  </div>
                 </template>
               </div>
+              <!-- Remark (備註) -->
+              <div v-if="modified.remark" class="info-cell full-width mt-6">
+                <label>{{ $t('part_detail.remark') }}</label>
+                <p class="description-text">{{ modified.remark }}</p>
+              </div>
             </div>
           </Card>
+
+          <!-- Last Updated Info (最後更新資訊) -->
+          <div class="meta-row">
+            <span class="meta-label">{{ $t('part_detail.updated_by') }}：</span>
+            <span class="meta-value">{{ modified.updatedBy }}</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-label">{{ $t('part_detail.updated_date') }}：</span>
+            <span class="meta-value">{{ modified.updatedDate }}</span>
+          </div>
         </div>
 
+        <!-- Side column preserved for future timeline/history integration (側欄保留供未來時間軸/歷程整合使用) -->
         <div class="side-column">
+          <!-- Placeholder: history panel will be wired to GET /api/parts/{partId}/milestones (待串接里程碑 API) -->
           <Card class="timeline-card">
             <template #header>
               <div class="card-header">
@@ -235,22 +285,7 @@ const getStatusColor = (status: PartStatus) => {
               </div>
             </template>
             <div class="card-body-padding">
-              <div class="timeline-wrapper">
-                <div v-for="(item, index) in part.history" :key="item.id" class="timeline-item">
-                  <div class="timeline-line" v-if="index !== (part.history?.length || 0) - 1"></div>
-                  <div class="timeline-dot" :style="{ borderColor: getStatusColor(item.status) }"></div>
-                  <div class="timeline-content">
-                    <div class="time-header">
-                      <span class="status-name" :style="{ color: getStatusColor(item.status) }">
-                        {{ $t('status.' + item.status.toLowerCase()) }}
-                      </span>
-                      <span class="time-stamp">{{ item.updatedAt }}</span>
-                    </div>
-                    <div class="user-name">By: {{ item.updatedBy }}</div>
-                    <p v-if="item.remark" class="remark-quote">"{{ item.remark }}"</p>
-                  </div>
-                </div>
-              </div>
+              <p class="text-muted">Milestone history coming soon. / 里程碑歷程即將上線。</p>
             </div>
           </Card>
         </div>
@@ -377,10 +412,12 @@ h3 {
   padding: 8px 14px;
   border-radius: 8px;
   font-family: 'Courier New', monospace;
-  display: inline-block;
+  display: block;
   color: var(--primary-color);
   font-weight: 700;
   border: 1px solid #e9ecef;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .description-text {
@@ -569,6 +606,22 @@ h3 {
   margin: 0;
   line-height: 1.5;
 }
+
+/* INTERNAL-AI-20260416: Styles for meta update info row (INTERNAL-AI-20260416: 最後更新資訊列樣式) */
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #8898aa;
+  margin-bottom: 1.5rem;
+}
+
+.meta-label { font-weight: 600; }
+.meta-value { color: #525f7f; }
+.meta-sep { color: #dee2e6; }
+
+.text-muted { color: #8898aa; font-size: 0.9rem; }
 
 .loading-overlay {
   display: flex;

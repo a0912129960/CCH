@@ -9,7 +9,12 @@ namespace CCH.Core.Interfaces;
 public interface IPartQueryService
 {
     PartListResponseDto SearchParts(string? customerId, string? status, string? partNo, string? supplier, int page, int pageSize);
-    PartDetailResponseDto GetPartDetail(int partId);
+
+    // INTERNAL-AI-20260416: GetPartDetail returns nullable to support 404 when part does not exist.
+    // (INTERNAL-AI-20260416: GetPartDetail 改為可為空回傳，以支援零件不存在時的 404 回應。)
+    /* PartDetailResponseDto GetPartDetail(int partId); */
+    PartDetailResponseDto? GetPartDetail(int partId);
+
     IEnumerable<MilestoneDto> GetMilestones(int partId);
     IEnumerable<PartDetailDto> GetHistory(int partId);
 }

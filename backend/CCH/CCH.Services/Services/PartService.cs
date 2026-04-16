@@ -34,11 +34,24 @@ public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelS
 
     public byte[] GetUploadTemplate() => Encoding.UTF8.GetBytes("Mock Template Content");
 
-    public PartDetailResponseDto GetPartDetail(int partId) => new()
+    // INTERNAL-AI-20260416: Returns null when partId <= 0 to simulate 404 not found scenario.
+    // (INTERNAL-AI-20260416: 當 partId <= 0 時回傳 null，模擬 404 找不到的情境。)
+    /* public PartDetailResponseDto GetPartDetail(int partId) => new()
     {
         Before = new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "Old Desc", HtsCode = "8471.30", Rate = 0 },
         Modified = new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "New Desc", HtsCode = "8471.30", Rate = 0 }
-    };
+    }; */
+    public PartDetailResponseDto? GetPartDetail(int partId)
+    {
+        // Simulate 404: return null when partId is invalid (模擬 404：partId 無效時回傳 null)
+        if (partId <= 0) return null;
+
+        return new PartDetailResponseDto
+        {
+            Before = new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "Old Desc", HtsCode = "8471.30.0000", Rate = 0, Remark = "", UpdatedBy = "Customer001", UpdatedDate = DateTime.Now.AddDays(-5) },
+            Modified = new PartDetailDto { PartNo = "PART-001", Country = "TW", Division = "DIV1", Supplier = "SUP1", PartDesc = "New Desc", HtsCode = "8471.30.0000", Rate = 0, HtsCode1 = "8517.12.0000", Rate1 = 5.5m, Remark = "Updated HTS code", UpdatedBy = "Customer001", UpdatedDate = DateTime.Now }
+        };
+    }
 
     public object CreatePart(PartSaveRequest request, string status) => new { partId = 3, partNo = request.PartNo, status };
 

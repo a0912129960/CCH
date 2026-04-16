@@ -125,7 +125,14 @@
     "review_action": "審核操作",
     "return_reason_label": "退回原因",
     "return_placeholder": "請說明退回給客戶的原因...",
-    "btn_return_customer": "退回給客戶"
+    "btn_return_customer": "退回給客戶",
+    "country": "國家",
+    "division": "部門",
+    "rate": "稅率 (%)",
+    "hts_and_rate": "HTS 代碼與稅率",
+    "remark": "備註",
+    "updated_by": "更新者",
+    "updated_date": "更新日期"
   },
   "status": {
     "unknown": "未知",

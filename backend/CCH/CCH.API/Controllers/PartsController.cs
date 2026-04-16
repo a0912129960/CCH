@@ -63,9 +63,20 @@ public class PartsController : ControllerBase
     public ActionResult<ApiResponse<object>> CreateAndSubmitPart([FromBody] PartSaveRequest request) =>
         Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(request, "S02")));
 
-    [HttpGet("{partId}")]
+    // INTERNAL-AI-20260416: Added 404 handling when part is not found.
+    // (INTERNAL-AI-20260416: 新增零件不存在時的 404 回應處理。)
+    /* [HttpGet("{partId}")]
     public ActionResult<ApiResponse<PartDetailResponseDto>> GetPartDetail(int partId) =>
-        Ok(ApiResponse<PartDetailResponseDto>.SuccessResponse(_queryService.GetPartDetail(partId)));
+        Ok(ApiResponse<PartDetailResponseDto>.SuccessResponse(_queryService.GetPartDetail(partId))); */
+    [HttpGet("{partId}")]
+    public ActionResult<ApiResponse<PartDetailResponseDto>> GetPartDetail(int partId)
+    {
+        // Attempt to retrieve part detail; return 404 if not found (嘗試取得零件詳細資料；若不存在則回傳 404)
+        var result = _queryService.GetPartDetail(partId);
+        if (result == null)
+            return NotFound(ApiResponse<object>.FailureResponse("Part not found. / 零件不存在。"));
+        return Ok(ApiResponse<PartDetailResponseDto>.SuccessResponse(result));
+    }
 
     [HttpPut("{partId}")]
     public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request) =>
