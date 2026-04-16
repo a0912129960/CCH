@@ -24,36 +24,29 @@ export interface PartHistory {
 
 export interface Part {
   id: string;
+  division: string;
   partNo: string;
+  description?: string;
+  countryOfOrigin: string;
   htsCode: string;
+  generalDutyRate: number;
   status: PartStatus;
-  supplier: string;
+  updatedBy: string;
+  lastUpdated: string;
+  slaDeadline?: string; // ISO format
+  
+  // Expanded Duties
+  duty301?: { code: string; rate: string };
+  dutyIEEPA?: { code: string; rate: string };
+  duty232Aluminum?: { code: string; rate: string };
+  dutyReciprocal?: { code: string; rate: string };
+
   customerId: string;
   customerName: string;
-  lastUpdated: string;
-  description?: string;
   dimercoRemark?: string;
   replacementCode?: string;
   history?: PartHistory[];
 }
-
-/**
- * Customer Interface (客戶介面)
- * From /api/common/customers
- */
-export interface CustomerOption {
-  key: string;   // Customer ID
-  value: string; // Customer Name
-}
-
-/**
- * Mock data for Customers (客戶模擬資料)
- */
-export const MOCK_CUSTOMERS: CustomerOption[] = [
-  { key: 'customer001', value: 'Dimerco Electronics' },
-  { key: 'customer002', value: 'Global Tech Solutions' },
-  { key: 'customer003', value: 'Alpha Systems Corp' }
-];
 
 /**
  * Internal Helper to generate random history (生成隨機歷史記錄的輔助函式)
@@ -119,6 +112,7 @@ export const MOCK_PARTS: Part[] = [
 /**
  * Expanded Mock data for Suppliers (供應商模擬資料)
  */
+/*
 export const MOCK_SUPPLIERS = [
   'TechCorp Solutions',
   'Global Logistics Inc',
@@ -127,32 +121,48 @@ export const MOCK_SUPPLIERS = [
   'Delta Systems',
   'Omega Industrial'
 ];
+*/
+
+/**
+ * Internal Helper to generate random history (生成隨機歷史記錄的輔助函式)
+ */
+/*
+const generateHistory = (status: PartStatus, date: string): PartHistory[] => {
+...
+};
+*/
+
+/**
+ * Expanded Mock data for Parts (擴充後的零件模擬資料)
+ */
+/*
+export const MOCK_PARTS: Part[] = [
+...
+];
+*/
 
 export const partService = {
   async getParts(): Promise<Part[]> {
-    return MOCK_PARTS;
+    try {
+      const response = await api.get<{ success: boolean; data: Part[] }>('/parts');
+      return response.data.success ? response.data.data : [];
+    } catch (error) {
+      console.error('API /parts failed.', error);
+      return [];
+    }
   },
   async getPartById(id: string): Promise<Part | undefined> {
-    return MOCK_PARTS.find(p => p.id === id);
+    try {
+      const response = await api.get<{ success: boolean; data: Part }>(`/parts/${id}`);
+      return response.data.success ? response.data.data : undefined;
+    } catch (error) {
+      console.error(`API /parts/${id} failed.`, error);
+      return undefined;
+    }
   },
   async getSuppliers(): Promise<string[]> {
-    return MOCK_SUPPLIERS;
-  },
-  /**
-   * Get Customers from Common API (從通用 API 獲取客戶)
-   * (繁體中文) 從 /api/common/customers 獲取客戶清單。
-   */
-  async getCustomers(): Promise<CustomerOption[]> {
-    try {
-      const response = await api.get<{ success: boolean; message: string; data: CustomerOption[] }>('/common/customers');
-      if (response.data.success) {
-        return response.data.data;
-      }
-      return MOCK_CUSTOMERS; // Fallback to mock (回退至模擬資料)
-    } catch (error) {
-      console.warn('API /common/customers failed, using mock data. (API 失敗，使用模擬資料。)');
-      return MOCK_CUSTOMERS;
-    }
+    // INTERNAL-AI-20260416: Redirect to commonService or real parts supplier API if exists
+    return [];
   },
   async createPart(data: { 
     partNo: string; 
@@ -163,92 +173,42 @@ export const partService = {
     customerName?: string;
     status?: PartStatus;
   }): Promise<Part> {
-    const newPart: Part = {
-      id: (MOCK_PARTS.length + 1).toString(),
-      partNo: data.partNo,
-      htsCode: data.htsCode,
-      status: data.status || PartStatus.PENDING_REVIEW,
-      supplier: data.supplier || 'Unknown Source',
-      customerId: data.customerId || 'customer001',
-      customerName: data.customerName || 'Dimerco Electronics',
-      lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      description: data.description,
-      history: [
-        {
-          id: 'h-new',
-          status: data.status || PartStatus.PENDING_REVIEW,
-          updatedBy: data.status === PartStatus.ACTIVE ? 'Dimerco Employee' : 'Customer A',
-          updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-          remark: data.status === PartStatus.ACTIVE ? 'Part created and auto-approved by employee.' : 'Part created and submitted for review.'
-        }
-      ]
-    };
-    MOCK_PARTS.unshift(newPart);
-    return newPart;
+    const response = await api.post<{ success: boolean; data: Part }>('/parts', data);
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error('Failed to create part');
   },
   async updatePartStatus(id: string, newStatus: PartStatus, remark?: string): Promise<boolean> {
-    const part = MOCK_PARTS.find(p => p.id === id);
-    if (part) {
-      part.status = newStatus;
-      part.lastUpdated = new Date().toISOString().replace('T', ' ').substring(0, 16);
-      if (part.history) {
-        part.history.push({
-          id: 'h' + Date.now(),
-          status: newStatus,
-          updatedBy: 'Customer A',
-          updatedAt: part.lastUpdated,
-          remark
-        });
-      }
-      return true;
-    }
-    return false;
+    const response = await api.patch<{ success: boolean }>(`/parts/${id}/status`, { status: newStatus, remark });
+    return response.data.success;
   },
   
   /**
    * Bulk Upload Methods (批量上傳方法)
    */
   async downloadTemplate(): Promise<void> {
-    // Mock template download (模擬範本下載)
-    const headers = ['Part No', 'HTS Code', 'Description', 'Supplier'];
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "part_upload_template.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    window.location.href = `${api.defaults.baseURL}/parts/template`;
   },
 
-  async uploadParts( customerId?: string, onProgress?: (percent: number) => void): Promise<ImportBatchReport> {
-    // Simulate progress (模擬進度)
-    if (onProgress) {
-      for (let i = 0; i <= 100; i += 20) {
-        onProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 200));
+  async uploadParts(file: File, customerId?: string, onProgress?: (percent: number) => void): Promise<ImportBatchReport> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (customerId) formData.append('customerId', customerId);
+
+    const response = await api.post<{ success: boolean; data: ImportBatchReport }>('/parts/upload', formData, {
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percent);
+        }
       }
+    });
+
+    if (response.data.success) {
+      return response.data.data;
     }
-
-    // Mock processing logic (模擬處理邏輯)
-    // If customerId is provided (from Employee), parts should be NEW/UPDATED and ACTIVE
-    const defaultStatus = customerId ? 'ACTIVE' : 'PENDING_REVIEW';
-    const mockRows: ImportRowReport[] = [
-      { partNo: 'PN-NEW-001', htsCode: '8517.12.00', status: ImportResultStatus.NEW, message: `Successfully imported as ${defaultStatus}` },
-      { partNo: 'PN-2024-001', htsCode: '8517.12.00', status: ImportResultStatus.UNCHANGED, message: 'No changes detected' },
-      { partNo: 'PN-2024-002', htsCode: '9999.99.99', status: ImportResultStatus.UPDATED, message: `HTS Code updated, status set to ${defaultStatus}` },
-      { partNo: 'PN-ERR-999', htsCode: 'INVALID', status: ImportResultStatus.REJECTED, message: 'Invalid HTS Code format' }
-    ];
-
-    return {
-      batchId: 'batch-' + Date.now(),
-      totalRows: mockRows.length,
-      newCount: 1,
-      updatedCount: 1,
-      unchangedCount: 1,
-      rejectedCount: 1,
-      rows: mockRows
-    };
+    throw new Error('Upload failed');
   }
 };
 

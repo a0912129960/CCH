@@ -70,8 +70,15 @@
     "filter_status": "状态筛选",
     "filter_supplier": "供应商筛选",
     "add_new": "新增零件",
-    "bulk_upload": "批量上传"
+    "bulk_upload": "批量上传",
+    "division": "部门",
+    "description": "零件描述",
+    "coo": "原产地",
+    "duty_rate": "一般关税率 (%)",
+    "updated_by": "更新者",
+    "sla": "SLA"
   },
+
   "part_upload": {
     "title": "批量上传零件",
     "dragger_text": "点击或将文件拖拽到此区域上传",

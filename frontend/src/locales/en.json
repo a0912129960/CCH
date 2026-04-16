@@ -72,7 +72,13 @@
     "filter_status": "Status Filter",
     "filter_supplier": "Supplier Filter",
     "add_new": "Add New Part",
-    "bulk_upload": "Bulk Upload"
+    "bulk_upload": "Bulk Upload",
+    "division": "Division",
+    "description": "Part Description",
+    "coo": "Country of Origin",
+    "duty_rate": "General Duty Rate (%)",
+    "updated_by": "Updated By",
+    "sla": "SLA"
   },
   "part_upload": {
     "title": "Bulk Upload Parts",

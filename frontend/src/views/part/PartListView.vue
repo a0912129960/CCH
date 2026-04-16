@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { authService, UserRole } from '../../services/auth/auth';
-import { partService, type Part, PartStatus, type CustomerOption } from '../../services/part/part';
+import { partService, type Part, PartStatus } from '../../services/part/part';
+import { commonService, type CustomerOption, type StatusOption, type SupplierOption } from '../../services/common/common';
 import Card from '../../components/common/Card.vue';
 import Dot from '../../components/common/Dot.vue';
 import Button from '../../components/common/Button.vue';
@@ -12,70 +13,129 @@ import Button from '../../components/common/Button.vue';
  * Sidebar layout version.
  * 
  * Audit Update on 2026-04-16 by Gemini AI:
- * Ticket: UI-SEARCH-CUSTOMER-003
- * Intent: Remove role restriction from customer dropdown and use /api/common/customers ({key, value}).
- * Impact: UI accessibility and data binding update.
- * (繁體中文) 2026-04-16 Gemini AI 更新：移除客戶下拉選單的角色限制，並改用 /api/common/customers ({key, value}) 格式。
+ * Ticket: UI-SEARCH-SUPPLIER-001
+ * Intent: Update supplier filter to use /api/common/suppliers and reload when customer changes.
+ * Impact: UI logic and dynamic data fetching.
+ * (繁體中文) 2026-04-16 Gemini AI 更新：更新供應商過濾器以使用 /api/common/suppliers 並在客戶變更時重新載入。
  */
 
 const route = useRoute();
 const router = useRouter();
 
-const parts = ref<Part[]>([]);
-const suppliers = ref<string[]>([]);
-const customers = ref<CustomerOption[]>([]);
-const loading = ref(true);
+// INTERNAL-AI-20260416: Capture auth state immediately for filtering
+const { role, customerId: authCustomerId } = authService.state;
+const isEmployee = computed(() => role && role !== UserRole.CUSTOMER);
+const userCustomerId = computed(() => authCustomerId);
 
-const { role, customerId: userCustomerId } = authService.state;
-const isEmployee = role && role !== UserRole.CUSTOMER;
+const parts = ref<Part[]>([]);
+const suppliers = ref<SupplierOption[]>([]);
+const customers = ref<CustomerOption[]>([]);
+const statusOptions = ref<StatusOption[]>([]);
+const loading = ref(true);
 
 // Search and Filter states
 const searchQuery = ref('');
 const statusFilter = ref<string>((route.query.status as string) || '');
 const supplierFilter = ref('');
-const customerFilter = ref<string>((route.query.customerId as string) || (isEmployee ? '' : userCustomerId || ''));
+const customerFilter = ref<string>((route.query.customerId as string) || (isEmployee.value ? '' : userCustomerId.value || ''));
 const sortBy = ref<'partNo' | 'lastUpdated'>('lastUpdated');
 const sortOrder = ref<'asc' | 'desc'>('desc');
 
+// INTERNAL-AI-20260416: Track expanded rows
+const expandedRows = ref<Set<string>>(new Set());
+
+const toggleRow = (id: string) => {
+  if (expandedRows.value.has(id)) {
+    expandedRows.value.delete(id);
+  } else {
+    expandedRows.value.add(id);
+  }
+};
+
+/**
+ * Format remaining minutes to a human-readable SLA countdown.
+ * (將剩餘分鐘數格式化為可讀的 SLA 倒數。)
+ */
+const formatSLA = (deadline?: string) => {
+  if (!deadline) return '-';
+  const now = new Date();
+  const target = new Date(deadline);
+  const diff = target.getTime() - now.getTime();
+  if (diff <= 0) return 'OVERDUE';
+  const mins = Math.floor(diff / 60000);
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}h ${m}m`;
+};
+
+/**
+ * Reload suppliers based on selected customer (根據所選客戶重新載入供應商)
+ */
+const reloadSuppliers = async () => {
+  const cId = customerFilter.value || 'all';
+  suppliers.value = await commonService.getSuppliers(cId);
+  // Reset supplier filter if it's no longer in the list (如果不在清單中，重設供應商過濾器)
+  if (supplierFilter.value && !suppliers.value.some(s => s.key === supplierFilter.value)) {
+    supplierFilter.value = '';
+  }
+};
+
 onMounted(async () => {
   try {
-    const [partsData, suppliersData, customersData] = await Promise.all([
+    const [partsData, customersData, statusesData] = await Promise.all([
       partService.getParts(),
-      partService.getSuppliers(),
-      partService.getCustomers()
+      commonService.getCustomers(),
+      commonService.getStatusOptions()
     ]);
     parts.value = partsData;
-    suppliers.value = suppliersData;
     customers.value = customersData;
+    statusOptions.value = statusesData;
+
+    // Initial load of suppliers (供應商初始載入)
+    await reloadSuppliers();
+
+    // Reset customer filter if not employee and fixed to user's customer
+    if (!isEmployee.value && userCustomerId.value) {
+      customerFilter.value = userCustomerId.value;
+    }
   } finally {
     loading.value = false;
   }
 });
 
+// Watch for customer filter changes to reload suppliers (監聽客戶過濾器變更以重新載入供應商)
+watch(customerFilter, async () => {
+  await reloadSuppliers();
+});
+
 const filteredParts = computed(() => {
+  if (!parts.value || parts.value.length === 0) return [];
   let result = [...parts.value];
   
-  // Role-based restriction (角色存取限制)
-  if (!isEmployee && userCustomerId) {
-    result = result.filter(p => p.customerId === userCustomerId);
+  // INTERNAL-AI-20260416: Use customerFilter if set, otherwise fallback to user's restricted access
+  const effectiveCustomerId = customerFilter.value || (!isEmployee.value ? userCustomerId.value : '');
+
+  if (effectiveCustomerId) {
+    result = result.filter(p => p.customerId === effectiveCustomerId);
   }
 
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase();
+  if (searchQuery.value && searchQuery.value.trim() !== '') {
+    const q = searchQuery.value.toLowerCase().trim();
     result = result.filter(p => 
-      p.partNo.toLowerCase().includes(q) || 
-      p.htsCode.toLowerCase().includes(q)
+      (p.partNo && p.partNo.toLowerCase().includes(q)) || 
+      (p.htsCode && p.htsCode.toLowerCase().includes(q))
     );
   }
   if (statusFilter.value) {
     result = result.filter(p => p.status === statusFilter.value);
   }
   if (supplierFilter.value) {
-    result = result.filter(p => p.supplier === supplierFilter.value);
+    // INTERNAL-AI-20260416: Map to supplier value/name if key is selected
+    const selectedSupplier = suppliers.value.find(s => s.key === supplierFilter.value);
+    const supplierName = selectedSupplier ? selectedSupplier.value : supplierFilter.value;
+    result = result.filter(p => p.supplier === supplierName);
   }
-  if (isEmployee && customerFilter.value) {
-    result = result.filter(p => p.customerId === customerFilter.value);
-  }
+  
   result.sort((a, b) => {
     const valA = a[sortBy.value];
     const valB = b[sortBy.value];
@@ -155,10 +215,10 @@ const getStatusColor = (status: PartStatus) => {
             <el-select v-model="statusFilter" class="form-select-el" clearable>
               <el-option :label="$t('common.all')" value="" />
               <el-option 
-                v-for="s in Object.values(PartStatus)" 
-                :key="s" 
-                :label="$t('status.' + s.toLowerCase())" 
-                :value="s" 
+                v-for="s in statusOptions" 
+                :key="s.key" 
+                :label="s.value" 
+                :value="s.key" 
               />
             </el-select>
           </div>
@@ -168,7 +228,7 @@ const getStatusColor = (status: PartStatus) => {
             <label>{{ $t('part_list.filter_supplier') }}</label>
             <el-select v-model="supplierFilter" class="form-select-el" clearable filterable>
               <el-option :label="$t('common.all')" value="" />
-              <el-option v-for="s in suppliers" :key="s" :label="s" :value="s" />
+              <el-option v-for="s in suppliers" :key="s.key" :label="s.value" :value="s.key" />
             </el-select>
           </div>
         </div>
@@ -178,37 +238,92 @@ const getStatusColor = (status: PartStatus) => {
         <table class="data-table">
           <thead>
             <tr>
+              <th width="40"></th>
+              <th>{{ $t('part_list.division') }}</th>
               <th @click="sortBy = 'partNo'; sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
                 {{ $t('customer.part_no') }} {{ sortBy === 'partNo' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
               </th>
-              <th v-if="!customerFilter">{{ $t('employee.customer_select') }}</th>
+              <th>{{ $t('part_list.description') }}</th>
+              <th>{{ $t('part_list.coo') }}</th>
               <th>{{ $t('customer.hts_code') }}</th>
-              <th>{{ $t('common.supplier') }}</th>
+              <th>{{ $t('part_list.duty_rate') }}</th>
               <th>{{ $t('common.status') }}</th>
+              <th>{{ $t('part_list.updated_by') }}</th>
               <th @click="sortBy = 'lastUpdated'; sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
                 {{ $t('common.last_updated') }} {{ sortBy === 'lastUpdated' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
               </th>
+              <th>{{ $t('part_list.sla') }}</th>
+              <th>{{ $t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="loading"><td colspan="5" class="text-center">Loading...</td></tr>
-            <tr v-else v-for="part in filteredParts" :key="part.id">
-              <td class="part-no-cell">
-                <a href="javascript:void(0)" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
-                  {{ part.partNo }}
-                </a>
-              </td>
-              <td v-if="!customerFilter">{{ part.customerName }}</td>
-              <td><code>{{ part.htsCode }}</code></td>
-              <td>{{ part.supplier }}</td>
-              <td>
-                <div class="status-cell">
-                  <Dot :color="getStatusColor(part.status)" size="8px" />
-                  <span>{{ $t('status.' + part.status.toLowerCase()) }}</span>
-                </div>
-              </td>
-              <td class="time-cell">{{ part.lastUpdated }}</td>
-            </tr>
+            <tr v-if="loading"><td colspan="12" class="text-center">Loading...</td></tr>
+            <template v-else v-for="part in filteredParts" :key="part.id">
+              <tr :class="{ 'expanded-row-master': expandedRows.has(part.id) }">
+                <td>
+                  <span class="expand-toggle" @click="toggleRow(part.id)">
+                    <i :class="expandedRows.has(part.id) ? 'el-icon-minus' : 'el-icon-plus'"></i>
+                  </span>
+                </td>
+                <td>{{ part.division || '-' }}</td>
+                <td class="part-no-cell">
+                  <a href="javascript:void(0)" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
+                    {{ part.partNo }}
+                  </a>
+                </td>
+                <td class="desc-cell">{{ part.description || '-' }}</td>
+                <td>{{ part.countryOfOrigin || '-' }}</td>
+                <td><code>{{ part.htsCode }}</code></td>
+                <td>{{ part.generalDutyRate !== undefined ? part.generalDutyRate + '%' : '-' }}</td>
+                <td>
+                  <div class="status-cell">
+                    <Dot :color="getStatusColor(part.status)" size="8px" />
+                    <span>{{ $t('status.' + part.status.toLowerCase()) }}</span>
+                  </div>
+                </td>
+                <td>{{ part.updatedBy || '-' }}</td>
+                <td class="time-cell">{{ part.lastUpdated }}</td>
+                <td>
+                  <span :class="['sla-badge', part.slaDeadline ? 'active' : '']">
+                    {{ formatSLA(part.slaDeadline) }}
+                  </span>
+                </td>
+                <td>
+                  <Button type="text" size="small" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
+                    View
+                  </Button>
+                </td>
+              </tr>
+              <!-- Expandable Detail Row -->
+              <tr v-if="expandedRows.has(part.id)" class="detail-row">
+                <td colspan="12">
+                  <div class="detail-content">
+                    <div class="duty-grid">
+                      <div class="duty-item">
+                        <div class="duty-label">301 Duty</div>
+                        <div class="duty-val">Code: {{ part.duty301?.code || '9903.88.01' }}</div>
+                        <div class="duty-val">Rate: {{ part.duty301?.rate || '25%' }}</div>
+                      </div>
+                      <div class="duty-item">
+                        <div class="duty-label">IEEPA Duty</div>
+                        <div class="duty-val">Code: {{ part.dutyIEEPA?.code || '-' }}</div>
+                        <div class="duty-val">Rate: {{ part.dutyIEEPA?.rate || '-' }}</div>
+                      </div>
+                      <div class="duty-item">
+                        <div class="duty-label">232 Aluminum</div>
+                        <div class="duty-val">Code: {{ part.duty232Aluminum?.code || '-' }}</div>
+                        <div class="duty-val">Rate: {{ part.duty232Aluminum?.rate || '-' }}</div>
+                      </div>
+                      <div class="duty-item">
+                        <div class="duty-label">Reciprocal Tariff</div>
+                        <div class="duty-val">Code: {{ part.dutyReciprocal?.code || '-' }}</div>
+                        <div class="duty-val">Rate: {{ part.dutyReciprocal?.rate || '-' }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -317,12 +432,13 @@ h1 {
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 1200px;
 }
 
 .data-table th, .data-table td {
@@ -353,6 +469,81 @@ h1 {
 .part-no-cell a:hover {
   text-decoration: underline;
   color: #0086b3;
+}
+
+.desc-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expand-toggle {
+  cursor: pointer;
+  color: var(--primary-color);
+  font-weight: bold;
+  font-size: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.expand-toggle:hover {
+  background-color: #f0f7ff;
+}
+
+.expanded-row-master {
+  background-color: #f8f9fe;
+}
+
+.detail-row td {
+  padding: 0 !important;
+  border-bottom: none !important;
+}
+
+.detail-content {
+  background-color: #fafbfd;
+  padding: 1.5rem 3rem;
+  border-bottom: 1px solid #f0f2f5;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.duty-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+.duty-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--sidebar-color);
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--primary-color);
+  display: inline-block;
+}
+
+.duty-val {
+  font-size: 0.85rem;
+  color: #525f7f;
+  margin-top: 0.2rem;
+}
+
+.sla-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  background-color: #f1f3f5;
+  color: #8898aa;
+}
+
+.sla-badge.active {
+  background-color: #fff1f0;
+  color: #f5222d;
+  border: 1px solid #ffa39e;
 }
 
 .status-cell {

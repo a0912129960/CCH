@@ -21,6 +21,7 @@
 - **Repository Mandate (Repository 強制規範)**: 
   - All database CRUD operations MUST be handled by the Repository layer. 
   - Services MUST NOT access `DbContext` or raw data storage directly.
+  - **Mock Phase Persistence (模擬階段持久化)**: During the mock/development phase, Repositories MUST use persistent JSON files (located in `Repositories/Data/`) to preserve data across restarts.
 - **SOLID Principles**: Implementation must strictly adhere to SOLID principles.
 - **Auth (認證)**: Use **JWT Token-based authentication**. Secure controllers with `[Authorize]`.
 - **RESTful API**: 
