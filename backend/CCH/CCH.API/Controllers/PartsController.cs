@@ -78,9 +78,26 @@ public class PartsController : ControllerBase
         return Ok(ApiResponse<PartDetailResponseDto>.SuccessResponse(result));
     }
 
-    [HttpPut("{partId}")]
+    // INTERNAL-AI-20260416: Added Customer-only role restriction and 400 validation error handling.
+    // (INTERNAL-AI-20260416: 新增僅限 Customer 角色存取限制與 400 驗證錯誤處理。)
+    /* [HttpPut("{partId}")]
     public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request)));
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request))); */
+    [HttpPut("{partId}")]
+    [Authorize(Roles = "customer")]
+    public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request)
+    {
+        // Return 400 if any required fields or format validation fails (若驗證失敗則回傳 400)
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+            return BadRequest(ApiResponse<object>.FailureResponse(string.Join(" | ", errors)));
+        }
+
+        return Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request)));
+    }
 
     [HttpPost("{partId}/submit")]
     public ActionResult<ApiResponse<object>> SubmitPart(int partId, [FromBody] PartSaveRequest request) =>

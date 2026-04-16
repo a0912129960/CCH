@@ -1,7 +1,9 @@
 using System.Text;
 using CCH.Core.Interfaces;
+using CCH.Core.Models;
 using CCH.Services.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +18,20 @@ builder.Services.AddScoped<IPartQueryService, PartService>();
 builder.Services.AddScoped<IPartLifecycleService, PartService>();
 builder.Services.AddScoped<IPartExcelService, PartService>();
 
-builder.Services.AddControllers();
+// INTERNAL-AI-20260416: Override default [ApiController] 400 response to use ApiResponse format.
+// (INTERNAL-AI-20260416: 覆寫 [ApiController] 預設 400 回應，改用 ApiResponse 格式。)
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+            var message = string.Join(" | ", errors);
+            return new BadRequestObjectResult(ApiResponse<object>.FailureResponse(message));
+        };
+    });
 
 // Add HttpContextAccessor and UserContext / 新增 HttpContextAccessor 與 UserContext
 builder.Services.AddHttpContextAccessor();

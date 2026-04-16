@@ -6,7 +6,7 @@ import { authService, UserRole } from '../../services/auth/auth';
 // INTERNAL-AI-20260416: Import real API function and new types. Old mock imports preserved below.
 // (INTERNAL-AI-20260416: 匯入真實 API 函式與新型別。舊的 mock 匯入保留如下。)
 /* import { partService, type Part, PartStatus } from '../../services/part/part'; */
-import { partService, PartStatus, getPartDetail, type PartDetailResponse } from '../../services/part/part';
+import { partService, PartStatus, getPartDetail, updatePart, type PartDetailResponse, type PartSavePayload } from '../../services/part/part';
 import { useTabStore } from '../../stores/tabs';
 import Card from '../../components/common/Card.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -35,7 +35,25 @@ const partId = Number(partIdStr);
 /* const part = ref<Part | null>(null); */
 const partDetail = ref<PartDetailResponse | null>(null);
 const loading = ref(true);
+const saving = ref(false);
 const actionRemark = ref('');
+
+// INTERNAL-AI-20260416: Editable form state for PUT /api/parts/{partId}.
+// (INTERNAL-AI-20260416: PUT /api/parts/{partId} 的可編輯表單狀態。)
+const form = ref<PartSavePayload>({
+  partNo: '',
+  countryId: null,
+  division: '',
+  supplier: '',
+  partDesc: '',
+  htsCode: '',
+  rate: 0,
+  htsCode1: null, rate1: null,
+  htsCode2: null, rate2: null,
+  htsCode3: null, rate3: null,
+  htsCode4: null, rate4: null,
+  remark: ''
+});
 
 const userRole = computed(() => authService.state.role);
 const isEmployee = computed(() => userRole.value === UserRole.DIMERCO || userRole.value === UserRole.DCB);
@@ -69,8 +87,23 @@ onMounted(async () => {
     const data = await getPartDetail(partId);
     if (data) {
       partDetail.value = data;
-      // Update tab title with the Part No from the modified object (用 modified 零件編號更新標籤標題)
       tabStore.updateTabTitle(route.path, data.modified.partNo);
+      // Populate editable form from the modified snapshot (從 modified 快照初始化表單)
+      const m = data.modified;
+      form.value = {
+        partNo: m.partNo,
+        countryId: null,
+        division: m.division,
+        supplier: m.supplier,
+        partDesc: m.partDesc,
+        htsCode: m.htsCode,
+        rate: m.rate,
+        htsCode1: m.htsCode1 ?? null, rate1: m.rate1 ?? null,
+        htsCode2: m.htsCode2 ?? null, rate2: m.rate2 ?? null,
+        htsCode3: m.htsCode3 ?? null, rate3: m.rate3 ?? null,
+        htsCode4: m.htsCode4 ?? null, rate4: m.rate4 ?? null,
+        remark: m.remark
+      };
     } else {
       // Part not found (404): redirect to parts list (零件不存在 404：跳轉回零件清單)
       ElMessage.error('Part not found. / 零件不存在。');
@@ -80,6 +113,38 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// INTERNAL-AI-20260416: Save handler for Customer role — calls PUT /api/parts/{partId}.
+// (INTERNAL-AI-20260416: Customer 角色的儲存處理函式，呼叫 PUT /api/parts/{partId}。)
+const handleSave = async () => {
+  saving.value = true;
+  try {
+    // Sanitize optional number fields: convert empty string / NaN to null before sending.
+    // (送出前將空白或 NaN 的選填數字欄位轉為 null，避免後端 decimal? 解析失敗。)
+    const toNullableNumber = (v: any) => (v === '' || v === null || Number.isNaN(v) ? null : Number(v));
+    const toNullableString = (v: any) => (v === '' ? null : v || null);
+
+    const payload: PartSavePayload = {
+      ...form.value,
+      rate:     toNullableNumber(form.value.rate) ?? 0,
+      rate1:    toNullableNumber(form.value.rate1),
+      rate2:    toNullableNumber(form.value.rate2),
+      rate3:    toNullableNumber(form.value.rate3),
+      rate4:    toNullableNumber(form.value.rate4),
+      htsCode1: toNullableString(form.value.htsCode1),
+      htsCode2: toNullableString(form.value.htsCode2),
+      htsCode3: toNullableString(form.value.htsCode3),
+      htsCode4: toNullableString(form.value.htsCode4),
+    };
+
+    await updatePart(partId, payload);
+    ElMessage.success('Saved successfully. / 儲存成功。');
+  } catch (err: any) {
+    // Error message is already shown globally by the api interceptor (錯誤訊息已由 api 攔截器全域顯示)
+  } finally {
+    saving.value = false;
+  }
+};
 
 // INTERNAL-AI-20260416: Action handlers below are preserved from old mock implementation.
 // (INTERNAL-AI-20260416: 以下操作處理函式保留自舊 mock 實作，供日後接 API 時參考。)
@@ -164,6 +229,8 @@ const getStatusColor = (status: PartStatus) => {
       <div class="detail-content-grid">
         <div class="main-column">
           <!-- Basic Information Card (基本資料卡片) -->
+          <!-- Customer: editable fields; Employee: read-only display -->
+          <!-- (Customer 可編輯欄位；Employee 唯讀顯示) -->
           <Card class="info-card section-margin">
             <template #header>
               <div class="card-header">
@@ -175,24 +242,29 @@ const getStatusColor = (status: PartStatus) => {
               <div class="info-grid">
                 <div class="info-cell">
                   <label>{{ $t('customer.part_no') }}</label>
+                  <!-- Part No: read-only (非 Customer 或 Customer 均唯讀，PartNo 不可修改) -->
                   <div class="value code-box">{{ modified.partNo }}</div>
                 </div>
                 <div class="info-cell">
                   <label>{{ $t('part_detail.country') }}</label>
+                  <!-- Country: read-only (國家不可修改) -->
                   <div class="value code-box">{{ modified.country }}</div>
                 </div>
                 <div class="info-cell">
-                  <label>{{ $t('part_detail.division') }}</label>
-                  <div class="value code-box">{{ modified.division }}</div>
+                  <label>{{ $t('part_detail.division') }} <span v-if="isCustomer" class="required-mark">*</span></label>
+                  <input v-if="isCustomer" v-model="form.division" class="field-input" />
+                  <div v-else class="value code-box">{{ modified.division }}</div>
                 </div>
                 <div class="info-cell">
-                  <label>{{ $t('common.supplier') }}</label>
-                  <div class="value code-box">{{ modified.supplier }}</div>
+                  <label>{{ $t('common.supplier') }} <span v-if="isCustomer" class="required-mark">*</span></label>
+                  <input v-if="isCustomer" v-model="form.supplier" class="field-input" />
+                  <div v-else class="value code-box">{{ modified.supplier }}</div>
                 </div>
               </div>
               <div class="info-cell full-width mt-6">
-                <label>{{ $t('part_create.description') }}</label>
-                <p class="description-text">{{ modified.partDesc || 'No description provided.' }}</p>
+                <label>{{ $t('part_create.description') }} <span v-if="isCustomer" class="required-mark">*</span></label>
+                <textarea v-if="isCustomer" v-model="form.partDesc" class="field-textarea" rows="3"></textarea>
+                <p v-else class="description-text">{{ modified.partDesc || 'No description provided.' }}</p>
               </div>
             </div>
           </Card>
@@ -208,61 +280,72 @@ const getStatusColor = (status: PartStatus) => {
             <div class="card-body-padding">
               <div class="info-grid">
                 <div class="info-cell">
-                  <label>{{ $t('customer.hts_code') }}</label>
-                  <div class="value code-box">{{ modified.htsCode }}</div>
+                  <label>{{ $t('customer.hts_code') }} <span v-if="isCustomer" class="required-mark">*</span></label>
+                  <input v-if="isCustomer" v-model="form.htsCode" class="field-input code-font" placeholder="XXXX.XX.XXXX" />
+                  <div v-else class="value code-box">{{ modified.htsCode }}</div>
                 </div>
                 <div class="info-cell">
                   <label>{{ $t('part_detail.rate') }}</label>
-                  <div class="value code-box">{{ modified.rate }}</div>
+                  <input v-if="isCustomer" v-model.number="form.rate" type="number" class="field-input" />
+                  <div v-else class="value code-box">{{ modified.rate }}</div>
                 </div>
-                <template v-if="modified.htsCode1">
-                  <div class="info-cell">
-                    <label>{{ $t('customer.hts_code') }} 1</label>
-                    <div class="value code-box">{{ modified.htsCode1 }}</div>
-                  </div>
-                  <div class="info-cell">
-                    <label>{{ $t('part_detail.rate') }} 1</label>
-                    <div class="value code-box">{{ modified.rate1 ?? '-' }}</div>
-                  </div>
-                </template>
-                <template v-if="modified.htsCode2">
-                  <div class="info-cell">
-                    <label>{{ $t('customer.hts_code') }} 2</label>
-                    <div class="value code-box">{{ modified.htsCode2 }}</div>
-                  </div>
-                  <div class="info-cell">
-                    <label>{{ $t('part_detail.rate') }} 2</label>
-                    <div class="value code-box">{{ modified.rate2 ?? '-' }}</div>
-                  </div>
-                </template>
-                <template v-if="modified.htsCode3">
-                  <div class="info-cell">
-                    <label>{{ $t('customer.hts_code') }} 3</label>
-                    <div class="value code-box">{{ modified.htsCode3 }}</div>
-                  </div>
-                  <div class="info-cell">
-                    <label>{{ $t('part_detail.rate') }} 3</label>
-                    <div class="value code-box">{{ modified.rate3 ?? '-' }}</div>
-                  </div>
-                </template>
-                <template v-if="modified.htsCode4">
-                  <div class="info-cell">
-                    <label>{{ $t('customer.hts_code') }} 4</label>
-                    <div class="value code-box">{{ modified.htsCode4 }}</div>
-                  </div>
-                  <div class="info-cell">
-                    <label>{{ $t('part_detail.rate') }} 4</label>
-                    <div class="value code-box">{{ modified.rate4 ?? '-' }}</div>
-                  </div>
-                </template>
+                <div class="info-cell">
+                  <label>{{ $t('customer.hts_code') }} 1</label>
+                  <input v-if="isCustomer" v-model="form.htsCode1" class="field-input code-font" placeholder="XXXX.XX.XXXX" />
+                  <div v-else class="value code-box">{{ modified.htsCode1 ?? '-' }}</div>
+                </div>
+                <div class="info-cell">
+                  <label>{{ $t('part_detail.rate') }} 1</label>
+                  <input v-if="isCustomer" v-model.number="form.rate1" type="number" class="field-input" />
+                  <div v-else class="value code-box">{{ modified.rate1 ?? '-' }}</div>
+                </div>
+                <div class="info-cell">
+                  <label>{{ $t('customer.hts_code') }} 2</label>
+                  <input v-if="isCustomer" v-model="form.htsCode2" class="field-input code-font" placeholder="XXXX.XX.XXXX" />
+                  <div v-else class="value code-box">{{ modified.htsCode2 ?? '-' }}</div>
+                </div>
+                <div class="info-cell">
+                  <label>{{ $t('part_detail.rate') }} 2</label>
+                  <input v-if="isCustomer" v-model.number="form.rate2" type="number" class="field-input" />
+                  <div v-else class="value code-box">{{ modified.rate2 ?? '-' }}</div>
+                </div>
+                <div class="info-cell">
+                  <label>{{ $t('customer.hts_code') }} 3</label>
+                  <input v-if="isCustomer" v-model="form.htsCode3" class="field-input code-font" placeholder="XXXX.XX.XXXX" />
+                  <div v-else class="value code-box">{{ modified.htsCode3 ?? '-' }}</div>
+                </div>
+                <div class="info-cell">
+                  <label>{{ $t('part_detail.rate') }} 3</label>
+                  <input v-if="isCustomer" v-model.number="form.rate3" type="number" class="field-input" />
+                  <div v-else class="value code-box">{{ modified.rate3 ?? '-' }}</div>
+                </div>
+                <div class="info-cell">
+                  <label>{{ $t('customer.hts_code') }} 4</label>
+                  <input v-if="isCustomer" v-model="form.htsCode4" class="field-input code-font" placeholder="XXXX.XX.XXXX" />
+                  <div v-else class="value code-box">{{ modified.htsCode4 ?? '-' }}</div>
+                </div>
+                <div class="info-cell">
+                  <label>{{ $t('part_detail.rate') }} 4</label>
+                  <input v-if="isCustomer" v-model.number="form.rate4" type="number" class="field-input" />
+                  <div v-else class="value code-box">{{ modified.rate4 ?? '-' }}</div>
+                </div>
               </div>
               <!-- Remark (備註) -->
-              <div v-if="modified.remark" class="info-cell full-width mt-6">
+              <div class="info-cell full-width mt-6">
                 <label>{{ $t('part_detail.remark') }}</label>
-                <p class="description-text">{{ modified.remark }}</p>
+                <textarea v-if="isCustomer" v-model="form.remark" class="field-textarea" rows="2"></textarea>
+                <p v-else class="description-text">{{ modified.remark || '-' }}</p>
               </div>
             </div>
           </Card>
+
+          <!-- Save Button — Customer only (儲存按鈕，僅 Customer 顯示) -->
+          <!-- INTERNAL-AI-20260416 -->
+          <div v-if="isCustomer" class="save-row">
+            <button class="btn-cch btn-save" :disabled="saving" @click="handleSave">
+              {{ saving ? 'Saving...' : $t('common.save') }}
+            </button>
+          </div>
 
           <!-- Last Updated Info (最後更新資訊) -->
           <div class="meta-row">
@@ -605,6 +688,84 @@ h3 {
   border-left: 4px solid #dee2e6;
   margin: 0;
   line-height: 1.5;
+}
+
+/* INTERNAL-AI-20260416: Editable field styles matching code-box visual style */
+/* (INTERNAL-AI-20260416: 可編輯欄位樣式，與 code-box 視覺風格一致) */
+.field-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #d0d7de;
+  background: #fff;
+  font-size: 1.1rem;
+  color: #32325d;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.field-input.code-font {
+  font-family: 'Courier New', monospace;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.12);
+}
+
+.field-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #d0d7de;
+  background: #fff;
+  font-size: 1rem;
+  color: #32325d;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.field-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.12);
+}
+
+.required-mark {
+  color: #f56c6c;
+  margin-left: 2px;
+}
+
+.save-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2.5rem;
+}
+
+.btn-save {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  min-width: 140px;
+}
+
+.btn-save:hover:not(:disabled) {
+  background-color: #337ecc;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(64, 158, 255, 0.3);
+}
+
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* INTERNAL-AI-20260416: Styles for meta update info row (INTERNAL-AI-20260416: 最後更新資訊列樣式) */

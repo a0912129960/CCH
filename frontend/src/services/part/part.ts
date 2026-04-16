@@ -285,6 +285,43 @@ export async function getPartDetail(partId: number): Promise<PartDetailResponse 
   }
 }
 
+// INTERNAL-AI-20260416: Payload type for PUT /api/parts/{partId}.
+// (INTERNAL-AI-20260416: PUT /api/parts/{partId} 的請求資料型別。)
+
+/**
+ * Payload for saving/updating a part (PUT /api/parts/{partId}).
+ * (儲存/更新零件的請求資料，對應後端 PartSaveRequest。)
+ */
+export interface PartSavePayload {
+  partNo: string;
+  countryId: number | null;
+  division: string;
+  supplier: string;
+  partDesc: string;
+  htsCode: string;
+  rate: number;
+  htsCode1?: string | null;
+  rate1?: number | null;
+  htsCode2?: string | null;
+  rate2?: number | null;
+  htsCode3?: string | null;
+  rate3?: number | null;
+  htsCode4?: string | null;
+  rate4?: number | null;
+  remark?: string;
+}
+
+/**
+ * Call PUT /api/parts/{partId} to save part data.
+ * (呼叫 PUT /api/parts/{partId} 儲存零件資料。)
+ * Throws on validation error (400) or other errors. (驗證失敗 400 或其他錯誤時拋出例外。)
+ *
+ * INTERNAL-AI-20260416
+ */
+export async function updatePart(partId: number, payload: PartSavePayload): Promise<void> {
+  await api.put(`/parts/${partId}`, payload);
+}
+
 /**
  * Import Result Status (匯入結果狀態)
  */
