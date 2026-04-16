@@ -15,6 +15,7 @@ public class PartListItemDto
     public string Country { get; set; } = string.Empty;
     public string HtsCode { get; set; } = string.Empty;
     public decimal Rate { get; set; }
+    public string Supplier { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string UpdatedBy { get; set; } = string.Empty;
     public DateTime UpdatedDate { get; set; }

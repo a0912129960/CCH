@@ -2,7 +2,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { authService } from '../../services/auth/auth';
-import { partService, type Part, PartStatus } from '../../services/part/part';
+// INTERNAL-AI-20260416: Import real API function and new types; old mock imports preserved below.
+// (INTERNAL-AI-20260416: 匯入真實 API 函式與新型別，舊的 mock 匯入保留如下。)
+/* import { partService, type Part, PartStatus } from '../../services/part/part'; */
+import { partService, searchParts, statusToI18nKey, statusToColor, type PartListItem } from '../../services/part/part';
 import Card from '../../components/common/Card.vue';
 import Dot from '../../components/common/Dot.vue';
 import Button from '../../components/common/Button.vue';
@@ -21,7 +24,10 @@ import Button from '../../components/common/Button.vue';
 const route = useRoute();
 const router = useRouter();
 
-const parts = ref<Part[]>([]);
+// INTERNAL-AI-20260416: Switched from mock Part[] to real PartListItem[] from backend API.
+// (INTERNAL-AI-20260416: 從 mock Part[] 改為後端 API 回傳的 PartListItem[]。)
+/* const parts = ref<Part[]>([]); */
+const parts = ref<PartListItem[]>([]);
 const suppliers = ref<string[]>([]);
 const customers = ref<{ id: string; name: string }[]>([]);
 const loading = ref(true);
@@ -34,36 +40,40 @@ const searchQuery = ref('');
 const statusFilter = ref<string>((route.query.status as string) || '');
 const supplierFilter = ref('');
 const customerFilter = ref<string>((route.query.customerId as string) || (isEmployee ? '' : userCustomerId || ''));
-const sortBy = ref<'partNo' | 'lastUpdated'>('lastUpdated');
+const sortBy = ref<'partNo' | 'updatedDate'>('updatedDate');
 const sortOrder = ref<'asc' | 'desc'>('desc');
 
 onMounted(async () => {
   try {
-    const [partsData, suppliersData, customersData] = await Promise.all([
+    // INTERNAL-AI-20260416: Call real backend API instead of mock.
+    // (INTERNAL-AI-20260416: 改呼叫真實後端 API，取代 mock 資料。)
+    /* const [partsData, suppliersData, customersData] = await Promise.all([
       partService.getParts(),
       partService.getSuppliers(),
       partService.getCustomers()
     ]);
     parts.value = partsData;
     suppliers.value = suppliersData;
-    customers.value = customersData;
+    customers.value = customersData; */
+    const result = await searchParts();
+    parts.value = result.data;
+    // Derive unique supplier list from the response (從回應資料推導唯一供應商清單)
+    suppliers.value = [...new Set(result.data.map(p => p.supplier).filter(Boolean))];
+    customers.value = await partService.getCustomers();
   } finally {
     loading.value = false;
   }
 });
 
+// INTERNAL-AI-20260416: Updated filtering to use new PartListItem fields (status S01-S04, supplier, etc.)
+// (INTERNAL-AI-20260416: 更新篩選邏輯，使用新的 PartListItem 欄位。)
 const filteredParts = computed(() => {
   let result = [...parts.value];
-  
-  // Role-based restriction (角色存取限制)
-  if (!isEmployee && userCustomerId) {
-    result = result.filter(p => p.customerId === userCustomerId);
-  }
 
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
-    result = result.filter(p => 
-      p.partNo.toLowerCase().includes(q) || 
+    result = result.filter(p =>
+      p.partNo.toLowerCase().includes(q) ||
       p.htsCode.toLowerCase().includes(q)
     );
   }
@@ -73,33 +83,18 @@ const filteredParts = computed(() => {
   if (supplierFilter.value) {
     result = result.filter(p => p.supplier === supplierFilter.value);
   }
-  if (isEmployee && customerFilter.value) {
-    result = result.filter(p => p.customerId === customerFilter.value);
-  }
   result.sort((a, b) => {
-    const valA = a[sortBy.value];
-    const valB = b[sortBy.value];
-    if (sortOrder.value === 'asc') {
-      return valA > valB ? 1 : -1;
-    } else {
-      return valA < valB ? 1 : -1;
-    }
+    const valA = sortBy.value === 'partNo' ? a.partNo : a.updatedDate;
+    const valB = sortBy.value === 'partNo' ? b.partNo : b.updatedDate;
+    return sortOrder.value === 'asc' ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
   });
   return result;
 });
 
-const getStatusColor = (status: PartStatus) => {
-  const colors: Record<string, string> = {
-    [PartStatus.UNKNOWN]: '#909399',
-    [PartStatus.PENDING_CUSTOMER]: '#E6A23C',
-    [PartStatus.PENDING_REVIEW]: '#409EFF',
-    [PartStatus.RETURNED]: '#F56C6C',
-    [PartStatus.ACTIVE]: '#67C23A',
-    [PartStatus.FLAGGED]: '#E6A23C',
-    [PartStatus.SUPERSEDED]: '#909399'
-  };
-  return colors[status] || '#909399';
-};
+// INTERNAL-AI-20260416: Use statusToColor from service (backend S01-S04 codes).
+// (INTERNAL-AI-20260416: 改用 service 的 statusToColor 對應後端 S01-S04 狀態碼。)
+/* const getStatusColor = (status: PartStatus) => { ... } */
+const getStatusColor = (status: string) => statusToColor(status);
 </script>
 
 <template>
@@ -130,17 +125,13 @@ const getStatusColor = (status: PartStatus) => {
             </div>
           </div>
 
-          <!-- Status Filter -->
+          <!-- Status Filter — uses backend S01-S04 codes (狀態篩選，使用後端 S01-S04 狀態碼) -->
           <div class="filter-item">
             <label>{{ $t('part_list.filter_status') }}</label>
             <el-select v-model="statusFilter" class="form-select-el" clearable>
               <el-option :label="$t('common.all')" value="" />
-              <el-option 
-                v-for="s in Object.values(PartStatus)" 
-                :key="s" 
-                :label="$t('status.' + s.toLowerCase())" 
-                :value="s" 
-              />
+              <el-option v-for="s in ['S01','S02','S03','S04','Inactive']" :key="s"
+                :label="$t('status.' + statusToI18nKey(s))" :value="s" />
             </el-select>
           </div>
 
@@ -188,16 +179,16 @@ const getStatusColor = (status: PartStatus) => {
                   {{ part.partNo }}
                 </a>
               </td>
-              <td v-if="isEmployee && !customerFilter">{{ part.customerName }}</td>
+              <td v-if="isEmployee && !customerFilter">{{ part.customer }}</td>
               <td><code>{{ part.htsCode }}</code></td>
               <td>{{ part.supplier }}</td>
               <td>
                 <div class="status-cell">
                   <Dot :color="getStatusColor(part.status)" size="8px" />
-                  <span>{{ $t('status.' + part.status.toLowerCase()) }}</span>
+                  <span>{{ $t('status.' + statusToI18nKey(part.status)) }}</span>
                 </div>
               </td>
-              <td class="time-cell">{{ part.lastUpdated }}</td>
+              <td class="time-cell">{{ part.updatedDate }}</td>
             </tr>
           </tbody>
         </table>

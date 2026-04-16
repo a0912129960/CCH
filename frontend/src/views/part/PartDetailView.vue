@@ -6,7 +6,7 @@ import { authService, UserRole } from '../../services/auth/auth';
 // INTERNAL-AI-20260416: Import real API function and new types. Old mock imports preserved below.
 // (INTERNAL-AI-20260416: 匯入真實 API 函式與新型別。舊的 mock 匯入保留如下。)
 /* import { partService, type Part, PartStatus } from '../../services/part/part'; */
-import { partService, PartStatus, getPartDetail, updatePart, type PartDetailResponse, type PartSavePayload } from '../../services/part/part';
+import { partService, PartStatus, getPartDetail, updatePart, submitPart, type PartDetailResponse, type PartSavePayload } from '../../services/part/part';
 import { useTabStore } from '../../stores/tabs';
 import Card from '../../components/common/Card.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -36,6 +36,7 @@ const partId = Number(partIdStr);
 const partDetail = ref<PartDetailResponse | null>(null);
 const loading = ref(true);
 const saving = ref(false);
+const submitting = ref(false);
 const actionRemark = ref('');
 
 // INTERNAL-AI-20260416: Editable form state for PUT /api/parts/{partId}.
@@ -143,6 +144,47 @@ const handleSave = async () => {
     // Error message is already shown globally by the api interceptor (錯誤訊息已由 api 攔截器全域顯示)
   } finally {
     saving.value = false;
+  }
+};
+
+// INTERNAL-AI-20260416: Submit handler for Customer — calls POST /api/parts/{partId}/submit.
+// (INTERNAL-AI-20260416: Customer 角色的送審處理函式，呼叫 POST /api/parts/{partId}/submit。)
+const handleSubmit = async () => {
+  try {
+    await ElMessageBox.confirm(
+      'Are you sure you want to submit this part to Dimerco for review? / 確定要送審給 Dimerco 嗎？',
+      'Save & Send to Dimerco',
+      { confirmButtonClass: 'btn-confirm-orange', type: 'warning' }
+    );
+  } catch {
+    return; // User cancelled (使用者取消)
+  }
+
+  submitting.value = true;
+  try {
+    const toNullableNumber = (v: any) => (v === '' || v === null || Number.isNaN(v) ? null : Number(v));
+    const toNullableString = (v: any) => (v === '' ? null : v || null);
+
+    const payload: PartSavePayload = {
+      ...form.value,
+      rate:     toNullableNumber(form.value.rate) ?? 0,
+      rate1:    toNullableNumber(form.value.rate1),
+      rate2:    toNullableNumber(form.value.rate2),
+      rate3:    toNullableNumber(form.value.rate3),
+      rate4:    toNullableNumber(form.value.rate4),
+      htsCode1: toNullableString(form.value.htsCode1),
+      htsCode2: toNullableString(form.value.htsCode2),
+      htsCode3: toNullableString(form.value.htsCode3),
+      htsCode4: toNullableString(form.value.htsCode4),
+    };
+
+    await submitPart(partId, payload);
+    ElMessage.success('Submitted to Dimerco for review. / 已送審給 Dimerco。');
+    router.push('/parts');
+  } catch {
+    // Error already shown by interceptor (錯誤訊息已由攔截器顯示)
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -339,11 +381,14 @@ const getStatusColor = (status: PartStatus) => {
             </div>
           </Card>
 
-          <!-- Save Button — Customer only (儲存按鈕，僅 Customer 顯示) -->
+          <!-- Action Buttons — Customer only (操作按鈕，僅 Customer 顯示) -->
           <!-- INTERNAL-AI-20260416 -->
           <div v-if="isCustomer" class="save-row">
-            <button class="btn-cch btn-save" :disabled="saving" @click="handleSave">
+            <button class="btn-cch btn-save" :disabled="saving || submitting" @click="handleSave">
               {{ saving ? 'Saving...' : $t('common.save') }}
+            </button>
+            <button class="btn-cch btn-submit" :disabled="saving || submitting" @click="handleSubmit">
+              {{ submitting ? 'Submitting...' : 'Save & Send to Dimerco' }}
             </button>
           </div>
 
@@ -764,6 +809,24 @@ h3 {
 }
 
 .btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-submit {
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  min-width: 200px;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #f57c00;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(255, 152, 0, 0.3);
+}
+
+.btn-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

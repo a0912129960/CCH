@@ -230,6 +230,86 @@ export const partService = {
   }
 };
 
+// INTERNAL-AI-20260416: Types and function for the real GET /api/parts list endpoint.
+// (INTERNAL-AI-20260416: 對應後端 GET /api/parts 清單的型別與函式。)
+
+/**
+ * Single item in the part list matching backend PartListItemDto.
+ * (對應後端 PartListItemDto 的零件清單單筆資料。)
+ */
+export interface PartListItem {
+  id: number;
+  customer: string;
+  partNo: string;
+  partDesc: string;
+  country: string;
+  htsCode: string;
+  rate: number;
+  supplier: string;
+  status: string; // S01 | S02 | S03 | S04 | Inactive
+  updatedBy: string;
+  updatedDate: string;
+  slaStatus: string;
+}
+
+/**
+ * Paginated response for GET /api/parts.
+ * (GET /api/parts 的分頁回應結構。)
+ */
+export interface PartListApiResponse {
+  total: number;
+  page: number;
+  data: PartListItem[];
+}
+
+/**
+ * Map backend status codes to i18n keys for display.
+ * (將後端狀態碼對應至前端 i18n 顯示鍵值。)
+ */
+export const statusToI18nKey = (status: string): string => {
+  const map: Record<string, string> = {
+    S01: 'unknown',
+    S02: 'pending_review',
+    S03: 'pending_customer',
+    S04: 'active',
+    Inactive: 'superseded',
+  };
+  return map[status] ?? 'unknown';
+};
+
+/**
+ * Map backend status codes to display colors.
+ * (將後端狀態碼對應至顯示顏色。)
+ */
+export const statusToColor = (status: string): string => {
+  const map: Record<string, string> = {
+    S01: '#909399',
+    S02: '#409EFF',
+    S03: '#E6A23C',
+    S04: '#67C23A',
+    Inactive: '#909399',
+  };
+  return map[status] ?? '#909399';
+};
+
+/**
+ * Fetch paginated part list from the real backend API GET /api/parts.
+ * (從後端 GET /api/parts 取得分頁零件清單。)
+ *
+ * INTERNAL-AI-20260416
+ */
+export async function searchParts(params?: {
+  customerId?: string;
+  status?: string;
+  partNo?: string;
+  supplier?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<PartListApiResponse> {
+  const response = await api.get<{ success: boolean; data: PartListApiResponse }>('/parts', { params });
+  return response.data.data;
+}
+
 // INTERNAL-AI-20260416: New interfaces for the real GET /api/parts/{partId} response.
 // (INTERNAL-AI-20260416: 新增對應後端 GET /api/parts/{partId} 回應的 TypeScript 介面。)
 
@@ -320,6 +400,17 @@ export interface PartSavePayload {
  */
 export async function updatePart(partId: number, payload: PartSavePayload): Promise<void> {
   await api.put(`/parts/${partId}`, payload);
+}
+
+/**
+ * Call POST /api/parts/{partId}/submit to save and send part to Dimerco for review.
+ * (呼叫 POST /api/parts/{partId}/submit 儲存並送審給 Dimerco。)
+ * Returns { partId, status: 'S02' } on success. (成功時回傳 { partId, status: 'S02' }。)
+ *
+ * INTERNAL-AI-20260416
+ */
+export async function submitPart(partId: number, payload: PartSavePayload): Promise<void> {
+  await api.post(`/parts/${partId}/submit`, payload);
 }
 
 /**
