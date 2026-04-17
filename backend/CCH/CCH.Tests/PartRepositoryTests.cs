@@ -43,7 +43,7 @@ public class PartRepositoryTests : IDisposable
     public void SearchParts_FilterByCustomer_ReturnsMappedName()
     {
         // Act - Search for Customer A (ID 101)
-        var result = _repository.SearchParts("101", null, null, null);
+        var result = _repository.SearchParts(101, null, null, null);
 
         // Assert
         Assert.NotEmpty(result);

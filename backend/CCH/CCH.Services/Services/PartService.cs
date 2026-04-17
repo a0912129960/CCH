@@ -37,7 +37,36 @@ public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelS
     public byte[] ExportParts(string? customerId, string? status, string? partNo, string? supplier) => 
         Encoding.UTF8.GetBytes("Mock Excel Content");
 
-    public object BatchAccept(IEnumerable<int> partIds) => new { failed = new List<object>() };
+    public object BatchAccept(IEnumerable<int> partIds)
+    {
+        var failed = new List<object>();
+        foreach (var id in partIds)
+        {
+            try
+            {
+                // In mock phase, we assume status must be S02 or S03 to be accepted
+                var detail = _repository.GetPartDetail(id);
+                if (detail == null)
+                {
+                    failed.Add(new { partId = id, errorMessage = "Part not found. / 找不到零件。" });
+                    continue;
+                }
+
+                if (detail.Status != "S02" && detail.Status != "S03")
+                {
+                    failed.Add(new { partId = id, errorMessage = $"Invalid status: {detail.Status}. Expected S02 or S03. / 錯誤的狀態：{detail.Status}。預期為 S02 或 S03。" });
+                    continue;
+                }
+
+                _repository.UpdateStatus(id, "S04");
+            }
+            catch (Exception ex)
+            {
+                failed.Add(new { partId = id, errorMessage = ex.Message });
+            }
+        }
+        return new { failed };
+    }
 
     public List<BulkUploadResponseDto> BulkUpload(Stream fileStream) => new List<BulkUploadResponseDto>()
     {
