@@ -446,6 +446,17 @@ export async function getMilestones(partId: number): Promise<Milestone[]> {
 }
 
 /**
+ * Accept multiple parts classification via POST /api/parts/batch-accept.
+ * (透過 POST /api/parts/batch-accept 批量接受零件分類。)
+ * 
+ * INTERNAL-AI-20260417
+ */
+export async function batchAcceptParts(partIds: number[]): Promise<{ success: boolean, message: string, data: { partId: string, errorMessage: string }[] }> {
+  const response = await api.post<{ success: boolean, message: string, data: { partId: string, errorMessage: string }[] }>(`/parts/batch-accept`, partIds);
+  return response.data;
+}
+
+/**
  * Accept a part classification via POST /api/parts/{partId}/accept (DCB only).
  * (DCB 角色接受零件分類，呼叫 POST /api/parts/{partId}/accept。)
  */

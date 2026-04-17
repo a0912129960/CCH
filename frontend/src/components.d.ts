@@ -17,6 +17,7 @@ declare module 'vue' {
     Card: typeof import('./components/common/Card.vue')['default']
     Dot: typeof import('./components/common/Dot.vue')['default']
     Dropdown: typeof import('./components/common/Dropdown.vue')['default']
+    ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
     ElDropdown: typeof import('element-plus/es')['ElDropdown']
     ElDropdownItem: typeof import('element-plus/es')['ElDropdownItem']
     ElDropdownMenu: typeof import('element-plus/es')['ElDropdownMenu']

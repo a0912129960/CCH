@@ -73,6 +73,7 @@
     "filter_supplier": "供应商筛选",
     "add_new": "新增零件",
     "bulk_upload": "批量上传",
+    "batch_accept": "批量接受",
     "export_excel": "导出至 Excel",
     "division": "部门",
     "description": "零件描述",
