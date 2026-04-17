@@ -19,7 +19,7 @@ describe('Auth Service (驗證服務測試)', () => {
     const mockResponse = {
       data: {
         token: 'fake-jwt-token',
-        user: { id: 'U123', name: 'Admin', role: UserRole.EMPLOYEE }
+        user: { id: 'U123', name: 'Admin', role: UserRole.DIMERCO }
       }
     };
     
@@ -31,7 +31,7 @@ describe('Auth Service (驗證服務測試)', () => {
     expect(result).toBe(true);
     expect(authService.isAuthenticated()).toBe(true);
     expect(authService.state.username).toBe('Admin');
-    expect(authService.state.role).toBe(UserRole.EMPLOYEE);
+    expect(authService.state.role).toBe(UserRole.DIMERCO);
   });
 
   it('login should fail on error (登入在發生錯誤時應失敗)', async () => {

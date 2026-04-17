@@ -87,23 +87,23 @@ describe('PartCreateView.vue', () => {
   });
 
   it('shows customer selection for employees but not for customers (員工可見客戶選擇器，客戶則不可見)', async () => {
-    const { authService } = await import('../../../services/auth/auth');
+    const { authService, UserRole } = await import('../../../services/auth/auth');
     
     // Customer case
-    authService.state.role = 'CUSTOMER';
+    authService.state.role = UserRole.CUSTOMER;
     let wrapper = mount(PartCreateView, globalConfig);
     expect(wrapper.findComponent({ name: 'ElSelect', from: 'element-plus' }).exists()).toBe(false); // Using tag search instead
 
     // Employee case
-    authService.state.role = 'EMPLOYEE';
+    authService.state.role = UserRole.DIMERCO;
     wrapper = mount(PartCreateView, globalConfig);
     // Find by the test data attribute I added
     expect(wrapper.find('[data-test="customer-select"]').exists()).toBe(true);
   });
 
   it('sets status to ACTIVE when employee creates part (員工建立零件時，狀態自動設為 ACTIVE)', async () => {
-    const { authService } = await import('../../../services/auth/auth');
-    authService.state.role = 'EMPLOYEE';
+    const { authService, UserRole } = await import('../../../services/auth/auth');
+    authService.state.role = UserRole.DIMERCO;
     const wrapper = mount(PartCreateView, globalConfig);
     
     // Manually set data to avoid stub event issues

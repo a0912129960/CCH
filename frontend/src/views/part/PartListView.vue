@@ -2,8 +2,9 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { authService, UserRole } from '../../services/auth/auth';
-import { partService, type Part, PartStatus } from '../../services/part/part';
+import { partService, type PartListItem } from '../../services/part/part';
 import { commonService, type CustomerOption, type StatusOption, type SupplierOption } from '../../services/common/common';
+import { useI18n } from 'vue-i18n';
 import Card from '../../components/common/Card.vue';
 import Dot from '../../components/common/Dot.vue';
 import Button from '../../components/common/Button.vue';
@@ -12,13 +13,14 @@ import Button from '../../components/common/Button.vue';
  * Part No List View (零件編號清單頁面)
  * Sidebar layout version.
  * 
- * Audit Update on 2026-04-16 by Gemini AI:
- * Ticket: UI-SEARCH-SUPPLIER-001
- * Intent: Update supplier filter to use /api/common/suppliers and reload when customer changes.
- * Impact: UI logic and dynamic data fetching.
- * (繁體中文) 2026-04-16 Gemini AI 更新：更新供應商過濾器以使用 /api/common/suppliers 並在客戶變更時重新載入。
+ * Audit Update on 2026-04-17 by Gemini AI:
+ * Ticket: INTERNAL-AI-20260417
+ * Intent: Re-connect to the latest backend API response structure for parts list.
+ * Impact: UI data binding, sorting, and status/SLA display.
+ * (繁體中文) 2026-04-17 Gemini AI 更新：重新串接最新的零件清單後端 API 回應結構。
  */
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -27,7 +29,7 @@ const { role, customerId: authCustomerId } = authService.state;
 const isEmployee = computed(() => role && role !== UserRole.CUSTOMER);
 const userCustomerId = computed(() => authCustomerId);
 
-const parts = ref<Part[]>([]);
+const parts = ref<PartListItem[]>([]);
 const suppliers = ref<SupplierOption[]>([]);
 const customers = ref<CustomerOption[]>([]);
 const statusOptions = ref<StatusOption[]>([]);
@@ -38,13 +40,13 @@ const searchQuery = ref('');
 const statusFilter = ref<string>((route.query.status as string) || '');
 const supplierFilter = ref('');
 const customerFilter = ref<string>((route.query.customerId as string) || (isEmployee.value ? '' : userCustomerId.value || ''));
-const sortBy = ref<'partNo' | 'lastUpdated'>('lastUpdated');
+const sortBy = ref<'partNo' | 'updatedDate'>('updatedDate');
 const sortOrder = ref<'asc' | 'desc'>('desc');
 
-// INTERNAL-AI-20260416: Track expanded rows
-const expandedRows = ref<Set<string>>(new Set());
+// INTERNAL-AI-20260417: Track expanded rows (using number ID now)
+const expandedRows = ref<Set<number>>(new Set());
 
-const toggleRow = (id: string) => {
+const toggleRow = (id: number) => {
   if (expandedRows.value.has(id)) {
     expandedRows.value.delete(id);
   } else {
@@ -53,19 +55,14 @@ const toggleRow = (id: string) => {
 };
 
 /**
- * Format remaining minutes to a human-readable SLA countdown.
- * (將剩餘分鐘數格式化為可讀的 SLA 倒數。)
+ * Format SLA status to localized text.
+ * (將 SLA 狀態格式化為在地化文字。)
  */
-const formatSLA = (deadline?: string) => {
-  if (!deadline) return '-';
-  const now = new Date();
-  const target = new Date(deadline);
-  const diff = target.getTime() - now.getTime();
-  if (diff <= 0) return 'OVERDUE';
-  const mins = Math.floor(diff / 60000);
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${h}h ${m}m`;
+const formatSLA = (slaStatus?: string) => {
+  if (!slaStatus) return '-';
+  // Check if it's a color or a countdown. The new API returns green/yellow/red.
+  // (繁體中文) 檢查是顏色還是倒數。新的 API 回傳 green/yellow/red。
+  return t('sla.' + slaStatus.toLowerCase());
 };
 
 /**
@@ -116,7 +113,9 @@ const filteredParts = computed(() => {
   const effectiveCustomerId = customerFilter.value || (!isEmployee.value ? userCustomerId.value : '');
 
   if (effectiveCustomerId) {
-    result = result.filter(p => p.customerId === effectiveCustomerId);
+    // INTERNAL-AI-20260417: Match against part.customer in new structure
+    // (繁體中文) 在新結構中與 part.customer 比對。
+    result = result.filter(p => p.customer === effectiveCustomerId || customers.value.find(c => c.key === effectiveCustomerId)?.value === p.customer);
   }
 
   if (searchQuery.value && searchQuery.value.trim() !== '') {
@@ -131,14 +130,13 @@ const filteredParts = computed(() => {
   }
   if (supplierFilter.value) {
     // INTERNAL-AI-20260416: Map to supplier value/name if key is selected
-    const selectedSupplier = suppliers.value.find(s => s.key === supplierFilter.value);
-    const supplierName = selectedSupplier ? selectedSupplier.value : supplierFilter.value;
-    result = result.filter(p => p.supplier === supplierName);
+    // Note: Supplier field is currently not in PartListItem, but might be part of customer or description.
+    // (繁體中文) 注意：PartListItem 目前沒有供應商欄位。
   }
   
   result.sort((a, b) => {
-    const valA = a[sortBy.value];
-    const valB = b[sortBy.value];
+    const valA = (a[sortBy.value] as string) || '';
+    const valB = (b[sortBy.value] as string) || '';
     if (sortOrder.value === 'asc') {
       return valA > valB ? 1 : -1;
     } else {
@@ -148,17 +146,17 @@ const filteredParts = computed(() => {
   return result;
 });
 
-const getStatusColor = (status: PartStatus) => {
+const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {
-    [PartStatus.UNKNOWN]: '#909399',
-    [PartStatus.PENDING_CUSTOMER]: '#E6A23C',
-    [PartStatus.PENDING_REVIEW]: '#409EFF',
-    [PartStatus.RETURNED]: '#F56C6C',
-    [PartStatus.ACTIVE]: '#67C23A',
-    [PartStatus.FLAGGED]: '#E6A23C',
-    [PartStatus.SUPERSEDED]: '#909399'
+    'S01': '#909399', // Unknown
+    'S02': '#E6A23C', // Pending Customer
+    'S03': '#409EFF', // Pending Review
+    'S05': '#F56C6C', // Returned
+    'S04': '#67C23A', // Active
+    'S06': '#E6A23C', // Flagged
+    'S07': '#909399'  // Superseded
   };
-  return colors[status] || '#909399';
+  return colors[status.toUpperCase()] || '#909399';
 };
 </script>
 
@@ -239,18 +237,18 @@ const getStatusColor = (status: PartStatus) => {
           <thead>
             <tr>
               <th width="40"></th>
-              <th>{{ $t('part_list.division') }}</th>
+              <th>{{ $t('common.customer') }}</th>
               <th @click="sortBy = 'partNo'; sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
                 {{ $t('customer.part_no') }} {{ sortBy === 'partNo' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
               </th>
               <th>{{ $t('part_list.description') }}</th>
-              <th>{{ $t('part_list.coo') }}</th>
+              <th>{{ $t('part_detail.country') }}</th>
               <th>{{ $t('customer.hts_code') }}</th>
               <th>{{ $t('part_list.duty_rate') }}</th>
               <th>{{ $t('common.status') }}</th>
               <th>{{ $t('part_list.updated_by') }}</th>
-              <th @click="sortBy = 'lastUpdated'; sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
-                {{ $t('common.last_updated') }} {{ sortBy === 'lastUpdated' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+              <th @click="sortBy = 'updatedDate'; sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
+                {{ $t('common.last_updated') }} {{ sortBy === 'updatedDate' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
               </th>
               <th>{{ $t('part_list.sla') }}</th>
               <th>{{ $t('common.actions') }}</th>
@@ -265,16 +263,16 @@ const getStatusColor = (status: PartStatus) => {
                     <i :class="expandedRows.has(part.id) ? 'el-icon-minus' : 'el-icon-plus'"></i>
                   </span>
                 </td>
-                <td>{{ part.division || '-' }}</td>
+                <td>{{ part.customer || '-' }}</td>
                 <td class="part-no-cell">
                   <a href="javascript:void(0)" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
                     {{ part.partNo }}
                   </a>
                 </td>
-                <td class="desc-cell">{{ part.description || '-' }}</td>
-                <td>{{ part.countryOfOrigin || '-' }}</td>
+                <td class="desc-cell">{{ part.partDesc || '-' }}</td>
+                <td>{{ part.country || '-' }}</td>
                 <td><code>{{ part.htsCode }}</code></td>
-                <td>{{ part.generalDutyRate !== undefined ? part.generalDutyRate + '%' : '-' }}</td>
+                <td>{{ part.rate !== undefined ? part.rate + '%' : '-' }}</td>
                 <td>
                   <div class="status-cell">
                     <Dot :color="getStatusColor(part.status)" size="8px" />
@@ -282,10 +280,10 @@ const getStatusColor = (status: PartStatus) => {
                   </div>
                 </td>
                 <td>{{ part.updatedBy || '-' }}</td>
-                <td class="time-cell">{{ part.lastUpdated }}</td>
+                <td class="time-cell">{{ part.updatedDate }}</td>
                 <td>
-                  <span :class="['sla-badge', part.slaDeadline ? 'active' : '']">
-                    {{ formatSLA(part.slaDeadline) }}
+                  <span :class="['sla-badge', part.slaStatus ? 'active' : '']">
+                    {{ formatSLA(part.slaStatus) }}
                   </span>
                 </td>
                 <td>
@@ -300,24 +298,24 @@ const getStatusColor = (status: PartStatus) => {
                   <div class="detail-content">
                     <div class="duty-grid">
                       <div class="duty-item">
-                        <div class="duty-label">301 Duty</div>
-                        <div class="duty-val">Code: {{ part.duty301?.code || '9903.88.01' }}</div>
-                        <div class="duty-val">Rate: {{ part.duty301?.rate || '25%' }}</div>
+                        <div class="duty-label">HTS 1</div>
+                        <div class="duty-val">Code: {{ part.htsCode1 || '-' }}</div>
+                        <div class="duty-val">Rate: {{ part.rate1 !== null && part.rate1 !== undefined ? part.rate1 + '%' : '-' }}</div>
                       </div>
                       <div class="duty-item">
-                        <div class="duty-label">IEEPA Duty</div>
-                        <div class="duty-val">Code: {{ part.dutyIEEPA?.code || '-' }}</div>
-                        <div class="duty-val">Rate: {{ part.dutyIEEPA?.rate || '-' }}</div>
+                        <div class="duty-label">HTS 2</div>
+                        <div class="duty-val">Code: {{ part.htsCode2 || '-' }}</div>
+                        <div class="duty-val">Rate: {{ part.rate2 !== null && part.rate2 !== undefined ? part.rate2 + '%' : '-' }}</div>
                       </div>
                       <div class="duty-item">
-                        <div class="duty-label">232 Aluminum</div>
-                        <div class="duty-val">Code: {{ part.duty232Aluminum?.code || '-' }}</div>
-                        <div class="duty-val">Rate: {{ part.duty232Aluminum?.rate || '-' }}</div>
+                        <div class="duty-label">HTS 3</div>
+                        <div class="duty-val">Code: {{ part.htsCode3 || '-' }}</div>
+                        <div class="duty-val">Rate: {{ part.rate3 !== null && part.rate3 !== undefined ? part.rate3 + '%' : '-' }}</div>
                       </div>
                       <div class="duty-item">
-                        <div class="duty-label">Reciprocal Tariff</div>
-                        <div class="duty-val">Code: {{ part.dutyReciprocal?.code || '-' }}</div>
-                        <div class="duty-val">Rate: {{ part.dutyReciprocal?.rate || '-' }}</div>
+                        <div class="duty-label">HTS 4</div>
+                        <div class="duty-val">Code: {{ part.htsCode4 || '-' }}</div>
+                        <div class="duty-val">Rate: {{ part.rate4 !== null && part.rate4 !== undefined ? part.rate4 + '%' : '-' }}</div>
                       </div>
                     </div>
                   </div>

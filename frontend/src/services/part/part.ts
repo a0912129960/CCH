@@ -1,4 +1,5 @@
 import api from '../api';
+import { commonService } from '../common/common';
 
 /**
  * Part Status (零件狀態)
@@ -34,6 +35,7 @@ export interface Part {
   updatedBy: string;
   lastUpdated: string;
   slaDeadline?: string; // ISO format
+  supplier?: string; // Added to match mock data
   
   // Expanded Duties
   duty301?: { code: string; rate: string };
@@ -73,84 +75,97 @@ const generateHistory = (status: PartStatus, date: string): PartHistory[] => {
  */
 export const MOCK_PARTS: Part[] = [
   // 1-10 (Customer 001)
-  { id: '1', partNo: 'PN-2024-001', htsCode: '8517.12.00', status: PartStatus.ACTIVE, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-08 14:30', description: '5G Comm Module', history: generateHistory(PartStatus.ACTIVE, '2026-04-08 14:30') },
-  { id: '2', partNo: 'PN-2024-002', htsCode: '8471.30.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-07 09:15', description: 'Portable Laptop Unit', history: generateHistory(PartStatus.ACTIVE, '2026-04-07 09:15') },
-  { id: '3', partNo: 'PN-2024-003', htsCode: '8517.62.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-09 10:00', description: 'Router Switch', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-09 10:00') },
-  { id: '4', partNo: 'PN-2024-004', htsCode: '8471.50.00', status: PartStatus.PENDING_REVIEW, supplier: 'Alpha Manufacturing', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-05 16:45', description: 'Server Blade', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-04-05 16:45') },
-  { id: '5', partNo: 'PN-2024-005', htsCode: '8528.52.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-01 11:20', description: 'LCD Monitor', history: generateHistory(PartStatus.ACTIVE, '2026-04-01 11:20') },
-  { id: '6', partNo: 'PN-2024-006', htsCode: '8517.12.00', status: PartStatus.UNKNOWN, supplier: 'Unknown Source', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-09 08:00', description: 'Generic Phone Part', history: generateHistory(PartStatus.UNKNOWN, '2026-04-09 08:00') },
-  { id: '7', partNo: 'PN-2024-007', htsCode: '8517.12.00', status: PartStatus.RETURNED, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-09 11:00', description: 'Network Adapter', dimercoRemark: 'Incorrect HTS classification.', replacementCode: '8517.62.00', history: generateHistory(PartStatus.RETURNED, '2026-04-09 11:00') },
-  { id: '8', partNo: 'PN-2024-008', htsCode: '8517.62.00', status: PartStatus.FLAGGED, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-09 10:30', description: 'Wireless Receiver', history: generateHistory(PartStatus.FLAGGED, '2026-04-09 10:30') },
-  { id: '9', partNo: 'PN-2024-009', htsCode: '8471.50.00', status: PartStatus.SUPERSEDED, supplier: 'Alpha Manufacturing', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-03-30 11:00', description: 'Old Processor Model', history: generateHistory(PartStatus.SUPERSEDED, '2026-03-30 11:00') },
-  { id: '10', partNo: 'PN-2024-010', htsCode: '8517.62.00', status: PartStatus.ACTIVE, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-03-28 10:00', description: 'Base Station Component', history: generateHistory(PartStatus.ACTIVE, '2026-03-28 10:00') },
+  { id: '1', partNo: 'PN-2024-001', htsCode: '8517.12.00', status: PartStatus.ACTIVE, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-08 14:30', description: '5G Comm Module', history: generateHistory(PartStatus.ACTIVE, '2026-04-08 14:30'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '2', partNo: 'PN-2024-002', htsCode: '8471.30.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-07 09:15', description: 'Portable Laptop Unit', history: generateHistory(PartStatus.ACTIVE, '2026-04-07 09:15'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '3', partNo: 'PN-2024-003', htsCode: '8517.62.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-09 10:00', description: 'Router Switch', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-09 10:00'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '4', partNo: 'PN-2024-004', htsCode: '8471.50.00', status: PartStatus.PENDING_REVIEW, supplier: 'Alpha Manufacturing', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-05 16:45', description: 'Server Blade', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-04-05 16:45'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '5', partNo: 'PN-2024-005', htsCode: '8528.52.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-01 11:20', description: 'LCD Monitor', history: generateHistory(PartStatus.ACTIVE, '2026-04-01 11:20'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '6', partNo: 'PN-2024-006', htsCode: '8517.12.00', status: PartStatus.UNKNOWN, supplier: 'Unknown Source', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-09 08:00', description: 'Generic Phone Part', history: generateHistory(PartStatus.UNKNOWN, '2026-04-09 08:00'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '7', partNo: 'PN-2024-007', htsCode: '8517.12.00', status: PartStatus.RETURNED, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-09 11:00', description: 'Network Adapter', dimercoRemark: 'Incorrect HTS classification.', replacementCode: '8517.62.00', history: generateHistory(PartStatus.RETURNED, '2026-04-09 11:00'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '8', partNo: 'PN-2024-008', htsCode: '8517.62.00', status: PartStatus.FLAGGED, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-04-09 10:30', description: 'Wireless Receiver', history: generateHistory(PartStatus.FLAGGED, '2026-04-09 10:30'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '9', partNo: 'PN-2024-009', htsCode: '8471.50.00', status: PartStatus.SUPERSEDED, supplier: 'Alpha Manufacturing', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-03-30 11:00', description: 'Old Processor Model', history: generateHistory(PartStatus.SUPERSEDED, '2026-03-30 11:00'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '10', partNo: 'PN-2024-010', htsCode: '8517.62.00', status: PartStatus.ACTIVE, supplier: 'TechCorp Solutions', customerId: 'customer001', customerName: 'Dimerco Electronics', lastUpdated: '2026-03-28 10:00', description: 'Base Station Component', history: generateHistory(PartStatus.ACTIVE, '2026-03-28 10:00'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
   
   // 11-20 (Customer 002)
-  { id: '11', partNo: 'PN-G-011', htsCode: '8471.50.00', status: PartStatus.PENDING_REVIEW, supplier: 'Alpha Manufacturing', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-25 15:30', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-03-25 15:30') },
-  { id: '12', partNo: 'PN-G-012', htsCode: '8528.52.00', status: PartStatus.ACTIVE, supplier: 'Alpha Manufacturing', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-20 09:00', history: generateHistory(PartStatus.ACTIVE, '2026-03-20 09:00') },
-  { id: '13', partNo: 'PN-G-013', htsCode: '8517.12.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-15 14:20', history: generateHistory(PartStatus.ACTIVE, '2026-03-15 14:20') },
-  { id: '14', partNo: 'PN-G-014', htsCode: '8471.30.00', status: PartStatus.PENDING_REVIEW, supplier: 'TechCorp Solutions', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-10 11:45', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-03-10 11:45') },
-  { id: '15', partNo: 'PN-G-015', htsCode: '8517.62.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-05 16:10', history: generateHistory(PartStatus.ACTIVE, '2026-03-05 16:10') },
-  { id: '16', partNo: 'PN-G-016', htsCode: '8471.50.00', status: PartStatus.ACTIVE, supplier: 'Alpha Manufacturing', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-01 10:30', history: generateHistory(PartStatus.ACTIVE, '2026-03-01 10:30') },
-  { id: '17', partNo: 'PN-G-017', htsCode: '8517.12.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'Global Logistics Inc', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-04-09 09:30', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-09 09:30') },
-  { id: '18', partNo: 'PN-G-018', htsCode: '8471.30.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'Alpha Manufacturing', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-04-09 08:45', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-09 08:45') },
-  { id: '19', partNo: 'PN-G-019', htsCode: '8528.52.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'TechCorp Solutions', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-04-09 07:15', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-09 07:15') },
-  { id: '20', partNo: 'PN-G-020', htsCode: '8517.62.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'Global Logistics Inc', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-04-08 17:00', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-08 17:00') },
+  { id: '11', partNo: 'PN-G-011', htsCode: '8471.50.00', status: PartStatus.PENDING_REVIEW, supplier: 'Alpha Manufacturing', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-25 15:30', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-03-25 15:30'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '12', partNo: 'PN-G-012', htsCode: '8528.52.00', status: PartStatus.ACTIVE, supplier: 'Alpha Manufacturing', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-20 09:00', history: generateHistory(PartStatus.ACTIVE, '2026-03-20 09:00'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '13', partNo: 'PN-G-013', htsCode: '8517.12.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-15 14:20', history: generateHistory(PartStatus.ACTIVE, '2026-03-15 14:20'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '14', partNo: 'PN-G-014', htsCode: '8471.30.00', status: PartStatus.PENDING_REVIEW, supplier: 'TechCorp Solutions', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-10 11:45', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-03-10 11:45'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '15', partNo: 'PN-G-015', htsCode: '8517.62.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-05 16:10', history: generateHistory(PartStatus.ACTIVE, '2026-03-05 16:10'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '16', partNo: 'PN-G-016', htsCode: '8471.50.00', status: PartStatus.ACTIVE, supplier: 'Alpha Manufacturing', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-03-01 10:30', history: generateHistory(PartStatus.ACTIVE, '2026-03-01 10:30'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '17', partNo: 'PN-G-017', htsCode: '8517.12.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'Global Logistics Inc', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-04-09 09:30', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-09 09:30'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '18', partNo: 'PN-G-018', htsCode: '8471.30.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'Alpha Manufacturing', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-04-09 08:45', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-09 08:45'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '19', partNo: 'PN-G-019', htsCode: '8528.52.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'TechCorp Solutions', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-04-09 07:15', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-09 07:15'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '20', partNo: 'PN-G-020', htsCode: '8517.62.00', status: PartStatus.PENDING_CUSTOMER, supplier: 'Global Logistics Inc', customerId: 'customer002', customerName: 'Global Tech Solutions', lastUpdated: '2026-04-08 17:00', history: generateHistory(PartStatus.PENDING_CUSTOMER, '2026-04-08 17:00'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
 
   // 21-30 (Customer 003)
-  { id: '21', partNo: 'PN-A-021', htsCode: '8517.12.00', status: PartStatus.PENDING_REVIEW, supplier: 'TechCorp Solutions', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-08 11:20', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-04-08 11:20') },
-  { id: '22', partNo: 'PN-A-022', htsCode: '8471.30.00', status: PartStatus.PENDING_REVIEW, supplier: 'Global Logistics Inc', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-07 13:40', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-04-07 13:40') },
-  { id: '23', partNo: 'PN-A-023', htsCode: '8528.52.00', status: PartStatus.PENDING_REVIEW, supplier: 'Alpha Manufacturing', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-06 15:55', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-04-06 15:55') },
-  { id: '24', partNo: 'PN-A-024', htsCode: '8517.62.00', status: PartStatus.RETURNED, supplier: 'Global Logistics Inc', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-08 10:30', dimercoRemark: 'Supporting docs required.', history: generateHistory(PartStatus.RETURNED, '2026-04-08 10:30') },
-  { id: '25', partNo: 'PN-A-025', htsCode: '8517.12.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-28 13:45', history: generateHistory(PartStatus.ACTIVE, '2026-02-28 13:45') },
-  { id: '26', partNo: 'PN-A-026', htsCode: '8471.30.00', status: PartStatus.ACTIVE, supplier: 'TechCorp Solutions', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-25 09:20', history: generateHistory(PartStatus.ACTIVE, '2026-02-25 09:20') },
-  { id: '27', partNo: 'PN-A-027', htsCode: '8528.52.00', status: PartStatus.ACTIVE, supplier: 'Alpha Manufacturing', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-20 15:15', history: generateHistory(PartStatus.ACTIVE, '2026-02-20 15:15') },
-  { id: '28', partNo: 'PN-A-028', htsCode: '8517.62.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-15 11:30', history: generateHistory(PartStatus.ACTIVE, '2026-02-15 11:30') },
-  { id: '29', partNo: 'PN-A-029', htsCode: '8471.50.00', status: PartStatus.ACTIVE, supplier: 'TechCorp Solutions', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-10 14:00', history: generateHistory(PartStatus.ACTIVE, '2026-02-10 14:00') },
-  { id: '30', partNo: 'PN-A-030', htsCode: '8471.50.00', status: PartStatus.UNKNOWN, supplier: 'Unknown Source', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-07 09:00', history: generateHistory(PartStatus.UNKNOWN, '2026-04-07 09:00') }
+  { id: '21', partNo: 'PN-A-021', htsCode: '8517.12.00', status: PartStatus.PENDING_REVIEW, supplier: 'TechCorp Solutions', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-08 11:20', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-04-08 11:20'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '22', partNo: 'PN-A-022', htsCode: '8471.30.00', status: PartStatus.PENDING_REVIEW, supplier: 'Global Logistics Inc', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-07 13:40', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-04-07 13:40'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '23', partNo: 'PN-A-023', htsCode: '8528.52.00', status: PartStatus.PENDING_REVIEW, supplier: 'Alpha Manufacturing', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-06 15:55', history: generateHistory(PartStatus.PENDING_REVIEW, '2026-04-06 15:55'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '24', partNo: 'PN-A-024', htsCode: '8517.62.00', status: PartStatus.RETURNED, supplier: 'Global Logistics Inc', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-08 10:30', dimercoRemark: 'Supporting docs required.', history: generateHistory(PartStatus.RETURNED, '2026-04-08 10:30'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '25', partNo: 'PN-A-025', htsCode: '8517.12.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-28 13:45', history: generateHistory(PartStatus.ACTIVE, '2026-02-28 13:45'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '26', partNo: 'PN-A-026', htsCode: '8471.30.00', status: PartStatus.ACTIVE, supplier: 'TechCorp Solutions', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-25 09:20', history: generateHistory(PartStatus.ACTIVE, '2026-02-25 09:20'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '27', partNo: 'PN-A-027', htsCode: '8528.52.00', status: PartStatus.ACTIVE, supplier: 'Alpha Manufacturing', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-20 15:15', history: generateHistory(PartStatus.ACTIVE, '2026-02-20 15:15'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '28', partNo: 'PN-A-028', htsCode: '8517.62.00', status: PartStatus.ACTIVE, supplier: 'Global Logistics Inc', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-15 11:30', history: generateHistory(PartStatus.ACTIVE, '2026-02-15 11:30'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '29', partNo: 'PN-A-029', htsCode: '8471.50.00', status: PartStatus.ACTIVE, supplier: 'TechCorp Solutions', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-02-10 14:00', history: generateHistory(PartStatus.ACTIVE, '2026-02-10 14:00'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' },
+  { id: '30', partNo: 'PN-A-030', htsCode: '8471.50.00', status: PartStatus.UNKNOWN, supplier: 'Unknown Source', customerId: 'customer003', customerName: 'Alpha Systems Corp', lastUpdated: '2026-04-07 09:00', history: generateHistory(PartStatus.UNKNOWN, '2026-04-07 09:00'), division: '', countryOfOrigin: '', generalDutyRate: 0, updatedBy: '' }
 ];
 
-/**
- * Expanded Mock data for Suppliers (供應商模擬資料)
- */
-/*
-export const MOCK_SUPPLIERS = [
-  'TechCorp Solutions',
-  'Global Logistics Inc',
-  'Alpha Manufacturing',
-  'Beta Electronics',
-  'Delta Systems',
-  'Omega Industrial'
-];
-*/
+// INTERNAL-AI-20260417: New interfaces for the list view matching the latest backend response.
+// (INTERNAL-AI-20260417: 對應最新後端回應的零件清單介面。)
+export interface PartListItem {
+  id: number;
+  customer: string;
+  partNo: string;
+  partDesc: string;
+  country: string;
+  htsCode: string;
+  rate: number;
+  status: string;
+  updatedBy: string;
+  updatedDate: string;
+  slaStatus: string;
+  htsCode1?: string | null;
+  rate1?: number | null;
+  htsCode2?: string | null;
+  rate2?: number | null;
+  htsCode3?: string | null;
+  rate3?: number | null;
+  htsCode4?: string | null;
+  rate4?: number | null;
+}
 
-/**
- * Internal Helper to generate random history (生成隨機歷史記錄的輔助函式)
- */
-/*
-const generateHistory = (status: PartStatus, date: string): PartHistory[] => {
-...
-};
-*/
-
-/**
- * Expanded Mock data for Parts (擴充後的零件模擬資料)
- */
-/*
-export const MOCK_PARTS: Part[] = [
-...
-];
-*/
+export interface PartListResponse {
+  total: number;
+  page: number;
+  data: PartListItem[];
+}
 
 export const partService = {
-  async getParts(): Promise<Part[]> {
+  /**
+   * Fetch parts list with pagination (獲取分頁零件清單)
+   * (繁體中文) 獲獲取分頁零件清單，符合最新後端 API 回應。
+   * Updated by Gemini AI on 2026-04-17 (INTERNAL-AI-20260417)
+   */
+  async getParts(): Promise<PartListItem[]> {
     try {
-      const response = await api.get<{ success: boolean; data: Part[] }>('/parts');
-      return response.data.success ? response.data.data : [];
+      const response = await api.get<{ success: boolean; data: PartListResponse }>('/parts');
+      return response.data.success ? response.data.data.data : [];
     } catch (error) {
-      console.error('API /parts failed.', error);
+      console.error('API /parts failed. (API /parts 失敗。)', error);
       return [];
     }
   },
+
+  /**
+   * Get Customers (獲取客戶清單)
+   * (繁體中文) 從通用服務獲取客戶清單並轉換格式。
+   */
+  async getCustomers(): Promise<{ id: string; name: string }[]> {
+    const customers = await commonService.getCustomers();
+    return customers.map(c => ({ id: c.key, name: c.value }));
+  },
+
   async getPartById(id: string): Promise<Part | undefined> {
     try {
       const response = await api.get<{ success: boolean; data: Part }>(`/parts/${id}`);

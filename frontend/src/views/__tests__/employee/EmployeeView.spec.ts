@@ -28,7 +28,7 @@ describe('EmployeeView.vue', () => {
     
     // Setup Employee Auth state
     authService.state.isLoggedIn = true;
-    authService.state.role = UserRole.EMPLOYEE;
+    authService.state.role = UserRole.DIMERCO;
     authService.state.username = 'Y9999';
     authService.state.customerId = undefined;
   });

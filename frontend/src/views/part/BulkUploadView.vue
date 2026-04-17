@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { authService } from '../../services/auth/auth';
+import { authService, UserRole } from '../../services/auth/auth';
 import { partService, type ImportBatchReport, ImportResultStatus } from '../../services/part/part';
 import Card from '../../components/common/Card.vue';
 import Button from '../../components/common/Button.vue';
@@ -17,7 +17,7 @@ import { ElMessage, type UploadFile } from 'element-plus';
 
 const router = useRouter();
 const { role, customerId: userCustomerId } = authService.state;
-const isEmployee = role === 'EMPLOYEE';
+const isEmployee = role && role !== UserRole.CUSTOMER;
 
 const uploadFile = ref<File | null>(null);
 const uploading = ref(false);

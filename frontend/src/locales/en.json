@@ -149,6 +149,18 @@
     "returned": "Returned",
     "active": "Active",
     "flagged": "Flagged",
-    "superseded": "Superseded"
+    "superseded": "Superseded",
+    "s01": "Unknown",
+    "s02": "Pending Customer",
+    "s03": "Pending Review",
+    "s04": "Active",
+    "s05": "Returned",
+    "s06": "Flagged",
+    "s07": "Superseded"
+  },
+  "sla": {
+    "green": "Normal",
+    "yellow": "Warning",
+    "red": "Urgent"
   }
 }

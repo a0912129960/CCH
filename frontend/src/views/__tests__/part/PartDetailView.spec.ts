@@ -18,7 +18,7 @@ vi.mock('vue-i18n', () => ({
 
 // Mock authService
 vi.mock('../../../services/auth/auth', () => ({
-  UserRole: { EMPLOYEE: 'EMPLOYEE', CUSTOMER: 'CUSTOMER' },
+  UserRole: { DIMERCO: 'DIMERCO', CUSTOMER: 'CUSTOMER' },
   authService: {
     state: { role: 'CUSTOMER' }
   }
@@ -114,8 +114,8 @@ describe('PartDetailView.vue', () => {
   });
 
   it('enables employee review actions for PENDING_REVIEW parts (員工可核准或退回審核中的零件)', async () => {
-    const { authService } = await import('../../../services/auth/auth');
-    authService.state.role = 'EMPLOYEE';
+    const { authService, UserRole } = await import('../../../services/auth/auth');
+    authService.state.role = UserRole.DIMERCO;
     
     // Mock a pending review part
     partService.getPartById = vi.fn().mockResolvedValue({
