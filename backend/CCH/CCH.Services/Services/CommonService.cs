@@ -1,5 +1,6 @@
 using CCH.Core.DTOs;
 using CCH.Core.Interfaces;
+using CCH.Core.Interfaces.Repositories;
 
 namespace CCH.Services.Services;
 
@@ -9,31 +10,27 @@ namespace CCH.Services.Services;
 /// </summary>
 public class CommonService : ICommonService
 {
-    public IEnumerable<KeyValuePairDto> GetCustomers() => new[]
-    {
-        new KeyValuePairDto { Key = "C001", Value = "Customer A" },
-        new KeyValuePairDto { Key = "C002", Value = "Customer B" }
-    };
+    private readonly ICommonRepository _repository;
 
-    public IEnumerable<KeyValuePairDto> GetCountries() => new[]
+    public CommonService(ICommonRepository repository)
     {
-        new KeyValuePairDto { Key = "CN", Value = "China" },
-        new KeyValuePairDto { Key = "TW", Value = "Taiwan" },
-        new KeyValuePairDto { Key = "US", Value = "USA" }
-    };
+        _repository = repository;
+    }
 
-    public IEnumerable<KeyValuePairDto> GetSuppliers(string? customerId) => new[]
-    {
-        new KeyValuePairDto { Key = "S001", Value = "Supplier X" },
-        new KeyValuePairDto { Key = "S002", Value = "Supplier Y" }
-    };
+    public IEnumerable<KeyValuePairDto> GetCustomers() => 
+        _repository.GetCustomers().Select(c => new KeyValuePairDto { Key = c.ID.ToString(), Value = c.Name });
 
-    public IEnumerable<KeyValuePairDto> GetStatus() => new[]
+    public IEnumerable<KeyValuePairDto> GetCountries() => 
+        _repository.GetCountries().Select(c => new KeyValuePairDto { Key = c.Code, Value = c.Name });
+
+    public IEnumerable<KeyValuePairDto> GetSuppliers(string? customerId)
     {
-        new KeyValuePairDto { Key = "S01", Value = "New" },
-        new KeyValuePairDto { Key = "S02", Value = "Pending Review" },
-        new KeyValuePairDto { Key = "S03", Value = "Returned" },
-        new KeyValuePairDto { Key = "S04", Value = "Accepted" },
-        new KeyValuePairDto { Key = "S05", Value = "Inactive" }
-    };
+        int? cId = null;
+        if (int.TryParse(customerId, out int parsedId)) cId = parsedId;
+
+        return _repository.GetSuppliers(cId).Select(s => new KeyValuePairDto { Key = s.ID.ToString(), Value = s.Name });
+    }
+
+    public IEnumerable<KeyValuePairDto> GetStatus() => 
+        _repository.GetStatuses().Select(s => new KeyValuePairDto { Key = s.Code, Value = s.Description });
 }

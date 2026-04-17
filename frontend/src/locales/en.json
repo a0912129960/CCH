@@ -27,9 +27,11 @@
     "accept": "Accept",
     "resubmit": "Resubmit",
     "back": "Back",
+    "no_data": "No data found",
     "confirm": "Confirm",
     "close_all": "Close All",
-    "close_others": "Close Others"
+    "close_others": "Close Others",
+    "collapse_all": "Collapse All"
   },
   "login": {
     "title": "Login",
@@ -72,7 +74,14 @@
     "filter_status": "Status Filter",
     "filter_supplier": "Supplier Filter",
     "add_new": "Add New Part",
-    "bulk_upload": "Bulk Upload"
+    "bulk_upload": "Bulk Upload",
+    "export_excel": "Export to Excel",
+    "division": "Division",
+    "description": "Part Description",
+    "coo": "Country of Origin",
+    "duty_rate": "General Duty Rate (%)",
+    "updated_by": "Updated By",
+    "sla": "SLA"
   },
   "part_upload": {
     "title": "Bulk Upload Parts",
@@ -162,6 +171,18 @@
     "returned": "Returned",
     "active": "Active",
     "flagged": "Flagged",
-    "superseded": "Superseded"
+    "superseded": "Superseded",
+    "s01": "Unknown",
+    "s02": "Pending Customer",
+    "s03": "Pending Review",
+    "s04": "Active",
+    "s05": "Returned",
+    "s06": "Flagged",
+    "s07": "Superseded"
+  },
+  "sla": {
+    "green": "Normal",
+    "yellow": "Warning",
+    "red": "Urgent"
   }
 }

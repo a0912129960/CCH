@@ -1,7 +1,6 @@
 import { setActivePinia, createPinia } from 'pinia';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useTabStore } from '../tabs';
-import * as vueRouter from 'vue-router';
 
 // Better Mocking Strategy
 const mockPush = vi.fn();

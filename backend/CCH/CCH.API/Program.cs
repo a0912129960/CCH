@@ -1,6 +1,8 @@
 using System.Text;
 using CCH.Core.Interfaces;
+using CCH.Core.Interfaces.Repositories;
 using CCH.Core.Models;
+using CCH.Services.Repositories;
 using CCH.Services.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICommonService, CommonService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// Register Repositories / 註冊倉儲
+builder.Services.AddScoped<IPartRepository, PartRepository>();
+builder.Services.AddScoped<ICommonRepository, CommonRepository>();
 
 // Register split Part interfaces
 builder.Services.AddScoped<IPartQueryService, PartService>();

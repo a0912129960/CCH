@@ -14,7 +14,7 @@ import Dot from '../../components/common/Dot.vue';
  */
 
 const router = useRouter();
-const username = authService.state.username;
+const username = computed(() => authService.state.username);
 
 const customers = ref<{ id: string; name: string }[]>([]);
 const selectedCustomerId = ref('all');

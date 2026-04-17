@@ -27,8 +27,10 @@
     "accept": "接受",
     "resubmit": "重新提交",
     "back": "返回",
+    "no_data": "暂无数据",
     "close_all": "关闭全部",
-    "close_others": "关闭其他"
+    "close_others": "关闭其他",
+    "collapse_all": "全数收合"
   },
   "login": {
     "title": "登录",
@@ -70,8 +72,16 @@
     "filter_status": "状态筛选",
     "filter_supplier": "供应商筛选",
     "add_new": "新增零件",
-    "bulk_upload": "批量上传"
+    "bulk_upload": "批量上传",
+    "export_excel": "导出至 Excel",
+    "division": "部门",
+    "description": "零件描述",
+    "coo": "原产地",
+    "duty_rate": "一般关税率 (%)",
+    "updated_by": "更新者",
+    "sla": "SLA"
   },
+
   "part_upload": {
     "title": "批量上传零件",
     "dragger_text": "点击或将文件拖拽到此区域上传",
@@ -160,6 +170,18 @@
     "returned": "退回 (待修正)",
     "active": "生效中",
     "flagged": "标记重估",
-    "superseded": "已取代"
+    "superseded": "已取代",
+    "s01": "未知",
+    "s02": "待客户提交",
+    "s03": "待中菲行审核",
+    "s04": "生效中",
+    "s05": "退回 (待修正)",
+    "s06": "标记重估",
+    "s07": "已取代"
+  },
+  "sla": {
+    "green": "正常",
+    "yellow": "警告",
+    "red": "紧急"
   }
 }

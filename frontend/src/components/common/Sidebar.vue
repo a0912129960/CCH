@@ -1,9 +1,13 @@
 <script setup lang="ts">
+/*
 import { RouterLink, useRouter } from 'vue-router';
+*/
 import { authService, UserRole } from '../../services/auth/auth';
 import { useUIStore } from '../../stores/ui';
+/*
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
+*/
 
 // Import SVG Assets
 import MyDimercoLogo from '@/assets/images/circle-logo.svg';
@@ -16,7 +20,7 @@ import ChevronIcon from '@/assets/images/chervon.svg';
  * Update by Gemini AI on 2026-04-15
  */
 
-const router = useRouter();
+// const router = useRouter();
 const uiStore = useUIStore();
 const { isSidebarCollapsed: isCollapsed } = storeToRefs(uiStore);
 

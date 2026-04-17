@@ -113,8 +113,8 @@ public class PartSaveRequest
     public string Division { get; set; } = string.Empty;
 
     // Supplier is required (供應商為必填)
-    [Required(ErrorMessage = "Supplier is required. / 供應商為必填。")]
-    public string Supplier { get; set; } = string.Empty;
+    [Required(ErrorMessage = "SupplierId is required. / 供應商為必填。")]
+    public int? SupplierId { get; set; }
 
     // Part Description is required (零件描述為必填)
     [Required(ErrorMessage = "PartDesc is required. / 零件描述為必填。")]

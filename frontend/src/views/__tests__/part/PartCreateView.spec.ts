@@ -4,33 +4,45 @@ import PartCreateView from '../../part/PartCreateView.vue';
 import { partService } from '../../../services/part/part';
 
 // Mock element-plus
-vi.mock('element-plus', () => ({
-  ElMessage: {
-    success: vi.fn(),
-    error: vi.fn(),
-    warning: vi.fn()
-  }
-}));
+vi.mock('element-plus', async () => {
+  const actual = await vi.importActual('element-plus') as any;
+  return {
+    ...actual,
+    ElMessage: {
+      success: vi.fn(),
+      error: vi.fn(),
+      warning: vi.fn()
+    }
+  };
+});
 
 // Mock vue-i18n
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}));
+vi.mock('vue-i18n', async () => {
+  const actual = await vi.importActual('vue-i18n') as any;
+  return {
+    ...actual,
+    useI18n: () => ({
+      t: (key: string) => key
+    })
+  };
+});
 
 /**
  * Part Creation View Component Tests (新增零件組件測試)
  * BR-08: HTS Format | BR-21: Description Quality
  */
-vi.mock('../../../services/auth/auth', () => ({
-  authService: {
-    state: {
-      role: 'CUSTOMER',
-      customerId: 'customer001'
+vi.mock('../../../services/auth/auth', async () => {
+  const actual = await vi.importActual('../../../services/auth/auth') as any;
+  return {
+    ...actual,
+    authService: {
+      state: {
+        role: 'CUSTOMER',
+        customerId: 'customer001'
+      }
     }
-  }
-}));
+  };
+});
 
 vi.mock('../../../services/part/part', () => ({
   PartStatus: {
@@ -87,23 +99,23 @@ describe('PartCreateView.vue', () => {
   });
 
   it('shows customer selection for employees but not for customers (員工可見客戶選擇器，客戶則不可見)', async () => {
-    const { authService } = await import('../../../services/auth/auth');
+    const { authService, UserRole } = await import('../../../services/auth/auth');
     
     // Customer case
-    authService.state.role = 'CUSTOMER';
+    authService.state.role = UserRole.CUSTOMER;
     let wrapper = mount(PartCreateView, globalConfig);
     expect(wrapper.findComponent({ name: 'ElSelect', from: 'element-plus' }).exists()).toBe(false); // Using tag search instead
 
     // Employee case
-    authService.state.role = 'EMPLOYEE';
+    authService.state.role = UserRole.DIMERCO;
     wrapper = mount(PartCreateView, globalConfig);
     // Find by the test data attribute I added
     expect(wrapper.find('[data-test="customer-select"]').exists()).toBe(true);
   });
 
   it('sets status to ACTIVE when employee creates part (員工建立零件時，狀態自動設為 ACTIVE)', async () => {
-    const { authService } = await import('../../../services/auth/auth');
-    authService.state.role = 'EMPLOYEE';
+    const { authService, UserRole } = await import('../../../services/auth/auth');
+    authService.state.role = UserRole.DIMERCO;
     const wrapper = mount(PartCreateView, globalConfig);
     
     // Manually set data to avoid stub event issues

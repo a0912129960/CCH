@@ -5,20 +5,27 @@ import AppHeader from '../AppHeader.vue';
 import { createRouter, createWebHistory } from 'vue-router';
 
 // Simplest possible mock
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (k: string) => k,
-    locale: { value: 'en' }
-  })
-}));
+vi.mock('vue-i18n', async () => {
+  const actual = await vi.importActual('vue-i18n') as any;
+  return {
+    ...actual,
+    useI18n: () => ({
+      t: (k: string) => k,
+      locale: { value: 'en' }
+    })
+  };
+});
 
-vi.mock('../../../services/auth/auth', () => ({
-  authService: {
-    logout: vi.fn(),
-    state: { username: 'Test User', role: 'DIMERCO' }
-  },
-  UserRole: { CUSTOMER: 'CUSTOMER', DCB: 'DCB', DIMERCO: 'DIMERCO' }
-}));
+vi.mock('../../../services/auth/auth', async () => {
+  const actual = await vi.importActual('../../../services/auth/auth') as any;
+  return {
+    ...actual,
+    authService: {
+      logout: vi.fn(),
+      state: { username: 'Test User', role: 'DIMERCO' }
+    }
+  };
+});
 
 describe('AppHeader.vue', () => {
   it('mounts without crashing (應能正常掛載而不崩潰)', () => {

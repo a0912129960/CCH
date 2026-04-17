@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { authService } from '../../services/auth/auth';
+import { authService, UserRole } from '../../services/auth/auth';
 import { partService, PartStatus } from '../../services/part/part';
 import Card from '../../components/common/Card.vue';
 import Button from '../../components/common/Button.vue';
@@ -18,7 +18,7 @@ const router = useRouter();
 const { t } = useI18n();
 
 const { role, customerId: userCustomerId } = authService.state;
-const isEmployee = role === 'EMPLOYEE';
+const isEmployee = role && role !== UserRole.CUSTOMER;
 
 const form = ref({
   partNo: '',
