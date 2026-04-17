@@ -42,8 +42,12 @@ watch(
   () => {
     // Only add tab if it's not the root path (僅在非根目錄時新增頁籤)
     if (isSidebarLayout.value && route.meta.requiresAuth && route.path !== '/') {
+      // INTERNAL-AI-20260417: If navigating to part-detail, check if we already have a better title or use a placeholder that gets updated.
+      // (INTERNAL-AI-20260417: 若導向零件詳情，檢查是否已有更好的標題，或使用會被更新的預設值。)
+      const existingTab = tabStore.openTabs.find(t => t.path === route.path);
+      
       tabStore.addTab({
-        title: (route.meta.title as string) || 'common.home',
+        title: existingTab?.title || (route.meta.title as string) || 'common.home',
         path: route.path,
         name: (route.name as string) || ''
       });

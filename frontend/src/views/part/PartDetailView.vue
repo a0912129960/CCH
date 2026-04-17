@@ -94,11 +94,16 @@ const milestoneColor = (action: string): string => {
   return '#909399';
 };
 
-onMounted(async () => {
+/**
+ * Load Part Detail and update tab title (載入零件詳情並更新頁籤標題)
+ * INTERNAL-AI-20260417: Added dedicated loader to support keep-alive changes.
+ */
+const initLoad = async (id: number) => {
+  loading.value = true;
   try {
     const [detailData, milestoneData] = await Promise.all([
-      getPartDetail(partId),
-      getMilestones(partId).catch(() => [] as Milestone[])
+      getPartDetail(id),
+      getMilestones(id).catch(() => [] as Milestone[])
     ]);
 
     if (detailData) {
@@ -128,7 +133,24 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+};
+
+onMounted(() => {
+  initLoad(partId);
 });
+
+/**
+ * INTERNAL-AI-20260417: Handle dynamic ID changes for Keep-Alive components.
+ * (INTERNAL-AI-20260417: 處理 Keep-Alive 組件的動態 ID 變更。)
+ */
+watch(
+  () => route.params.id,
+  (newId) => {
+    if (newId && route.name === 'part-detail') {
+      initLoad(Number(newId));
+    }
+  }
+);
 
 // Sanitize helpers (清理輔助函式)
 const toNullableNumber = (v: any) => (v === '' || v === null || Number.isNaN(v) ? null : Number(v));
