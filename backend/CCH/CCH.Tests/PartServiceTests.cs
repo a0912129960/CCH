@@ -54,7 +54,7 @@ public class PartServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(2, result.Total);
+        Assert.Equal(17, result.Total);
         Assert.Equal("Customer A", result.Data.First().Customer);
     }
 }

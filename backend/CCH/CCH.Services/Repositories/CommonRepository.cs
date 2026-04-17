@@ -85,6 +85,18 @@ public class CommonRepository : ICommonRepository
             new() { Code = "", Description = "Inactive" }
         };
 
+        _suppliers = new List<SupplierEntity> {
+            new() { ID = 1, CustomerID = 101, Name = "TechSupply Corp" },
+            new() { ID = 2, CustomerID = 101, Name = "SensorTech Solutions" },
+            new() { ID = 3, CustomerID = 101, Name = "AluFab Co" },
+            new() { ID = 4, CustomerID = 102, Name = "FluidDynamics Ltd" },
+            new() { ID = 5, CustomerID = 102, Name = "CableConnect" },
+            new() { ID = 6, CustomerID = 102, Name = "PowerGuard" },
+            new() { ID = 7, CustomerID = 103, Name = "IronWorks Inc" },
+            new() { ID = 8, CustomerID = 103, Name = "OpticView" },
+            new() { ID = 9, CustomerID = 103, Name = "FanTech" }
+        };
+
         SaveAllData();
     }
 

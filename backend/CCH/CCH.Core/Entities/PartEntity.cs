@@ -12,7 +12,7 @@ public class PartEntity
     public int CountryID { get; set; }
     public string PartDescription { get; set; } = string.Empty;
     public string Division { get; set; } = string.Empty;
-    public string Supplier { get; set; } = string.Empty;
+    public int SupplierID { get; set; }
     public string HTSCode { get; set; } = string.Empty;
     public decimal DutyRate { get; set; }
     public string? AddHTSCode1 { get; set; }
