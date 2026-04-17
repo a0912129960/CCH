@@ -18,7 +18,6 @@ import Button from '../../components/common/Button.vue';
  * Impact: UI data binding, sorting, and status/SLA display.
  */
 
-const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -53,15 +52,6 @@ const toggleRow = (id: number) => {
   } else {
     expandedRows.value.add(id);
   }
-};
-
-/**
- * Format SLA status to localized text.
- * (將 SLA 狀態格式化為在地化文字。)
- */
-const formatSLA = (slaStatus?: string) => {
-  if (!slaStatus) return '-';
-  return t('sla.' + slaStatus.toLowerCase());
 };
 
 /**
@@ -147,19 +137,19 @@ watch([currentPage, pageSize], async () => {
   await fetchParts();
 });
 
-// const handleSearch = async () => { ... } (Removed)
-
-const getStatusColor = (status: string) => {
+const getSLAColor = (slaStatus?: string) => {
+  if (!slaStatus) return 'transparent';
+  const s = slaStatus.toLowerCase();
   const colors: Record<string, string> = {
-    'S01': '#909399', // Unknown
-    'S02': '#E6A23C', // Pending Customer
-    'S03': '#409EFF', // Pending Review
-    'S05': '#F56C6C', // Returned
-    'S04': '#67C23A', // Active
-    'S06': '#E6A23C', // Flagged
-    'S07': '#909399'  // Superseded
+    'green': '#67C23A',
+    'normal': '#67C23A',
+    'yellow': '#FADB14',  // Bright Yellow (亮黃色)
+    'orange': '#FF9900',  // Orange (橘色)
+    'warning': '#FF9900', // Mapping warning to orange
+    'red': '#F56C6C',
+    'urgent': '#F56C6C'
   };
-  return colors[status.toUpperCase()] || '#909399';
+  return colors[s] || '#909399';
 };
 </script>
 
@@ -274,18 +264,19 @@ const getStatusColor = (status: string) => {
                 <td>{{ part.rate !== undefined ? part.rate + '%' : '-' }}</td>
                 <td>
                   <div class="status-cell">
-                    <Dot :color="getStatusColor(part.status)" size="8px" />
                     <span>{{ $t('status.' + part.status.toLowerCase()) }}</span>
                   </div>
                 </td>
                 <td>{{ part.updatedBy || '-' }}</td>
-                <td class="time-cell">{{ part.updatedDate }}</td>
+                <td class="time-cell">{{ commonService.formatDateTime(part.updatedDate) }}</td>
                 <td>
-                  <span :class="['sla-badge', part.slaStatus ? 'active' : '']">
-                    {{ formatSLA(part.slaStatus) }}
-                  </span>
+                  <div v-if="part.slaStatus" class="status-cell">
+                    <Dot :dotColor="getSLAColor(part.slaStatus)" size="8px" />
+                  </div>
+                  <span v-else>-</span>
                 </td>
                 <td>
+
                   <Button type="text" size="small" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
                     View
                   </Button>
@@ -559,7 +550,6 @@ h1 {
 }
 
 .time-cell {
-  color: #8898aa;
   font-size: 0.9rem;
 }
 
