@@ -73,6 +73,7 @@
     "filter_supplier": "供應商篩選",
     "add_new": "新增零件",
     "bulk_upload": "批量上傳",
+    "export_excel": "匯出至 Excel",
     "division": "部門",
     "description": "零件描述",
     "coo": "原產地",

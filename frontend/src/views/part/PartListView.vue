@@ -8,12 +8,12 @@ import Card from '../../components/common/Card.vue';
 import Dot from '../../components/common/Dot.vue';
 import Button from '../../components/common/Button.vue';
 
-import { CaretRight, CaretBottom, Upload } from '@element-plus/icons-vue';
+import { CaretRight, CaretBottom, Upload, Download } from '@element-plus/icons-vue';
 
 /**
  * Part No List View (零件編號清單頁面)
- * Audit Update on 2026-04-17: Relocate Toggle All to Grid Header.
- * Update by Gemini AI: Changed icons to small arrows (Gray) and moved Toggle All to First Column.
+ * Audit Update on 2026-04-17: Add Export to Excel.
+ * Update by Gemini AI: Added Export button and mock functionality.
  */
 
 const route = useRoute();
@@ -72,6 +72,18 @@ const htsLabels = [
   '232 Aluminum',
   'Reciprocal Tariff'
 ];
+
+/**
+ * Export current list to Excel (匯出目前清單至 Excel)
+ * INTERNAL-AI-20260417: Mock export logic. (模擬匯出邏輯。)
+ */
+const exportToExcel = () => {
+  ElMessage({
+    message: 'Exporting to Excel... (正在匯出至 Excel...)',
+    type: 'success',
+  });
+  // In a real scenario, this would trigger an API call or use a library like xlsx.
+};
 
 /**
  * Helper to get HTS fields safely from PartListItem (輔助函式：安全獲取 HTS 欄位)
@@ -213,7 +225,10 @@ const getSLAColor = (slaStatus?: string) => {
                 {{ $t('part_list.add_new') }}
               </Button>
               <Button type="secondary" class="ml-4" @click="router.push({ name: 'part-upload' })">
-                <el-icon><Upload /></el-icon> {{ $t('part_list.bulk_upload') }}
+                 {{ $t('part_list.bulk_upload') }}
+              </Button>
+              <Button type="secondary" class="ml-4" @click="exportToExcel">
+                 {{ $t('part_list.export_excel') }}
               </Button>
             </div>
           </div>
