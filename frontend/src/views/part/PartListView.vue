@@ -8,9 +8,12 @@ import Card from '../../components/common/Card.vue';
 import Dot from '../../components/common/Dot.vue';
 import Button from '../../components/common/Button.vue';
 
+import { CaretRight, CaretBottom, Upload } from '@element-plus/icons-vue';
+
 /**
  * Part No List View (零件編號清單頁面)
- * Audit Update on 2026-04-17: Ultra-compact Fixed Layout Refinement.
+ * Audit Update on 2026-04-17: Relocate Toggle All to Grid Header.
+ * Update by Gemini AI: Changed icons to small arrows (Gray) and moved Toggle All to First Column.
  */
 
 const route = useRoute();
@@ -43,6 +46,38 @@ const toggleRow = (id: number) => {
   } else {
     expandedRows.value.add(id);
   }
+};
+
+/**
+ * Check if all visible rows are expanded (檢查是否所有可見行皆已展開)
+ */
+const isAllExpanded = computed(() => {
+  return parts.value.length > 0 && parts.value.every(p => expandedRows.value.has(p.id));
+});
+
+/**
+ * Toggle all rows (切換所有行的展開狀態)
+ */
+const toggleAll = () => {
+  if (isAllExpanded.value) {
+    expandedRows.value.clear();
+  } else {
+    parts.value.forEach(p => expandedRows.value.add(p.id));
+  }
+};
+
+/**
+ * Helper to get HTS fields safely from PartListItem (輔助函式：安全獲取 HTS 欄位)
+ */
+const getHTSCode = (part: PartListItem, i: number): string => {
+  const key = `htsCode${i}` as keyof PartListItem;
+  return (part[key] as string) || '-';
+};
+
+const getHTSRate = (part: PartListItem, i: number): string => {
+  const key = `rate${i}` as keyof PartListItem;
+  const val = part[key];
+  return val !== null && val !== undefined ? val + '%' : '-';
 };
 
 const reloadSuppliers = async () => {
@@ -134,7 +169,9 @@ const getSLAColor = (slaStatus?: string) => {
   <div class="page-wrapper">
     <div class="page-container">
       <header class="page-header">
-        <h1>{{ $t('part_list.title') }}</h1>
+        <div class="header-title-row">
+          <h1>{{ $t('part_list.title') }}</h1>
+        </div>
       </header>
 
       <Card class="filter-card">
@@ -169,7 +206,7 @@ const getSLAColor = (slaStatus?: string) => {
                 {{ $t('part_list.add_new') }}
               </Button>
               <Button type="secondary" class="ml-4" @click="router.push({ name: 'part-upload' })">
-                <i class="el-icon-upload"></i> {{ $t('part_list.bulk_upload') }}
+                <el-icon><Upload /></el-icon> {{ $t('part_list.bulk_upload') }}
               </Button>
             </div>
           </div>
@@ -194,7 +231,12 @@ const getSLAColor = (slaStatus?: string) => {
         <table class="data-table">
           <thead>
             <tr>
-              <th width="35"></th>
+              <th width="35" class="text-center">
+                <span class="expand-toggle" @click="toggleAll" :title="$t('common.collapse_all')">
+                  <el-icon v-if="isAllExpanded"><CaretBottom /></el-icon>
+                  <el-icon v-else><CaretRight /></el-icon>
+                </span>
+              </th>
               <th width="100">{{ $t('common.customer') }}</th>
               <th width="80">{{ $t('customer.part_no') }}</th>
               <th width="120">{{ $t('part_list.description') }}</th>
@@ -203,7 +245,7 @@ const getSLAColor = (slaStatus?: string) => {
               <th width="50" class="wrap-header">{{ $t('part_list.duty_rate') }}</th>
               <th width="120">{{ $t('common.status') }}</th>
               <th width="80">{{ $t('part_list.updated_by') }}</th>
-              <th width="125">{{ $t('common.last_updated') }}</th>
+              <th width="100">{{ $t('common.last_updated') }}</th>
               <th width="40">{{ $t('part_list.sla') }}</th>
               <th width="65">{{ $t('common.actions') }}</th>
             </tr>
@@ -214,9 +256,10 @@ const getSLAColor = (slaStatus?: string) => {
             </tr>
             <template v-else v-for="part in parts" :key="part.id">
               <tr :class="{ 'expanded-row-master': expandedRows.has(part.id) }">
-                <td>
+                <td class="text-center">
                   <span class="expand-toggle" @click="toggleRow(part.id)">
-                    <i :class="expandedRows.has(part.id) ? 'el-icon-minus' : 'el-icon-plus'"></i>
+                    <el-icon v-if="expandedRows.has(part.id)"><CaretBottom /></el-icon>
+                    <el-icon v-else><CaretRight /></el-icon>
                   </span>
                 </td>
                 <td :title="part.customer">{{ part.customer || '-' }}</td>
@@ -246,8 +289,8 @@ const getSLAColor = (slaStatus?: string) => {
                     <div class="duty-grid">
                       <div class="duty-item" v-for="i in 4" :key="i">
                         <div class="duty-label">HTS {{i}}</div>
-                        <div class="duty-val">Code: {{ part['htsCode' + i] || '-' }}</div>
-                        <div class="duty-val">Rate: {{ part['rate' + i] !== null && part['rate' + i] !== undefined ? part['rate' + i] + '%' : '-' }}</div>
+                        <div class="duty-val">Code: {{ getHTSCode(part, i) }}</div>
+                        <div class="duty-val">Rate: {{ getHTSRate(part, i) }}</div>
                       </div>
                     </div>
                   </div>
@@ -282,7 +325,7 @@ const getSLAColor = (slaStatus?: string) => {
 }
 
 .page-container {
-  padding: 0.5rem 4px;
+  padding: 1.5rem 24px;
   max-width: 100%;
   margin: 0;
   font-family: "MyDimerco-WorkSansBold", sans-serif;
@@ -292,6 +335,11 @@ const getSLAColor = (slaStatus?: string) => {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.header-title-row {
+  display: flex;
+  align-items: center;
 }
 
 h1 {
@@ -371,13 +419,14 @@ h1 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 0.85rem; /* Explicitly sync both (明確同步兩者) */
 }
 
 .data-table th {
   background-color: #f8f9fe;
   color: #8898aa;
-  font-size: 0.75rem;
-  text-transform: uppercase;
+  text-transform: none;
+  font-weight: 600;
 }
 
 .wrap-header {
@@ -398,10 +447,21 @@ h1 {
 
 .expand-toggle {
   cursor: pointer;
-  color: var(--primary-color);
-  display: flex;
+  color: #909399; /* Gray (灰色) */
+  display: inline-flex;
   justify-content: center;
   align-items: center;
+  transition: color 0.2s ease;
+  width: 20px;
+  height: 20px;
+}
+
+.expand-toggle:hover {
+  color: var(--primary-color);
+}
+
+.text-center {
+  text-align: center !important;
 }
 
 .detail-content {
@@ -449,4 +509,7 @@ code {
   font-family: monospace;
   font-size: 0.8rem;
 }
+
+.mr-1 { margin-right: 0.25rem; }
+.ml-4 { margin-left: 1rem; }
 </style>

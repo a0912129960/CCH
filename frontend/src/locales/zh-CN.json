@@ -29,7 +29,8 @@
     "back": "返回",
     "no_data": "暂无数据",
     "close_all": "关闭全部",
-    "close_others": "关闭其他"
+    "close_others": "关闭其他",
+    "collapse_all": "全数收合"
   },
   "login": {
     "title": "登录",

@@ -28,7 +28,8 @@
     "back": "返回",
     "no_data": "暫無資料",
     "close_all": "關閉全部",
-    "close_others": "關閉其他"
+    "close_others": "關閉其他",
+    "collapse_all": "全數收合"
   },
   "login": {
     "title": "登入",

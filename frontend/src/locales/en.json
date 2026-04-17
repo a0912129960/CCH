@@ -30,7 +30,8 @@
     "no_data": "No data found",
     "confirm": "Confirm",
     "close_all": "Close All",
-    "close_others": "Close Others"
+    "close_others": "Close Others",
+    "collapse_all": "Collapse All"
   },
   "login": {
     "title": "Login",
