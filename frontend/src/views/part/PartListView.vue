@@ -11,7 +11,7 @@ import Card from '@src/components/common/Card.vue';
 import Dot from '@src/components/common/Dot.vue';
 import Button from '@src/components/common/Button.vue';
 
-import { CaretRight, CaretBottom, Upload, Download } from '@element-plus/icons-vue';
+import { CaretRight, CaretBottom } from '@element-plus/icons-vue';
 
 /**
  * Part No List View (零件編號清單頁面)
@@ -292,7 +292,7 @@ watch([currentPage, pageSize], fetchParts);
                   <span v-else>-</span>
                 </td>
                 <td class="col-actions">
-                  <Button type="text" class="btn-compact" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
+                  <Button class="btn-compact" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
                     View
                   </Button>
                 </td>
@@ -536,6 +536,5 @@ code {
   font-size: 0.8rem;
 }
 
-.mr-1 { margin-right: 0.25rem; }
 .ml-4 { margin-left: 1rem; }
 </style>
