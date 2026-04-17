@@ -34,7 +34,7 @@ public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelS
         };
     }
 
-    public byte[] ExportParts(string? customerId, string? status, string? partNo, string? supplier) => 
+    public byte[] ExportParts(int? customerId, string? status, string? partNo, int? supplierId) => 
         Encoding.UTF8.GetBytes("Mock Excel Content");
 
     public object BatchAccept(IEnumerable<int> partIds)

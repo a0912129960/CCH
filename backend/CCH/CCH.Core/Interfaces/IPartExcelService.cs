@@ -8,7 +8,7 @@ namespace CCH.Core.Interfaces;
 /// </summary>
 public interface IPartExcelService
 {
-    byte[] ExportParts(string? customerId, string? status, string? partNo, string? supplier);
+    byte[] ExportParts(int? customerId, string? status, string? partNo, int? supplierId);
     List<BulkUploadResponseDto> BulkUpload(Stream fileStream);
     byte[] GetUploadTemplate();
 }

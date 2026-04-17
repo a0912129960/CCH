@@ -31,7 +31,7 @@ public class PartsController : ControllerBase
         Ok(ApiResponse<PartListResponseDto>.SuccessResponse(_queryService.SearchParts(customerId, status, partNo, supplier, page, pageSize)));
 
     [HttpGet("export")]
-    public IActionResult ExportParts([FromQuery] string? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] string? supplier)
+    public IActionResult ExportParts([FromQuery] int? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] int? supplier)
     {
         var file = _excelService.ExportParts(customerId, status, partNo, supplier);
         return File(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "parts_export.xlsx");
