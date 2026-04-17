@@ -1,7 +1,7 @@
-using CCH.Core.DTOs;
+using CCH.Core.Interfaces;
 using CCH.Services.Repositories;
 using CCH.Services.Services;
-using Xunit;
+using Moq;
 
 namespace CCH.Tests;
 
@@ -15,6 +15,7 @@ public class PartServiceTests : IDisposable
     private readonly string _testPartsPath;
     private readonly PartService _partService;
     private readonly PartRepository _repository;
+    private readonly Mock<IUserContext> _mockUserContext;
 
     public PartServiceTests()
     {
@@ -22,7 +23,11 @@ public class PartServiceTests : IDisposable
         Directory.CreateDirectory(_testBaseDir);
         _testPartsPath = Path.Combine(_testBaseDir, "parts.json");
         _repository = new PartRepository(_testPartsPath);
-        _partService = new PartService(_repository);
+
+        _mockUserContext = new Mock<IUserContext>();
+        _mockUserContext.Setup(u => u.Role).Returns("admin"); // Use admin to bypass role filters initially
+
+        _partService = new PartService(_repository, _mockUserContext.Object);
     }
 
     public void Dispose()
@@ -37,7 +42,7 @@ public class PartServiceTests : IDisposable
     public void SearchParts_NoFilters_ReturnsMappedData()
     {
         // Act
-        var result = _partService.SearchParts(null, null, null, null, 1, 10);
+        var result = _partService.SearchParts(null, null, null, null, 1, 20);
 
         // Assert
         Assert.NotNull(result);

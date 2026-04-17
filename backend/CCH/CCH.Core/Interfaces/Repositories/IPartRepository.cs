@@ -8,7 +8,7 @@ namespace CCH.Core.Interfaces.Repositories;
 /// </summary>
 public interface IPartRepository
 {
-    IEnumerable<PartListItemDto> SearchParts(string? customerId, string? status, string? partNo, string? supplier);
+    IEnumerable<PartListItemDto> SearchParts(string? customerId, string? status, string? partNo, string? supplier, string? role = null);
     PartDetailResponseDto? GetPartDetail(int partId);
     int CreatePart(PartSaveRequest request, string status);
     void UpdatePart(int partId, PartSaveRequest request);

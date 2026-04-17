@@ -130,10 +130,29 @@ public class PartRepository : IPartRepository
         }
     }
 
-    private PartListItemDto MapToDto(PartEntity entity)
+    private PartListItemDto MapToDto(PartEntity entity, string? role = null)
     {
         var customerName = _customers.FirstOrDefault(c => c.ID == entity.CustomerID)?.Name ?? "Unknown";
         var countryName = _countries.FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
+
+        // SLA Calculation Logic (SLA 計算邏輯)
+        // Login by Customer: 0-36h (Green), 36-48h (Yellow), 48-72h (Orange), >72h (Red)
+        // Login by Dimerco/DCB: 0-24h (Green), 24-36h (Yellow), 36-48h (Orange), >48h (Red)
+        string slaStatus = "green";
+        var hoursElapsed = (DateTime.Now - entity.UpdatedDate).TotalHours;
+
+        if (role == "customer")
+        {
+            if (hoursElapsed > 72) slaStatus = "red";
+            else if (hoursElapsed > 48) slaStatus = "orange";
+            else if (hoursElapsed > 36) slaStatus = "yellow";
+        }
+        else // dimerco or dcb
+        {
+            if (hoursElapsed > 48) slaStatus = "red";
+            else if (hoursElapsed > 36) slaStatus = "orange";
+            else if (hoursElapsed > 24) slaStatus = "yellow";
+        }
 
         return new PartListItemDto
         {
@@ -147,8 +166,7 @@ public class PartRepository : IPartRepository
             Status = entity.Status,
             UpdatedBy = entity.UpdatedBy,
             UpdatedDate = entity.UpdatedDate,
-            SlaStatus = (DateTime.Now - entity.UpdatedDate).TotalDays > 7 ? "red" : 
-                        (DateTime.Now - entity.UpdatedDate).TotalDays > 3 ? "yellow" : "green",
+            SlaStatus = slaStatus,
             HtsCode1 = entity.AddHTSCode1,
             Rate1 = entity.AddDutyRate1,
             HtsCode2 = entity.AddHTSCode2,
@@ -160,9 +178,21 @@ public class PartRepository : IPartRepository
         };
     }
 
-    public IEnumerable<PartListItemDto> SearchParts(string? customerId, string? status, string? partNo, string? supplier)
+    public IEnumerable<PartListItemDto> SearchParts(string? customerId, string? status, string? partNo, string? supplier, string? role = null)
     {
         var query = _parts.AsQueryable();
+
+        // Role-based filtering (基於角色的篩選)
+        if (role == "customer")
+        {
+            // Customer: Only S01 and S03 (Customer: 僅 S01 與 S03)
+            query = query.Where(p => p.Status == "S01" || p.Status == "S03");
+        }
+        else if (role == "dimerco" || role == "dcb")
+        {
+            // Dimerco/DCB: Only S02 (Dimerco/DCB: 僅 S02)
+            query = query.Where(p => p.Status == "S02");
+        }
 
         if (!string.IsNullOrEmpty(customerId))
         {
@@ -184,7 +214,7 @@ public class PartRepository : IPartRepository
         if (!string.IsNullOrEmpty(supplier))
             query = query.Where(p => p.Supplier.Contains(supplier, StringComparison.OrdinalIgnoreCase));
 
-        return query.ToList().Select(MapToDto);
+        return query.ToList().Select(p => MapToDto(p, role));
     }
 
     public PartDetailResponseDto? GetPartDetail(int partId)

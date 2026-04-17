@@ -12,15 +12,17 @@ namespace CCH.Services.Services;
 public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelService
 {
     private readonly IPartRepository _repository;
+    private readonly IUserContext _userContext;
 
-    public PartService(IPartRepository repository)
+    public PartService(IPartRepository repository, IUserContext userContext)
     {
         _repository = repository;
+        _userContext = userContext;
     }
 
     public PartListResponseDto SearchParts(string? customerId, string? status, string? partNo, string? supplier, int page, int pageSize)
     {
-        var filtered = _repository.SearchParts(customerId, status, partNo, supplier);
+        var filtered = _repository.SearchParts(customerId, status, partNo, supplier, _userContext.Role);
         var total = filtered.Count();
         var data = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
