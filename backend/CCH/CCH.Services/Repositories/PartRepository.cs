@@ -178,7 +178,11 @@ public class PartRepository : IPartRepository
             query = query.Where(p => p.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
 
         if (!string.IsNullOrEmpty(partNo))
-            query = query.Where(p => p.PartNo.Contains(partNo, StringComparison.OrdinalIgnoreCase));
+        {
+            var normalizedSearch = partNo.Replace(".", "");
+            query = query.Where(p => p.PartNo.Contains(partNo, StringComparison.OrdinalIgnoreCase) || 
+                                     p.HTSCode.Replace(".", "").Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase));
+        }
 
         if (!string.IsNullOrEmpty(supplier))
         {

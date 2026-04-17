@@ -86,4 +86,17 @@ public class PartRepositoryTests : IDisposable
         Assert.Equal("Customer C", part.Customer);
         Assert.Equal("Japan", part.Country);
     }
+
+    [Theory]
+    [InlineData("9032.89.6085")]
+    [InlineData("9032896085")]
+    public void SearchParts_ByHTSCode_Normalized_ReturnsMatch(string search)
+    {
+        // Act
+        var result = _repository.SearchParts(null, null, search, null);
+
+        // Assert
+        Assert.NotEmpty(result);
+        Assert.Contains(result, p => p.PartNo == "PART-003");
+    }
 }
