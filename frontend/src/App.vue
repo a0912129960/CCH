@@ -110,7 +110,7 @@ watch(
 
 .content-area {
   flex: 1;
-  padding: 24px;
+  padding: 0; /* Set to 0 to maximize space (設為 0 以極大化空間) */
   overflow-y: auto;
   background-color: #f5f7f9;
   position: relative;
