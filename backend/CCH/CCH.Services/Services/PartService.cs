@@ -22,7 +22,7 @@ public class PartService : IPartQueryService, IPartLifecycleService, IPartExcelS
 
     public PartListResponseDto SearchParts(string? customerId, string? status, string? partNo, string? supplier, int page, int pageSize)
     {
-        var filtered = _repository.SearchParts(customerId, status, partNo, supplier, _userContext.Role);
+        var filtered = _repository.SearchParts(customerId, status, partNo, supplier);
         var total = filtered.Count();
         var data = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
