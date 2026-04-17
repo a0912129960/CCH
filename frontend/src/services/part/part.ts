@@ -143,17 +143,26 @@ export interface PartListResponse {
 
 export const partService = {
   /**
-   * Fetch parts list with pagination (獲取分頁零件清單)
-   * (繁體中文) 獲獲取分頁零件清單，符合最新後端 API 回應。
+   * Fetch parts list with pagination and search (獲取分頁與搜尋的零件清單)
    * Updated by Gemini AI on 2026-04-17 (INTERNAL-AI-20260417)
    */
-  async getParts(): Promise<PartListItem[]> {
+  async getParts(params?: {
+    customerId?: string;
+    status?: string;
+    partNo?: string;
+    supplier?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PartListResponse> {
     try {
-      const response = await api.get<{ success: boolean; data: PartListResponse }>('/parts');
-      return response.data.success ? response.data.data.data : [];
+      const response = await api.get<{ success: boolean; data: PartListResponse }>('/parts', { params });
+      if (response.data.success) {
+        return response.data.data;
+      }
+      return { total: 0, page: 1, data: [] };
     } catch (error) {
       console.error('API /parts failed. (API /parts 失敗。)', error);
-      return [];
+      return { total: 0, page: 1, data: [] };
     }
   },
 

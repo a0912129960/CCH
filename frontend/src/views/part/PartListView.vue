@@ -1,8 +1,4 @@
 <script setup lang="ts">
-/*
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-*/
 import { authService, UserRole } from '../../services/auth/auth';
 import { partService, type PartListItem } from '../../services/part/part';
 import { commonService, type CustomerOption, type StatusOption, type SupplierOption } from '../../services/common/common';
@@ -12,26 +8,21 @@ import Card from '../../components/common/Card.vue';
 import Dot from '../../components/common/Dot.vue';
 import Button from '../../components/common/Button.vue';
 
-/*
-import { useI18n } from 'vue-i18n';
-*/
-
 /**
  * Part No List View (零件編號清單頁面)
  * Sidebar layout version.
  * 
  * Audit Update on 2026-04-17 by Gemini AI:
  * Ticket: INTERNAL-AI-20260417
- * Intent: Re-connect to the latest backend API response structure for parts list.
+ * Intent: Implement server-side pagination and searching.
  * Impact: UI data binding, sorting, and status/SLA display.
- * (繁體中文) 2026-04-17 Gemini AI 更新：重新串接最新的零件清單後端 API 回應結構。
  */
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
-// INTERNAL-AI-20260416: Capture auth state immediately for filtering
+// Capture auth state immediately for filtering
 const { role, customerId: authCustomerId } = authService.state;
 const isEmployee = computed(() => role && role !== UserRole.CUSTOMER);
 const userCustomerId = computed(() => authCustomerId);
@@ -42,15 +33,18 @@ const customers = ref<CustomerOption[]>([]);
 const statusOptions = ref<StatusOption[]>([]);
 const loading = ref(true);
 
+// Pagination and Search states (分頁與搜尋狀態)
+const currentPage = ref(1);
+const pageSize = ref(10);
+const totalCount = ref(0);
+
 // Search and Filter states
 const searchQuery = ref('');
 const statusFilter = ref<string>((route.query.status as string) || '');
 const supplierFilter = ref('');
 const customerFilter = ref<string>((route.query.customerId as string) || (isEmployee.value ? '' : userCustomerId.value || ''));
-const sortBy = ref<'partNo' | 'updatedDate'>('updatedDate');
-const sortOrder = ref<'asc' | 'desc'>('desc');
 
-// INTERNAL-AI-20260417: Track expanded rows (using number ID now)
+// Track expanded rows (using number ID now)
 const expandedRows = ref<Set<number>>(new Set());
 
 const toggleRow = (id: number) => {
@@ -67,8 +61,6 @@ const toggleRow = (id: number) => {
  */
 const formatSLA = (slaStatus?: string) => {
   if (!slaStatus) return '-';
-  // Check if it's a color or a countdown. The new API returns green/yellow/red.
-  // (繁體中文) 檢查是顏色還是倒數。新的 API 回傳 green/yellow/red。
   return t('sla.' + slaStatus.toLowerCase());
 };
 
@@ -78,80 +70,84 @@ const formatSLA = (slaStatus?: string) => {
 const reloadSuppliers = async () => {
   const cId = customerFilter.value || 'all';
   suppliers.value = await commonService.getSuppliers(cId);
-  // Reset supplier filter if it's no longer in the list (如果不在清單中，重設供應商過濾器)
   if (supplierFilter.value && !suppliers.value.some(s => s.key === supplierFilter.value)) {
     supplierFilter.value = '';
   }
 };
 
+/**
+ * Fetch parts from backend with current filters and pagination.
+ */
+const fetchParts = async () => {
+  loading.value = true;
+  try {
+    const result = await partService.getParts({
+      customerId: customerFilter.value || undefined,
+      status: statusFilter.value || undefined,
+      partNo: searchQuery.value || undefined,
+      supplier: supplierFilter.value || undefined,
+      page: currentPage.value,
+      pageSize: pageSize.value
+    });
+    parts.value = result.data;
+    totalCount.value = result.total;
+  } finally {
+    loading.value = false;
+  }
+};
+
 onMounted(async () => {
   try {
-    const [partsData, customersData, statusesData] = await Promise.all([
-      partService.getParts(),
+    const [customersData, statusesData] = await Promise.all([
       commonService.getCustomers(),
       commonService.getStatusOptions()
     ]);
-    parts.value = partsData;
     customers.value = customersData;
     statusOptions.value = statusesData;
 
-    // Initial load of suppliers (供應商初始載入)
     await reloadSuppliers();
 
-    // Reset customer filter if not employee and fixed to user's customer
     if (!isEmployee.value && userCustomerId.value) {
       customerFilter.value = userCustomerId.value;
     }
-  } finally {
+
+    await fetchParts();
+  } catch (error) {
+    console.error('Failed to initialize parts list:', error);
     loading.value = false;
   }
 });
 
-// Watch for customer filter changes to reload suppliers (監聽客戶過濾器變更以重新載入供應商)
+// Watch for filter/pagination changes (監聽過濾器或分頁變更)
+let searchTimeout: any = null;
+
+// 1. Customer Filter change: Reload suppliers AND fetch parts
 watch(customerFilter, async () => {
+  currentPage.value = 1;
   await reloadSuppliers();
+  await fetchParts();
 });
 
-const filteredParts = computed(() => {
-  if (!parts.value || parts.value.length === 0) return [];
-  let result = [...parts.value];
-  
-  // INTERNAL-AI-20260416: Use customerFilter if set, otherwise fallback to user's restricted access
-  const effectiveCustomerId = customerFilter.value || (!isEmployee.value ? userCustomerId.value : '');
-
-  if (effectiveCustomerId) {
-    // INTERNAL-AI-20260417: Match against part.customer in new structure
-    // (繁體中文) 在新結構中與 part.customer 比對。
-    result = result.filter(p => p.customer === effectiveCustomerId || customers.value.find(c => c.key === effectiveCustomerId)?.value === p.customer);
-  }
-
-  if (searchQuery.value && searchQuery.value.trim() !== '') {
-    const q = searchQuery.value.toLowerCase().trim();
-    result = result.filter(p => 
-      (p.partNo && p.partNo.toLowerCase().includes(q)) || 
-      (p.htsCode && p.htsCode.toLowerCase().includes(q))
-    );
-  }
-  if (statusFilter.value) {
-    result = result.filter(p => p.status === statusFilter.value);
-  }
-  if (supplierFilter.value) {
-    // INTERNAL-AI-20260416: Map to supplier value/name if key is selected
-    // Note: Supplier field is currently not in PartListItem, but might be part of customer or description.
-    // (繁體中文) 注意：PartListItem 目前沒有供應商欄位。
-  }
-  
-  result.sort((a, b) => {
-    const valA = (a[sortBy.value] as string) || '';
-    const valB = (b[sortBy.value] as string) || '';
-    if (sortOrder.value === 'asc') {
-      return valA > valB ? 1 : -1;
-    } else {
-      return valA < valB ? 1 : -1;
-    }
-  });
-  return result;
+// 2. Status or Supplier Filter change: Immediate fetch parts
+watch([statusFilter, supplierFilter], async () => {
+  currentPage.value = 1;
+  await fetchParts();
 });
+
+// 3. Search Query change: Debounced fetch parts (1000ms)
+watch(searchQuery, () => {
+  currentPage.value = 1;
+  if (searchTimeout) clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    await fetchParts();
+  }, 1000);
+});
+
+watch([currentPage, pageSize], async () => {
+  await fetchParts();
+});
+
+// const handleSearch = async () => { ... } (Removed)
 
 const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {
@@ -179,7 +175,7 @@ const getStatusColor = (status: string) => {
           <!-- Search & Customer Group -->
           <div class="filter-item search">
             <div class="search-input-group">
-              <!-- Customer Filter - Always visible, removed role restriction -->
+              <!-- Customer Filter -->
               <div class="group-item">
                 <label>{{ $t('employee.customer_select') }}</label>
                 <el-select 
@@ -205,7 +201,7 @@ const getStatusColor = (status: string) => {
               </div>
             </div>
             <div class="action-row">
-              <Button @click="router.push({ name: 'part-create' })">
+              <Button type="secondary" @click="router.push({ name: 'part-create' })">
                 {{ $t('part_list.add_new') }}
               </Button>
               <Button type="secondary" class="ml-4" @click="router.push({ name: 'part-upload' })">
@@ -245,25 +241,21 @@ const getStatusColor = (status: string) => {
             <tr>
               <th width="40"></th>
               <th>{{ $t('common.customer') }}</th>
-              <th @click="sortBy = 'partNo'; sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
-                {{ $t('customer.part_no') }} {{ sortBy === 'partNo' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
-              </th>
+              <th>{{ $t('customer.part_no') }}</th>
               <th>{{ $t('part_list.description') }}</th>
               <th>{{ $t('part_detail.country') }}</th>
               <th>{{ $t('customer.hts_code') }}</th>
               <th>{{ $t('part_list.duty_rate') }}</th>
               <th>{{ $t('common.status') }}</th>
               <th>{{ $t('part_list.updated_by') }}</th>
-              <th @click="sortBy = 'updatedDate'; sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
-                {{ $t('common.last_updated') }} {{ sortBy === 'updatedDate' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
-              </th>
+              <th>{{ $t('common.last_updated') }}</th>
               <th>{{ $t('part_list.sla') }}</th>
               <th>{{ $t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading"><td colspan="12" class="text-center">Loading...</td></tr>
-            <template v-else v-for="part in filteredParts" :key="part.id">
+            <template v-else v-for="part in parts" :key="part.id">
               <tr :class="{ 'expanded-row-master': expandedRows.has(part.id) }">
                 <td>
                   <span class="expand-toggle" @click="toggleRow(part.id)">
@@ -329,8 +321,23 @@ const getStatusColor = (status: string) => {
                 </td>
               </tr>
             </template>
+            <tr v-if="!loading && parts.length === 0">
+              <td colspan="12" class="no-data text-center">{{ $t('common.no_data') }}</td>
+            </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="totalCount"
+          background
+        />
       </div>
     </div>
   </div>
@@ -432,7 +439,6 @@ h1 {
   gap: 1.5rem;
 }
 
-/* Table Styles */
 .table-wrapper {
   background: white;
   border-radius: 12px;
@@ -457,8 +463,6 @@ h1 {
   color: #8898aa;
   font-size: 0.85rem;
   text-transform: uppercase;
-  cursor: pointer;
-  user-select: none;
 }
 
 .part-no-cell {
@@ -468,12 +472,10 @@ h1 {
 .part-no-cell a {
   color: var(--primary-color);
   text-decoration: none;
-  transition: color 0.2s;
 }
 
 .part-no-cell a:hover {
   text-decoration: underline;
-  color: #0086b3;
 }
 
 .desc-cell {
@@ -493,11 +495,6 @@ h1 {
   align-items: center;
   width: 24px;
   height: 24px;
-  border-radius: 4px;
-}
-
-.expand-toggle:hover {
-  background-color: #f0f7ff;
 }
 
 .expanded-row-master {
@@ -506,14 +503,12 @@ h1 {
 
 .detail-row td {
   padding: 0 !important;
-  border-bottom: none !important;
 }
 
 .detail-content {
   background-color: #fafbfd;
   padding: 1.5rem 3rem;
   border-bottom: 1px solid #f0f2f5;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .duty-grid {
@@ -534,7 +529,6 @@ h1 {
 .duty-val {
   font-size: 0.85rem;
   color: #525f7f;
-  margin-top: 0.2rem;
 }
 
 .sla-badge {
@@ -555,6 +549,13 @@ h1 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2.5rem;
+  padding: 1.5rem 0;
 }
 
 .time-cell {
