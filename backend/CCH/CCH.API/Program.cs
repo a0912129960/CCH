@@ -17,6 +17,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // Register Repositories / 註冊倉儲
 builder.Services.AddScoped<IPartRepository, PartRepository>();
+builder.Services.AddScoped<ICommonRepository, CommonRepository>();
 
 // Register split Part interfaces
 builder.Services.AddScoped<IPartQueryService, PartService>();
