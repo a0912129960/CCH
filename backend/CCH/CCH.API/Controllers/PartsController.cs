@@ -99,17 +99,50 @@ public class PartsController : ControllerBase
         return Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request)));
     }
 
-    [HttpPost("{partId}/submit")]
+    // INTERNAL-AI-20260416: Customer only; same validation as PUT. Status S01/S03 → S02.
+    // (INTERNAL-AI-20260416: 僅限 Customer；與 PUT 相同驗證邏輯。狀態 S01/S03 → S02。)
+    /* [HttpPost("{partId}/submit")]
     public ActionResult<ApiResponse<object>> SubmitPart(int partId, [FromBody] PartSaveRequest request) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.SubmitPart(partId, request)));
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.SubmitPart(partId, request))); */
+    [HttpPost("{partId}/submit")]
+    [Authorize(Roles = "customer")]
+    public ActionResult<ApiResponse<object>> SubmitPart(int partId, [FromBody] PartSaveRequest request)
+    {
+        // Return 400 if validation fails (驗證失敗回傳 400)
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+            return BadRequest(ApiResponse<object>.FailureResponse(string.Join(" | ", errors)));
+        }
 
+        return Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.SubmitPart(partId, request)));
+    }
+
+    // INTERNAL-AI-20260416: Both Dimerco and DCB can review (accept/return) parts temporarily.
+    // (INTERNAL-AI-20260416: 暫時允許 Dimerco 與 DCB 兩個角色皆可審核（接受/退回）零件。)
+    /* [HttpPost("{partId}/accept")]
+    public ActionResult<ApiResponse<object>> AcceptPart(int partId) =>
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.AcceptPart(partId))); */
+    // INTERNAL-AI-20260416: Only DCB can review (accept/return) parts.
+    // (INTERNAL-AI-20260416: 僅 DCB 角色可審核（接受/退回）零件。)
+    /* [Authorize(Roles = "dimerco,dcb")] */
     [HttpPost("{partId}/accept")]
+    [Authorize(Roles = "dcb")]
     public ActionResult<ApiResponse<object>> AcceptPart(int partId) =>
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.AcceptPart(partId)));
 
-    [HttpPost("{partId}/return")]
+    // INTERNAL-AI-20260416: Changed body from raw string to ReturnReasonDto to avoid Content-Type issues.
+    // (INTERNAL-AI-20260416: 將請求主體從原始字串改為 ReturnReasonDto，避免 Content-Type 問題。)
+    /* [HttpPost("{partId}/return")]
+    [Authorize(Roles = "dcb")]
     public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] string returnReason) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, returnReason)));
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, returnReason))); */
+    [HttpPost("{partId}/return")]
+    [Authorize(Roles = "dcb")]
+    public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] ReturnReasonDto body) =>
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, body.Reason)));
 
     [HttpPost("{partId}/inactive")]
     public ActionResult<ApiResponse<object>> InactivatePart(int partId) =>

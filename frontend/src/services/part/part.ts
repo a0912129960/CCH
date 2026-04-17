@@ -230,6 +230,86 @@ export const partService = {
   }
 };
 
+// INTERNAL-AI-20260416: Types and function for the real GET /api/parts list endpoint.
+// (INTERNAL-AI-20260416: 對應後端 GET /api/parts 清單的型別與函式。)
+
+/**
+ * Single item in the part list matching backend PartListItemDto.
+ * (對應後端 PartListItemDto 的零件清單單筆資料。)
+ */
+export interface PartListItem {
+  id: number;
+  customer: string;
+  partNo: string;
+  partDesc: string;
+  country: string;
+  htsCode: string;
+  rate: number;
+  supplier: string;
+  status: string; // S01 | S02 | S03 | S04 | Inactive
+  updatedBy: string;
+  updatedDate: string;
+  slaStatus: string;
+}
+
+/**
+ * Paginated response for GET /api/parts.
+ * (GET /api/parts 的分頁回應結構。)
+ */
+export interface PartListApiResponse {
+  total: number;
+  page: number;
+  data: PartListItem[];
+}
+
+/**
+ * Map backend status codes to i18n keys for display.
+ * (將後端狀態碼對應至前端 i18n 顯示鍵值。)
+ */
+export const statusToI18nKey = (status: string): string => {
+  const map: Record<string, string> = {
+    S01: 'unknown',
+    S02: 'pending_review',
+    S03: 'pending_customer',
+    S04: 'active',
+    Inactive: 'superseded',
+  };
+  return map[status] ?? 'unknown';
+};
+
+/**
+ * Map backend status codes to display colors.
+ * (將後端狀態碼對應至顯示顏色。)
+ */
+export const statusToColor = (status: string): string => {
+  const map: Record<string, string> = {
+    S01: '#909399',
+    S02: '#409EFF',
+    S03: '#E6A23C',
+    S04: '#67C23A',
+    Inactive: '#909399',
+  };
+  return map[status] ?? '#909399';
+};
+
+/**
+ * Fetch paginated part list from the real backend API GET /api/parts.
+ * (從後端 GET /api/parts 取得分頁零件清單。)
+ *
+ * INTERNAL-AI-20260416
+ */
+export async function searchParts(params?: {
+  customerId?: string;
+  status?: string;
+  partNo?: string;
+  supplier?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<PartListApiResponse> {
+  const response = await api.get<{ success: boolean; data: PartListApiResponse }>('/parts', { params });
+  return response.data.data;
+}
+
 // INTERNAL-AI-20260416: New interfaces for the real GET /api/parts/{partId} response.
 // (INTERNAL-AI-20260416: 新增對應後端 GET /api/parts/{partId} 回應的 TypeScript 介面。)
 
@@ -263,6 +343,9 @@ export interface PartDetailFields {
  * (對應後端 PartDetailResponseDto 的零件詳細回應結構。)
  */
 export interface PartDetailResponse {
+  // INTERNAL-AI-20260416: Added status field for status badge display in the detail view.
+  // (INTERNAL-AI-20260416: 新增 status 欄位供詳細頁面顯示狀態標籤使用。)
+  status: string;
   before: PartDetailFields;
   modified: PartDetailFields;
 }
@@ -320,6 +403,56 @@ export interface PartSavePayload {
  */
 export async function updatePart(partId: number, payload: PartSavePayload): Promise<void> {
   await api.put(`/parts/${partId}`, payload);
+}
+
+/**
+ * Call POST /api/parts/{partId}/submit to save and send part to Dimerco for review.
+ * (呼叫 POST /api/parts/{partId}/submit 儲存並送審給 Dimerco。)
+ * Returns { partId, status: 'S02' } on success. (成功時回傳 { partId, status: 'S02' }。)
+ *
+ * INTERNAL-AI-20260416
+ */
+export async function submitPart(partId: number, payload: PartSavePayload): Promise<void> {
+  await api.post(`/parts/${partId}/submit`, payload);
+}
+
+// INTERNAL-AI-20260416: Milestone types and API functions for the detail view timeline.
+// (INTERNAL-AI-20260416: 詳細頁面時間軸所需的里程碑型別與 API 函式。)
+
+/**
+ * Single milestone item matching backend MilestoneDto.
+ * (對應後端 MilestoneDto 的里程碑項目。)
+ */
+export interface Milestone {
+  action: string;
+  updatedBy: string;
+  updatedDate: string;
+  remark: string;
+}
+
+/**
+ * Fetch milestones for a part from GET /api/parts/{partId}/milestones.
+ * (從後端 GET /api/parts/{partId}/milestones 取得里程碑清單。)
+ */
+export async function getMilestones(partId: number): Promise<Milestone[]> {
+  const response = await api.get<{ success: boolean; data: Milestone[] }>(`/parts/${partId}/milestones`);
+  return response.data.data;
+}
+
+/**
+ * Accept a part classification via POST /api/parts/{partId}/accept (DCB only).
+ * (DCB 角色接受零件分類，呼叫 POST /api/parts/{partId}/accept。)
+ */
+export async function acceptPart(partId: number): Promise<void> {
+  await api.post(`/parts/${partId}/accept`);
+}
+
+/**
+ * Return a part to the customer via POST /api/parts/{partId}/return (DCB only).
+ * (DCB 角色退回零件給客戶，呼叫 POST /api/parts/{partId}/return。)
+ */
+export async function returnPart(partId: number, reason: string): Promise<void> {
+  await api.post(`/parts/${partId}/return`, { reason });
 }
 
 /**

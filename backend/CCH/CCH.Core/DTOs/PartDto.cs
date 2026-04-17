@@ -15,6 +15,7 @@ public class PartListItemDto
     public string Country { get; set; } = string.Empty;
     public string HtsCode { get; set; } = string.Empty;
     public decimal Rate { get; set; }
+    public string Supplier { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string UpdatedBy { get; set; } = string.Empty;
     public DateTime UpdatedDate { get; set; }
@@ -48,8 +49,20 @@ public class PartListResponseDto
 /// </summary>
 public class PartDetailResponseDto
 {
+    // INTERNAL-AI-20260416: Added Status so the frontend can show the status badge.
+    // (INTERNAL-AI-20260416: 新增 Status 供前端顯示狀態標籤使用。)
+    public string Status { get; set; } = string.Empty;
     public PartDetailDto Before { get; set; } = new();
     public PartDetailDto Modified { get; set; } = new();
+}
+
+/// <summary>
+/// Request body for returning a part to the customer.
+/// (繁體中文) 退回零件給客戶的請求主體。
+/// </summary>
+public class ReturnReasonDto
+{
+    public string Reason { get; set; } = string.Empty;
 }
 
 /// <summary>
