@@ -29,5 +29,4 @@ public class PartEntity
     public string UpdatedBy { get; set; } = string.Empty;
     public DateTime CreatedDate { get; set; }
     public DateTime UpdatedDate { get; set; }
-    /* public string? SlaStatus { get; set; } */
 }

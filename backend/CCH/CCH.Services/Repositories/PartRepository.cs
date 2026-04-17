@@ -150,7 +150,7 @@ public class PartRepository : IPartRepository
         };
     }
 
-    public IEnumerable<PartListItemDto> SearchParts(string? customerId, string? status, string? partNo, string? supplier, string? role = null)
+    public IEnumerable<PartListItemDto> SearchParts(int? customerId, string? status, string? partNo, int? supplierId, string? role = null)
     {
         var query = _parts.AsQueryable();
 
@@ -163,15 +163,9 @@ public class PartRepository : IPartRepository
             query = query.Where(p => p.Status == "S02");
         }
 
-        if (!string.IsNullOrEmpty(customerId))
+        if (customerId > 0)
         {
-            if (int.TryParse(customerId, out int cId))
-                query = query.Where(p => p.CustomerID == cId);
-            else
-            {
-                var customerIds = _commonRepository.GetCustomers().Where(c => c.Name.Contains(customerId, StringComparison.OrdinalIgnoreCase)).Select(c => c.ID);
-                query = query.Where(p => customerIds.Contains(p.CustomerID));
-            }
+            query = query.Where(p => p.CustomerID == customerId);
         }
 
         if (!string.IsNullOrEmpty(status))
@@ -184,10 +178,9 @@ public class PartRepository : IPartRepository
                                      p.HTSCode.Replace(".", "").Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (!string.IsNullOrEmpty(supplier))
+        if (supplierId > 0)
         {
-            var supplierIds = _commonRepository.GetSuppliers().Where(s => s.Name.Contains(supplier, StringComparison.OrdinalIgnoreCase)).Select(s => s.ID);
-            query = query.Where(p => supplierIds.Contains(p.SupplierID));
+            query = query.Where(p => p.SupplierID == supplierId);
         }
 
         return query.ToList().Select(p => MapToDto(p, role));

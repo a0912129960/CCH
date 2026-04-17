@@ -27,7 +27,7 @@ public class PartsController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<ApiResponse<PartListResponseDto>> SearchParts([FromQuery] string? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] string? supplier, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
+    public ActionResult<ApiResponse<PartListResponseDto>> SearchParts([FromQuery] int? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] int? supplier, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
         Ok(ApiResponse<PartListResponseDto>.SuccessResponse(_queryService.SearchParts(customerId, status, partNo, supplier, page, pageSize)));
 
     [HttpGet("export")]
