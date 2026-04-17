@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
 import { authService, UserRole } from '@src/services/auth/auth';
-import { partService, type PartListItem } from '@src/services/part/part';
+import { partService, acceptPart, batchAcceptParts, type PartListItem } from '@src/services/part/part';
 import { commonService, type CustomerOption, type StatusOption, type SupplierOption } from '@src/services/common/common';
 
 // Internal components
@@ -21,9 +18,11 @@ import { CaretRight, CaretBottom } from '@element-plus/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 
 const { role, customerId: authCustomerId } = authService.state;
 const isEmployee = computed(() => role && role !== UserRole.CUSTOMER);
+const isDcb = computed(() => role === UserRole.DCB);
 const userCustomerId = computed(() => authCustomerId);
 
 // State Management
@@ -43,6 +42,69 @@ const supplierFilter = ref('');
 const customerFilter = ref<string>((route.query.customerId as string) || (isEmployee.value ? '' : userCustomerId.value || ''));
 
 const expandedRows = ref<Set<number>>(new Set());
+
+// Selection Logic for Batch Accept (批次接受的選擇邏輯)
+const selectedIds = ref<Set<number>>(new Set());
+const selectableParts = computed(() => 
+  parts.value.filter(p => p.status === 'S02' || p.status === 'S03')
+);
+
+const isAllSelectableSelected = computed(() => 
+  selectableParts.value.length > 0 && selectableParts.value.every(p => selectedIds.value.has(p.id))
+);
+
+const toggleSelection = (id: number) => {
+  if (selectedIds.value.has(id)) {
+    selectedIds.value.delete(id);
+  } else {
+    selectedIds.value.add(id);
+  }
+};
+
+const toggleAllSelection = () => {
+  if (isAllSelectableSelected.value) {
+    selectableParts.value.forEach(p => selectedIds.value.delete(p.id));
+  } else {
+    selectableParts.value.forEach(p => selectedIds.value.add(p.id));
+  }
+};
+
+const handleBatchAccept = async () => {
+  if (selectedIds.value.size === 0) return;
+
+  try {
+    await ElMessageBox.confirm(
+      `${t('part_detail.accept_confirm')} (${selectedIds.value.size} items)`,
+        t('part_list.batch_accept'),
+      { confirmButtonClass: 'btn-confirm-orange', type: 'warning' }
+    );
+
+    loading.value = true;
+    const idsToAccept = Array.from(selectedIds.value).map(id => Number(id));
+
+    // Call batch API (呼叫批量接受 API)
+    const result = await batchAcceptParts(idsToAccept);
+    
+    if (result.success) {
+      ElMessage.success(result.message || 'Batch accept successful');
+      selectedIds.value.clear();
+      await fetchParts();
+    } else {
+      ElMessage.error(result.message || 'Batch accept failed');
+      // Handle partial failures (處理部分失敗)
+      if (result.data && result.data.length > 0) {
+        console.error('Partial failures:', result.data);
+      }
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error(error);
+      ElMessage.error('Batch accept failed. (批次接受失敗。)');
+    }
+  } finally {
+    loading.value = false;
+  }
+};
 
 // Constants & Mappings
 const HTS_LABELS = [
@@ -213,6 +275,9 @@ watch([currentPage, pageSize], fetchParts);
               <Button class="ml-4" @click="exportToExcel">
                 {{ $t('part_list.export_excel') }}
               </Button>
+              <Button v-if="isDcb" class="ml-4 btn-batch-accept" :disabled="selectedIds.size === 0" @click="handleBatchAccept">
+                {{ $t('part_list.batch_accept') }}
+              </Button>
             </div>
           </div>
           <div class="filter-item">
@@ -247,6 +312,13 @@ watch([currentPage, pageSize], fetchParts);
                   <el-icon v-else><CaretRight /></el-icon>
                 </button>
               </th>
+              <th v-if="isDcb" scope="col" class="text-center col-checkbox">
+                <el-checkbox 
+                  :model-value="isAllSelectableSelected" 
+                  :indeterminate="selectedIds.size > 0 && !isAllSelectableSelected"
+                  @change="toggleAllSelection"
+                />
+              </th>
               <th scope="col" class="col-customer">{{ $t('common.customer') }}</th>
               <th scope="col" class="col-partno">{{ $t('customer.part_no') }}</th>
               <th scope="col" class="col-desc">{{ $t('part_list.description') }}</th>
@@ -262,7 +334,7 @@ watch([currentPage, pageSize], fetchParts);
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="12" class="text-center">Loading...</td>
+              <td :colspan="isDcb ? 13 : 12" class="text-center">Loading...</td>
             </tr>
             <template v-else v-for="part in parts" :key="part.id">
               <tr :class="{ 'expanded-row-master': expandedRows.has(part.id) }">
@@ -275,6 +347,13 @@ watch([currentPage, pageSize], fetchParts);
                     <el-icon v-if="expandedRows.has(part.id)"><CaretBottom /></el-icon>
                     <el-icon v-else><CaretRight /></el-icon>
                   </button>
+                </td>
+                <td v-if="isDcb" class="text-center col-checkbox">
+                  <el-checkbox 
+                    v-if="part.status === 'S02' || part.status === 'S03'"
+                    :model-value="selectedIds.has(part.id)" 
+                    @change="toggleSelection(part.id)"
+                  />
                 </td>
                 <td class="col-customer" :title="part.customer">{{ part.customer || '-' }}</td>
                 <td class="col-partno" :title="part.partNo">{{ part.partNo }}</td>
@@ -298,7 +377,7 @@ watch([currentPage, pageSize], fetchParts);
                 </td>
               </tr>
               <tr v-if="expandedRows.has(part.id)" class="detail-row">
-                <td colspan="12">
+                <td :colspan="isDcb ? 13 : 12">
                   <div class="detail-content">
                     <div class="duty-grid">
                       <div class="duty-item" v-for="i in 4" :key="i">
@@ -312,7 +391,7 @@ watch([currentPage, pageSize], fetchParts);
               </tr>
             </template>
             <tr v-if="!loading && parts.length === 0">
-              <td colspan="12" class="no-data text-center">{{ $t('common.no_data') }}</td>
+              <td :colspan="isDcb ? 13 : 12" class="no-data text-center">{{ $t('common.no_data') }}</td>
             </tr>
           </tbody>
         </table>
@@ -402,7 +481,12 @@ h1 {
   margin-top: 0.8rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1rem; /* Allow buttons to wrap to next line if needed, instead of squeezing text (允許按鈕在空間不足時整顆折行，而非壓縮文字) */
+}
+
+.action-row :deep(.btn-cch), 
+.action-row :deep(button) {
+  white-space: nowrap; /* Prevent text inside button from wrapping (防止按鈕內文字折行) */
 }
 
 .table-wrapper {
@@ -440,6 +524,7 @@ h1 {
 
 /* Modern Column Width Control */
 .col-expand { width: 35px; }
+.col-checkbox { width: 40px; }
 .col-customer { width: 100px; }
 .col-partno { width: 80px; }
 .col-desc { width: 120px; }
@@ -466,6 +551,18 @@ h1 {
   font-size: 0.7rem !important;
   height: 20px !important;
   line-height: 1 !important;
+}
+
+.btn-batch-accept {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.btn-batch-accept:disabled {
+  background-color: #a0cfff !important;
+  border-color: #a0cfff !important;
+  cursor: not-allowed;
 }
 
 .expand-toggle {

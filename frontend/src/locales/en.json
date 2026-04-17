@@ -75,6 +75,7 @@
     "filter_supplier": "Supplier Filter",
     "add_new": "Add New Part",
     "bulk_upload": "Bulk Upload",
+    "batch_accept": "Batch Accept",
     "export_excel": "Export to Excel",
     "division": "Division",
     "description": "Part Description",
