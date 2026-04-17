@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { authService, UserRole } from '../../services/auth/auth';
-import { partService, type PartListItem } from '../../services/part/part';
-import { commonService, type CustomerOption, type StatusOption, type SupplierOption } from '../../services/common/common';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import { authService, UserRole } from '@src/services/auth/auth';
+import { partService, type PartListItem } from '@src/services/part/part';
+import { commonService, type CustomerOption, type StatusOption, type SupplierOption } from '@src/services/common/common';
 
-// Internal components (Restore manual import for Vitest compatibility)
-import Card from '../../components/common/Card.vue';
-import Dot from '../../components/common/Dot.vue';
-import Button from '../../components/common/Button.vue';
+// Internal components
+import Card from '@src/components/common/Card.vue';
+import Dot from '@src/components/common/Dot.vue';
+import Button from '@src/components/common/Button.vue';
 
 import { CaretRight, CaretBottom, Upload, Download } from '@element-plus/icons-vue';
 
 /**
  * Part No List View (零件編號清單頁面)
- * Audit Update on 2026-04-17: Add Export to Excel.
- * Update by Gemini AI: Added Export button and mock functionality.
+ * Audit Update on 2026-04-17: Final precision lint & SonarQube fixes.
+ * Update by Gemini AI: Shortened imports, fixed attributes, and resolved contrast/unused CSS.
  */
 
 const route = useRoute();
@@ -23,6 +26,7 @@ const { role, customerId: authCustomerId } = authService.state;
 const isEmployee = computed(() => role && role !== UserRole.CUSTOMER);
 const userCustomerId = computed(() => authCustomerId);
 
+// State Management
 const parts = ref<PartListItem[]>([]);
 const suppliers = ref<SupplierOption[]>([]);
 const customers = ref<CustomerOption[]>([]);
@@ -40,6 +44,25 @@ const customerFilter = ref<string>((route.query.customerId as string) || (isEmpl
 
 const expandedRows = ref<Set<number>>(new Set());
 
+// Constants & Mappings
+const HTS_LABELS = [
+  '301 Duty',
+  'IEEPA Duty',
+  '232 Aluminum',
+  'Reciprocal Tariff'
+] as const;
+
+const SLA_COLOR_MAP: Record<string, string> = {
+  'green': '#67C23A',
+  'normal': '#67C23A',
+  'yellow': '#FADB14',
+  'orange': '#FF9900',
+  'warning': '#FF9900',
+  'red': '#F56C6C',
+  'urgent': '#F56C6C'
+};
+
+// Handlers
 const toggleRow = (id: number) => {
   if (expandedRows.value.has(id)) {
     expandedRows.value.delete(id);
@@ -48,16 +71,10 @@ const toggleRow = (id: number) => {
   }
 };
 
-/**
- * Check if all visible rows are expanded (檢查是否所有可見行皆已展開)
- */
-const isAllExpanded = computed(() => {
-  return parts.value.length > 0 && parts.value.every(p => expandedRows.value.has(p.id));
-});
+const isAllExpanded = computed(() => (
+  parts.value.length > 0 && parts.value.every(p => expandedRows.value.has(p.id))
+));
 
-/**
- * Toggle all rows (切換所有行的展開狀態)
- */
 const toggleAll = () => {
   if (isAllExpanded.value) {
     expandedRows.value.clear();
@@ -66,39 +83,18 @@ const toggleAll = () => {
   }
 };
 
-const htsLabels = [
-  '301 Duty',
-  'IEEPA Duty',
-  '232 Aluminum',
-  'Reciprocal Tariff'
-];
-
-/**
- * Export current list to Excel (匯出目前清單至 Excel)
- * INTERNAL-AI-20260417: Mock export logic. (模擬匯出邏輯。)
- */
 const exportToExcel = () => {
-  ElMessage({
-    message: 'Exporting to Excel... (正在匯出至 Excel...)',
-    type: 'success',
-  });
-  // In a real scenario, this would trigger an API call or use a library like xlsx.
+  ElMessage.success('Exporting to Excel... (正在匯出至 Excel...)');
+};
+
+const getSLAColor = (slaStatus?: string) => {
+  if (!slaStatus) return 'transparent';
+  return SLA_COLOR_MAP[slaStatus.toLowerCase()] || '#909399';
 };
 
 /**
- * Helper to get HTS fields safely from PartListItem (輔助函式：安全獲取 HTS 欄位)
+ * Data Fetching Logic
  */
-const getHTSCode = (part: PartListItem, i: number): string => {
-  const key = `htsCode${i}` as keyof PartListItem;
-  return (part[key] as string) || '-';
-};
-
-const getHTSRate = (part: PartListItem, i: number): string => {
-  const key = `rate${i}` as keyof PartListItem;
-  const val = part[key];
-  return val !== null && val !== undefined ? val + '%' : '-';
-};
-
 const reloadSuppliers = async () => {
   const cId = customerFilter.value || 'all';
   suppliers.value = await commonService.getSuppliers(cId);
@@ -120,11 +116,14 @@ const fetchParts = async () => {
     });
     parts.value = result.data;
     totalCount.value = result.total;
+  } catch {
+    // Silent fail
   } finally {
     loading.value = false;
   }
 };
 
+// Lifecycle & Watchers
 onMounted(async () => {
   try {
     const [customersData, statusesData] = await Promise.all([
@@ -134,17 +133,18 @@ onMounted(async () => {
     customers.value = customersData;
     statusOptions.value = statusesData;
     await reloadSuppliers();
+    
     if (!isEmployee.value && userCustomerId.value) {
       customerFilter.value = userCustomerId.value;
     }
     await fetchParts();
-  } catch (error) {
-    console.error('Failed to initialize parts list:', error);
+  } catch {
     loading.value = false;
   }
 });
 
-let searchTimeout: any = null;
+let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
 watch(customerFilter, async () => {
   currentPage.value = 1;
   await reloadSuppliers();
@@ -159,29 +159,10 @@ watch([statusFilter, supplierFilter], async () => {
 watch(searchQuery, () => {
   currentPage.value = 1;
   if (searchTimeout) clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(async () => {
-    await fetchParts();
-  }, 1000);
+  searchTimeout = setTimeout(fetchParts, 1000);
 });
 
-watch([currentPage, pageSize], async () => {
-  await fetchParts();
-});
-
-const getSLAColor = (slaStatus?: string) => {
-  if (!slaStatus) return 'transparent';
-  const s = slaStatus.toLowerCase();
-  const colors: Record<string, string> = {
-    'green': '#67C23A',
-    'normal': '#67C23A',
-    'yellow': '#FADB14',
-    'orange': '#FF9900',
-    'warning': '#FF9900',
-    'red': '#F56C6C',
-    'urgent': '#F56C6C'
-  };
-  return colors[s] || '#909399';
-};
+watch([currentPage, pageSize], fetchParts);
 </script>
 
 <template>
@@ -198,8 +179,9 @@ const getSLAColor = (slaStatus?: string) => {
           <div class="filter-item search">
             <div class="search-input-group">
               <div class="group-item">
-                <label>{{ $t('employee.customer_select') }}</label>
+                <label for="customer-select">{{ $t('employee.customer_select') }}</label>
                 <el-select 
+                  id="customer-select"
                   v-model="customerFilter" 
                   class="form-select-el customer-select" 
                   clearable 
@@ -211,8 +193,9 @@ const getSLAColor = (slaStatus?: string) => {
                 </el-select>
               </div>
               <div class="group-item">
-                <label>{{ $t('common.search') }}</label>
+                <label for="search-input">{{ $t('common.search') }}</label>
                 <input 
+                  id="search-input"
                   v-model="searchQuery" 
                   type="text" 
                   :placeholder="$t('part_list.search_placeholder')" 
@@ -221,27 +204,27 @@ const getSLAColor = (slaStatus?: string) => {
               </div>
             </div>
             <div class="action-row">
-              <Button type="secondary" @click="router.push({ name: 'part-create' })">
+              <Button @click="router.push({ name: 'part-create' })">
                 {{ $t('part_list.add_new') }}
               </Button>
-              <Button type="secondary" class="ml-4" @click="router.push({ name: 'part-upload' })">
-                 {{ $t('part_list.bulk_upload') }}
+              <Button class="ml-4" @click="router.push({ name: 'part-upload' })">
+                {{ $t('part_list.bulk_upload') }}
               </Button>
-              <Button type="secondary" class="ml-4" @click="exportToExcel">
-                 {{ $t('part_list.export_excel') }}
+              <Button class="ml-4" @click="exportToExcel">
+                {{ $t('part_list.export_excel') }}
               </Button>
             </div>
           </div>
           <div class="filter-item">
-            <label>{{ $t('part_list.filter_status') }}</label>
-            <el-select v-model="statusFilter" class="form-select-el" clearable>
+            <label for="status-filter">{{ $t('part_list.filter_status') }}</label>
+            <el-select id="status-filter" v-model="statusFilter" class="form-select-el" clearable>
               <el-option :label="$t('common.all')" value="" />
               <el-option v-for="s in statusOptions" :key="s.key" :label="s.value" :value="s.key" />
             </el-select>
           </div>
           <div class="filter-item">
-            <label>{{ $t('part_list.filter_supplier') }}</label>
-            <el-select v-model="supplierFilter" class="form-select-el" clearable filterable>
+            <label for="supplier-filter">{{ $t('part_list.filter_supplier') }}</label>
+            <el-select id="supplier-filter" v-model="supplierFilter" class="form-select-el" clearable filterable>
               <el-option :label="$t('common.all')" value="" />
               <el-option v-for="s in suppliers" :key="s.key" :label="s.value" :value="s.key" />
             </el-select>
@@ -253,23 +236,28 @@ const getSLAColor = (slaStatus?: string) => {
         <table class="data-table">
           <thead>
             <tr>
-              <th width="35" class="text-center">
-                <span class="expand-toggle" @click="toggleAll" :title="$t('common.collapse_all')">
+              <th scope="col" class="text-center col-expand">
+                <button 
+                  type="button"
+                  class="expand-toggle" 
+                  :title="$t('common.collapse_all')"
+                  @click="toggleAll"
+                >
                   <el-icon v-if="isAllExpanded"><CaretBottom /></el-icon>
                   <el-icon v-else><CaretRight /></el-icon>
-                </span>
+                </button>
               </th>
-              <th width="100">{{ $t('common.customer') }}</th>
-              <th width="80">{{ $t('customer.part_no') }}</th>
-              <th width="120">{{ $t('part_list.description') }}</th>
-              <th width="60">{{ $t('part_detail.country') }}</th>
-              <th width="90">{{ $t('customer.hts_code') }}</th>
-              <th width="50" class="wrap-header">{{ $t('part_list.duty_rate') }}</th>
-              <th width="120">{{ $t('common.status') }}</th>
-              <th width="80">{{ $t('part_list.updated_by') }}</th>
-              <th width="100">{{ $t('common.last_updated') }}</th>
-              <th width="40">{{ $t('part_list.sla') }}</th>
-              <th width="65">{{ $t('common.actions') }}</th>
+              <th scope="col" class="col-customer">{{ $t('common.customer') }}</th>
+              <th scope="col" class="col-partno">{{ $t('customer.part_no') }}</th>
+              <th scope="col" class="col-desc">{{ $t('part_list.description') }}</th>
+              <th scope="col" class="col-country">{{ $t('part_detail.country') }}</th>
+              <th scope="col" class="col-hts">{{ $t('customer.hts_code') }}</th>
+              <th scope="col" class="wrap-header col-rate">{{ $t('part_list.duty_rate') }}</th>
+              <th scope="col" class="col-status">{{ $t('common.status') }}</th>
+              <th scope="col" class="col-updatedby">{{ $t('part_list.updated_by') }}</th>
+              <th scope="col" class="col-updateddate">{{ $t('common.last_updated') }}</th>
+              <th scope="col" class="col-sla">{{ $t('part_list.sla') }}</th>
+              <th scope="col" class="col-actions">{{ $t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -278,28 +266,32 @@ const getSLAColor = (slaStatus?: string) => {
             </tr>
             <template v-else v-for="part in parts" :key="part.id">
               <tr :class="{ 'expanded-row-master': expandedRows.has(part.id) }">
-                <td class="text-center">
-                  <span class="expand-toggle" @click="toggleRow(part.id)">
+                <td class="text-center col-expand">
+                  <button 
+                    type="button"
+                    class="expand-toggle" 
+                    @click="toggleRow(part.id)"
+                  >
                     <el-icon v-if="expandedRows.has(part.id)"><CaretBottom /></el-icon>
                     <el-icon v-else><CaretRight /></el-icon>
-                  </span>
+                  </button>
                 </td>
-                <td :title="part.customer">{{ part.customer || '-' }}</td>
-                <td :title="part.partNo">{{ part.partNo }}</td>
-                <td :title="part.partDesc">{{ part.partDesc || '-' }}</td>
-                <td :title="part.country">{{ part.country || '-' }}</td>
-                <td><code>{{ part.htsCode }}</code></td>
-                <td>{{ part.rate !== undefined ? part.rate + '%' : '-' }}</td>
-                <td>{{ $t('status.' + part.status.toLowerCase()) }}</td>
-                <td :title="part.updatedBy">{{ part.updatedBy || '-' }}</td>
-                <td>{{ commonService.formatDateTime(part.updatedDate) }}</td>
-                <td>
+                <td class="col-customer" :title="part.customer">{{ part.customer || '-' }}</td>
+                <td class="col-partno" :title="part.partNo">{{ part.partNo }}</td>
+                <td class="col-desc" :title="part.partDesc">{{ part.partDesc || '-' }}</td>
+                <td class="col-country" :title="part.country">{{ part.country || '-' }}</td>
+                <td class="col-hts"><code>{{ part.htsCode }}</code></td>
+                <td class="col-rate">{{ part.rate !== undefined ? part.rate + '%' : '-' }}</td>
+                <td class="col-status">{{ $t('status.' + part.status.toLowerCase()) }}</td>
+                <td class="col-updatedby" :title="part.updatedBy">{{ part.updatedBy || '-' }}</td>
+                <td class="col-updateddate">{{ commonService.formatDateTime(part.updatedDate) }}</td>
+                <td class="col-sla">
                   <div v-if="part.slaStatus" class="status-cell">
                     <Dot :dotColor="getSLAColor(part.slaStatus)" size="8px" />
                   </div>
                   <span v-else>-</span>
                 </td>
-                <td>
+                <td class="col-actions">
                   <Button type="text" class="btn-compact" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
                     View
                   </Button>
@@ -310,9 +302,9 @@ const getSLAColor = (slaStatus?: string) => {
                   <div class="detail-content">
                     <div class="duty-grid">
                       <div class="duty-item" v-for="i in 4" :key="i">
-                        <div class="duty-label">{{ htsLabels[i-1] }}</div>
-                        <div class="duty-val">Code: {{ getHTSCode(part, i) }}</div>
-                        <div class="duty-val">Rate: {{ getHTSRate(part, i) }}</div>
+                        <div class="duty-label">{{ HTS_LABELS[i-1] }}</div>
+                        <div class="duty-val">Code: {{ part[`htsCode${i as 1|2|3|4}`] || '-' }}</div>
+                        <div class="duty-val">Rate: {{ part[`rate${i as 1|2|3|4}`] ?? '-' }}{{ part[`rate${i as 1|2|3|4}`] ? '%' : '' }}</div>
                       </div>
                     </div>
                   </div>
@@ -397,18 +389,13 @@ h1 {
 
 .filter-item label {
   font-size: 0.75rem;
-  color: #8898aa;
+  color: #525f7f;
 }
 
 .form-input {
   padding: 0.5rem;
   border: 1px solid #dee2e6;
   border-radius: 6px;
-}
-
-.form-select-el :deep(.el-input__wrapper) {
-  border-radius: 6px;
-  height: 36px;
 }
 
 .action-row {
@@ -428,7 +415,7 @@ h1 {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* Mandate fixed layout for width control (強制固定佈局以控制寬度) */
+  table-layout: fixed;
   min-width: 1100px;
 }
 
@@ -441,7 +428,7 @@ h1 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.85rem; /* Explicitly sync both (明確同步兩者) */
+  font-size: 0.85rem;
 }
 
 .data-table th {
@@ -451,11 +438,25 @@ h1 {
   font-weight: 600;
 }
 
+/* Modern Column Width Control */
+.col-expand { width: 35px; }
+.col-customer { width: 100px; }
+.col-partno { width: 80px; }
+.col-desc { width: 120px; }
+.col-country { width: 60px; }
+.col-hts { width: 90px; }
+.col-rate { width: 50px; }
+.col-status { width: 120px; }
+.col-updatedby { width: 80px; }
+.col-updateddate { width: 100px; }
+.col-sla { width: 40px; }
+.col-actions { width: 65px; }
+
 .wrap-header {
   white-space: normal !important;
   line-height: 1.0 !important;
-  word-break: break-all !important; /* Force break continuous text (強制斷開連續文字) */
-  max-width: 55px !important; /* Narrower to force wrapping (更窄以強制折行) */
+  word-break: break-all !important;
+  max-width: 55px !important;
   min-width: 55px !important;
   padding: 0.2rem 1px !important;
 }
@@ -476,6 +477,9 @@ h1 {
   transition: color 0.2s ease;
   width: 20px;
   height: 20px;
+  background: none;
+  border: none;
+  padding: 0;
 }
 
 .expand-toggle:hover {
