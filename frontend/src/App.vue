@@ -1,15 +1,21 @@
 <script setup lang="ts">
+/*
 import { RouterView, useRoute } from 'vue-router'
 import { computed, watch } from 'vue';
-import { authService, UserRole } from './services/auth/auth';
+*/
+import { authService } from './services/auth/auth';
+/*
 import Sidebar from './components/common/Sidebar.vue';
 import AppHeader from './components/common/AppHeader.vue';
 import AppTabs from './components/common/AppTabs.vue';
 import AppFooter from './components/common/AppFooter.vue';
 import Loading from './components/common/Loading.vue';
+*/
 import { useUIStore } from './stores/ui';
 import { useTabStore } from './stores/tabs';
+/*
 import { storeToRefs } from 'pinia';
+*/
 
 /**
  * Main App Component (主應用程式組件)

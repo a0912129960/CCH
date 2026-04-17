@@ -10,3 +10,6 @@
 /backend/CCH/CCH.Tests/bin
 /backend/CCH/CCH.Tests/obj
 /backend/CCH/.superpowers
+/frontend/docs
+/frontend/.env
+/backend/CCH/Data

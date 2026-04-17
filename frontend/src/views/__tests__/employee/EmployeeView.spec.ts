@@ -1,9 +1,9 @@
 import { mount, flushPromises } from '@vue/test-utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import EmployeeView from '../../employee/EmployeeView.vue';
-import { authService, UserRole } from '../../../services/auth/auth';
-import { partService } from '../../../services/part/part';
+import { UserRole } from '../../../services/auth/auth';
 import { dashboardService } from '../../../services/dashboard/dashboard';
+import { useAuthStore } from '../../../stores/auth';
 
 // Mock Vue Router
 vi.mock('vue-router', () => ({
@@ -12,7 +12,21 @@ vi.mock('vue-router', () => ({
   })
 }));
 
-// Mock I18n
+// Mock services
+vi.mock('../../../services/dashboard/dashboard', () => ({
+  dashboardService: {
+    getStatusSummary: vi.fn().mockResolvedValue([]),
+    getPendingReviewParts: vi.fn().mockResolvedValue([])
+  }
+}));
+
+vi.mock('../../../services/common/common', () => ({
+  commonService: {
+    getCustomers: vi.fn().mockResolvedValue([{ key: 'customer001', value: 'Test Customer' }])
+  }
+}));
+
+// Mock I18n handled by setup.ts
 const $t = (key: string) => key;
 
 describe('EmployeeView.vue', () => {
@@ -26,11 +40,13 @@ describe('EmployeeView.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Setup Employee Auth state
-    authService.state.isLoggedIn = true;
-    authService.state.role = UserRole.DIMERCO;
-    authService.state.username = 'Y9999';
-    authService.state.customerId = undefined;
+    // Setup Employee Auth state via Store
+    const authStore = useAuthStore();
+    authStore.setAuth('mock-token', {
+      id: 'E001',
+      name: 'Y9999',
+      role: UserRole.DIMERCO
+    });
   });
 
   it('renders employee dashboard title and welcome message', async () => {

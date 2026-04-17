@@ -1,13 +1,20 @@
 <script setup lang="ts">
+/*
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+*/
 import { authService, UserRole } from '../../services/auth/auth';
 import { partService, type PartListItem } from '../../services/part/part';
 import { commonService, type CustomerOption, type StatusOption, type SupplierOption } from '../../services/common/common';
-import { useI18n } from 'vue-i18n';
+
+// Internal components (Restore manual import for Vitest compatibility)
 import Card from '../../components/common/Card.vue';
 import Dot from '../../components/common/Dot.vue';
 import Button from '../../components/common/Button.vue';
+
+/*
+import { useI18n } from 'vue-i18n';
+*/
 
 /**
  * Part No List View (零件編號清單頁面)

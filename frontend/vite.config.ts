@@ -1,11 +1,35 @@
 /// <reference types="vitest" />
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    AutoImport({
+      imports: [
+        'vue', 
+        'vue-router', 
+        'pinia', 
+        'vue-i18n',
+        {
+          'element-plus': ['ElMessage', 'ElMessageBox']
+        }
+      ],
+      dts: 'src/auto-imports.d.ts',
+      resolvers: [ElementPlusResolver({ importStyle: false })],
+    }),
+    Components({
+      dirs: ['src/components/common'],
+      extensions: ['vue'],
+      dts: 'src/components.d.ts',
+      resolvers: [ElementPlusResolver({ importStyle: false })],
+    })
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -16,5 +40,6 @@ export default defineConfig({
     environment: 'happy-dom',
     include: ['src/**/*.spec.ts'],
     exclude: ['node_modules', 'dist'],
+    setupFiles: ['./src/__tests__/setup.ts'],
   },
 })

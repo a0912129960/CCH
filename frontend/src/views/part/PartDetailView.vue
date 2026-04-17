@@ -1,19 +1,23 @@
 <script setup lang="ts">
+/*
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+*/
 import { authService, UserRole } from '../../services/auth/auth';
 // INTERNAL-AI-20260416: Import real API functions and types. Old mock imports preserved below.
 // (INTERNAL-AI-20260416: 匯入真實 API 函式與型別。舊的 mock 匯入保留如下。)
 /* import { partService, type Part, PartStatus } from '../../services/part/part'; */
 import {
-  partService, PartStatus,
+  /* partService, PartStatus, */
   getPartDetail, updatePart, submitPart, getMilestones, acceptPart, returnPart,
   statusToI18nKey,
   type PartDetailResponse, type PartSavePayload, type Milestone
 } from '../../services/part/part';
 import { useTabStore } from '../../stores/tabs';
+/*
 import { ElMessage, ElMessageBox } from 'element-plus';
+*/
 
 /**
  * Part No Detail View (零件編號詳細頁面)
@@ -55,7 +59,7 @@ const form = ref<PartSavePayload>({
 });
 
 const userRole = computed(() => authService.state.role);
-const isEmployee = computed(() => userRole.value === UserRole.DIMERCO || userRole.value === UserRole.DCB);
+// const isEmployee = computed(() => userRole.value === UserRole.DIMERCO || userRole.value === UserRole.DCB);
 const isCustomer = computed(() => userRole.value === UserRole.CUSTOMER);
 const isDcb = computed(() => userRole.value === UserRole.DCB);
 
