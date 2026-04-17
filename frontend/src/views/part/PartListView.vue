@@ -66,6 +66,13 @@ const toggleAll = () => {
   }
 };
 
+const htsLabels = [
+  '301 Duty',
+  'IEEPA Duty',
+  '232 Aluminum',
+  'Reciprocal Tariff'
+];
+
 /**
  * Helper to get HTS fields safely from PartListItem (輔助函式：安全獲取 HTS 欄位)
  */
@@ -288,7 +295,7 @@ const getSLAColor = (slaStatus?: string) => {
                   <div class="detail-content">
                     <div class="duty-grid">
                       <div class="duty-item" v-for="i in 4" :key="i">
-                        <div class="duty-label">HTS {{i}}</div>
+                        <div class="duty-label">{{ htsLabels[i-1] }}</div>
                         <div class="duty-val">Code: {{ getHTSCode(part, i) }}</div>
                         <div class="duty-val">Rate: {{ getHTSRate(part, i) }}</div>
                       </div>
