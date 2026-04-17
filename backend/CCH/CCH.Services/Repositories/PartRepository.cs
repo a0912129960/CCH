@@ -6,43 +6,31 @@ using System.Text.Json;
 namespace CCH.Services.Repositories;
 
 /// <summary>
-/// Implementation of Part repository using relational JSON files with source path discovery.
-/// (繁體中文) 具備原始碼路徑自動偵測與關聯式 JSON 持久化的零件倉儲實作。
+/// Implementation of Part repository using relational JSON files.
+/// (繁體中文) 使用關連式 JSON 檔案的零件倉儲實作。
 /// </summary>
 public class PartRepository : IPartRepository
 {
     private readonly string _partsPath;
-    private readonly string _customersPath;
-    private readonly string _countriesPath;
-
+    private readonly ICommonRepository _commonRepository;
     private List<PartEntity> _parts = new();
-    private List<CustomerEntity> _customers = new();
-    private List<CountryEntity> _countries = new();
-
     private static readonly object _fileLock = new();
 
-    public PartRepository(string? overridePath = null)
+    public PartRepository(ICommonRepository commonRepository, string? overridePath = null)
     {
-        string dataDir;
+        _commonRepository = commonRepository;
+
         if (!string.IsNullOrEmpty(overridePath))
         {
-            dataDir = Path.GetDirectoryName(overridePath)!;
             _partsPath = overridePath;
         }
         else
         {
-            // Force Project Root Discovery: Navigate up 5 levels from bin/Debug/net10.0/
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
             var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
-            var sourceDir = Path.Combine(projectRootDir, "Data");
-
-
-            dataDir = sourceDir;
+            var dataDir = Path.Combine(projectRootDir, "Data");
             _partsPath = Path.Combine(dataDir, "parts.json");
         }
-
-        _customersPath = Path.Combine(dataDir, "customers.json");
-        _countriesPath = Path.Combine(dataDir, "countries.json");
 
         LoadAllData();
     }
@@ -51,11 +39,10 @@ public class PartRepository : IPartRepository
     {
         lock (_fileLock)
         {
-            // Ensure directory exists (確保目錄存在)
             var dir = Path.GetDirectoryName(_partsPath);
             if (dir != null && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
-            if (!File.Exists(_partsPath) || !File.Exists(_customersPath) || !File.Exists(_countriesPath))
+            if (!File.Exists(_partsPath))
             {
                 SeedData();
                 return;
@@ -64,8 +51,6 @@ public class PartRepository : IPartRepository
             try
             {
                 _parts = JsonSerializer.Deserialize<List<PartEntity>>(File.ReadAllText(_partsPath)) ?? new();
-                _customers = JsonSerializer.Deserialize<List<CustomerEntity>>(File.ReadAllText(_customersPath)) ?? new();
-                _countries = JsonSerializer.Deserialize<List<CountryEntity>>(File.ReadAllText(_countriesPath)) ?? new();
             }
             catch
             {
@@ -76,19 +61,7 @@ public class PartRepository : IPartRepository
 
     private void SeedData()
     {
-        _customers = new List<CustomerEntity> {
-            new() { ID = 101, Name = "Customer A" },
-            new() { ID = 102, Name = "Customer B" },
-            new() { ID = 103, Name = "Customer C" }
-        };
-
-        _countries = new List<CountryEntity> {
-            new() { ID = 1, Name = "Taiwan", Code = "TW" },
-            new() { ID = 2, Name = "China", Code = "CN" },
-            new() { ID = 3, Name = "USA", Code = "US" },
-            new() { ID = 4, Name = "Japan", Code = "JP" }
-        };
-
+        // Only seed parts. Customers and Countries are managed by CommonRepository.
         _parts = new List<PartEntity> {
             new() { ID = 1, CustomerID = 101, PartNo = "PART-001", CountryID = 1, PartDescription = "Electronic Controller Unit", Division = "Electronics", Supplier = "TechSupply Corp", HTSCode = "8537.10.9170", DutyRate = 0.0m, Status = "S04", UpdatedBy = "Admin", UpdatedDate = DateTime.Now.AddDays(-5), AddHTSCode1 = "8537.10.0000", AddDutyRate1 = 0.5m },
             new() { ID = 2, CustomerID = 102, PartNo = "PART-002", CountryID = 2, PartDescription = "Hydraulic Pump Assembly", Division = "Mechanical", Supplier = "FluidDynamics Ltd", HTSCode = "8413.50.0010", DutyRate = 5.0m, Status = "S02", UpdatedBy = "User X", UpdatedDate = DateTime.Now.AddDays(-1), AddHTSCode1 = "8413.91.0000", AddDutyRate1 = 2.5m, AddHTSCode2 = "8413.92.0000", AddDutyRate2 = 1.0m },
@@ -120,24 +93,20 @@ public class PartRepository : IPartRepository
             {
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 File.WriteAllText(_partsPath, JsonSerializer.Serialize(_parts, options));
-                File.WriteAllText(_customersPath, JsonSerializer.Serialize(_customers, options));
-                File.WriteAllText(_countriesPath, JsonSerializer.Serialize(_countries, options));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error saving relational data: {ex.Message}");
+                Console.WriteLine($"Error saving parts data: {ex.Message}");
             }
         }
     }
 
     private PartListItemDto MapToDto(PartEntity entity, string? role = null)
     {
-        var customerName = _customers.FirstOrDefault(c => c.ID == entity.CustomerID)?.Name ?? "Unknown";
-        var countryName = _countries.FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
+        var customerName = _commonRepository.GetCustomers().FirstOrDefault(c => c.ID == entity.CustomerID)?.Name ?? "Unknown";
+        var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
 
-        // SLA Calculation Logic (SLA 計算邏輯)
-        // Login by Customer: 0-36h (Green), 36-48h (Yellow), 48-72h (Orange), >72h (Red)
-        // Login by Dimerco/DCB: 0-24h (Green), 24-36h (Yellow), 36-48h (Orange), >48h (Red)
+        // SLA Calculation Logic
         string slaStatus = "green";
         var hoursElapsed = (DateTime.Now - entity.UpdatedDate).TotalHours;
 
@@ -147,7 +116,7 @@ public class PartRepository : IPartRepository
             else if (hoursElapsed > 48) slaStatus = "orange";
             else if (hoursElapsed > 36) slaStatus = "yellow";
         }
-        else // dimerco or dcb
+        else 
         {
             if (hoursElapsed > 48) slaStatus = "red";
             else if (hoursElapsed > 36) slaStatus = "orange";
@@ -182,15 +151,12 @@ public class PartRepository : IPartRepository
     {
         var query = _parts.AsQueryable();
 
-        // Role-based filtering (基於角色的篩選)
         if (role == "customer")
         {
-            // Customer: Only S01 and S03 (Customer: 僅 S01 與 S03)
             query = query.Where(p => p.Status == "S01" || p.Status == "S03");
         }
         else if (role == "dimerco" || role == "dcb")
         {
-            // Dimerco/DCB: Only S02 (Dimerco/DCB: 僅 S02)
             query = query.Where(p => p.Status == "S02");
         }
 
@@ -200,7 +166,7 @@ public class PartRepository : IPartRepository
                 query = query.Where(p => p.CustomerID == cId);
             else
             {
-                var customerIds = _customers.Where(c => c.Name.Contains(customerId, StringComparison.OrdinalIgnoreCase)).Select(c => c.ID);
+                var customerIds = _commonRepository.GetCustomers().Where(c => c.Name.Contains(customerId, StringComparison.OrdinalIgnoreCase)).Select(c => c.ID);
                 query = query.Where(p => customerIds.Contains(p.CustomerID));
             }
         }
@@ -220,7 +186,6 @@ public class PartRepository : IPartRepository
     public PartDetailResponseDto? GetPartDetail(int partId)
     {
         if (partId <= 0) return null;
-        
         var part = _parts.FirstOrDefault(p => p.ID == partId);
         if (part == null) return null;
 
@@ -262,7 +227,6 @@ public class PartRepository : IPartRepository
             CreatedDate = DateTime.Now,
             UpdatedDate = DateTime.Now
         };
-        
         _parts.Add(entity);
         SaveAllData();
         return newId;

@@ -13,10 +13,12 @@ public class CommonRepository : ICommonRepository
     private readonly string _customersPath;
     private readonly string _countriesPath;
     private readonly string _statusesPath;
+    private readonly string _suppliersPath;
 
     private List<CustomerEntity> _customers = new();
     private List<CountryEntity> _countries = new();
     private List<StatusEntity> _statuses = new();
+    private List<SupplierEntity> _suppliers = new();
 
     private static readonly object _fileLock = new();
 
@@ -30,6 +32,7 @@ public class CommonRepository : ICommonRepository
         _customersPath = Path.Combine(dataDir, "customers.json");
         _countriesPath = Path.Combine(dataDir, "countries.json");
         _statusesPath = Path.Combine(dataDir, "statuses.json");
+        _suppliersPath = Path.Combine(dataDir, "suppliers.json");
 
         LoadAllData();
     }
@@ -38,7 +41,7 @@ public class CommonRepository : ICommonRepository
     {
         lock (_fileLock)
         {
-            if (!File.Exists(_customersPath) || !File.Exists(_countriesPath) || !File.Exists(_statusesPath))
+            if (!File.Exists(_customersPath) || !File.Exists(_countriesPath) || !File.Exists(_statusesPath) || !File.Exists(_suppliersPath))
             {
                 SeedData();
                 return;
@@ -49,6 +52,7 @@ public class CommonRepository : ICommonRepository
                 _customers = JsonSerializer.Deserialize<List<CustomerEntity>>(File.ReadAllText(_customersPath)) ?? new();
                 _countries = JsonSerializer.Deserialize<List<CountryEntity>>(File.ReadAllText(_countriesPath)) ?? new();
                 _statuses = JsonSerializer.Deserialize<List<StatusEntity>>(File.ReadAllText(_statusesPath)) ?? new();
+                _suppliers = JsonSerializer.Deserialize<List<SupplierEntity>>(File.ReadAllText(_suppliersPath)) ?? new();
             }
             catch
             {
@@ -94,6 +98,7 @@ public class CommonRepository : ICommonRepository
                 File.WriteAllText(_customersPath, JsonSerializer.Serialize(_customers, options));
                 File.WriteAllText(_countriesPath, JsonSerializer.Serialize(_countries, options));
                 File.WriteAllText(_statusesPath, JsonSerializer.Serialize(_statuses, options));
+                File.WriteAllText(_suppliersPath, JsonSerializer.Serialize(_suppliers, options));
             }
             catch (Exception ex)
             {
@@ -105,4 +110,9 @@ public class CommonRepository : ICommonRepository
     public IEnumerable<CustomerEntity> GetCustomers() => _customers;
     public IEnumerable<CountryEntity> GetCountries() => _countries;
     public IEnumerable<StatusEntity> GetStatuses() => _statuses;
+    public IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null)
+    {
+        if (customerId == null) return _suppliers;
+        return _suppliers.Where(s => s.CustomerID == customerId.Value);
+    }
 }

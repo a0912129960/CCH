@@ -11,4 +11,5 @@ public interface ICommonRepository
     IEnumerable<CustomerEntity> GetCustomers();
     IEnumerable<CountryEntity> GetCountries();
     IEnumerable<StatusEntity> GetStatuses();
+    IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null);
 }

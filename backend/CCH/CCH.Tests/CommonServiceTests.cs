@@ -45,19 +45,26 @@ public class CommonServiceTests
     [Fact]
     public void GetCustomers_ReturnsMappedCustomersFromRepository()
     {
+        // ... (previous code)
+    }
+
+    [Fact]
+    public void GetSuppliers_WithCustomerId_ReturnsFilteredSuppliers()
+    {
         // Arrange
-        var mockCustomers = new List<CustomerEntity>
+        var mockSuppliers = new List<SupplierEntity>
         {
-            new() { ID = 101, Name = "Customer A" }
+            new() { ID = 1, CustomerID = 101, Name = "Supplier A1" },
+            new() { ID = 2, CustomerID = 102, Name = "Supplier B1" }
         };
-        _mockRepo.Setup(r => r.GetCustomers()).Returns(mockCustomers);
+        _mockRepo.Setup(r => r.GetSuppliers(101)).Returns(mockSuppliers.Where(s => s.CustomerID == 101));
 
         // Act
-        var result = _service.GetCustomers();
+        var result = _service.GetSuppliers("101");
 
         // Assert
         Assert.Single(result);
-        Assert.Equal("101", result.First().Key);
-        Assert.Equal("Customer A", result.First().Value);
+        Assert.Equal("1", result.First().Key);
+        Assert.Equal("Supplier A1", result.First().Value);
     }
 }

@@ -1,25 +1,34 @@
 using CCH.Core.DTOs;
+using CCH.Core.Entities;
+using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories;
+using Moq;
 using Xunit;
 
 namespace CCH.Tests;
 
 /// <summary>
 /// Tests for PartRepository implementation with relational file persistence.
-/// (繁體中文) 具備關聯式檔案持久化的 PartRepository 實作測試。
+/// (繁體中文) 具備關連式檔案持久化的 PartRepository 實作測試。
 /// </summary>
 public class PartRepositoryTests : IDisposable
 {
     private readonly string _testBaseDir;
     private readonly string _testPartsPath;
     private readonly PartRepository _repository;
+    private readonly Mock<ICommonRepository> _mockCommonRepo;
 
     public PartRepositoryTests()
     {
         _testBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"Test_{Guid.NewGuid()}");
         Directory.CreateDirectory(_testBaseDir);
         _testPartsPath = Path.Combine(_testBaseDir, "parts.json");
-        _repository = new PartRepository(_testPartsPath);
+
+        _mockCommonRepo = new Mock<ICommonRepository>();
+        _mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<CustomerEntity> { new() { ID = 101, Name = "Customer A" }, new() { ID = 103, Name = "Customer C" } });
+        _mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Taiwan" }, new() { ID = 4, Name = "Japan" } });
+
+        _repository = new PartRepository(_mockCommonRepo.Object, _testPartsPath);
     }
 
     public void Dispose()
@@ -69,7 +78,7 @@ public class PartRepositoryTests : IDisposable
         var newId = _repository.CreatePart(request, "S01");
         
         // Assert - Verify in a fresh instance
-        var secondRepo = new PartRepository(_testPartsPath);
+        var secondRepo = new PartRepository(_mockCommonRepo.Object, _testPartsPath);
         var part = secondRepo.SearchParts(null, null, "RELATIONAL-TEST", null).FirstOrDefault();
         
         Assert.NotNull(part);

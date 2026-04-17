@@ -23,11 +23,13 @@ public class CommonService : ICommonService
     public IEnumerable<KeyValuePairDto> GetCountries() => 
         _repository.GetCountries().Select(c => new KeyValuePairDto { Key = c.Code, Value = c.Name });
 
-    public IEnumerable<KeyValuePairDto> GetSuppliers(string? customerId) => new[]
+    public IEnumerable<KeyValuePairDto> GetSuppliers(string? customerId)
     {
-        new KeyValuePairDto { Key = "S001", Value = "Supplier X" },
-        new KeyValuePairDto { Key = "S002", Value = "Supplier Y" }
-    };
+        int? cId = null;
+        if (int.TryParse(customerId, out int parsedId)) cId = parsedId;
+
+        return _repository.GetSuppliers(cId).Select(s => new KeyValuePairDto { Key = s.ID.ToString(), Value = s.Name });
+    }
 
     public IEnumerable<KeyValuePairDto> GetStatus() => 
         _repository.GetStatuses().Select(s => new KeyValuePairDto { Key = s.Code, Value = s.Description });
