@@ -11,8 +11,8 @@ using Xunit;
 namespace CCH.Tests;
 
 /// <summary>
-/// Tests for PartQueryService and PartExcelService implementation using Relational Repository.
-/// (繁體中文) 使用關聯式 Repository 的 PartQueryService 與 PartExcelService 實作測試。
+/// Tests for PartQueryService and PartExcelService implementation with separated responsibilities.
+/// (繁體中文) 具備職責分離的 PartQueryService 與 PartExcelService 實作測試。
 /// </summary>
 public class PartServiceTests : IDisposable
 {
@@ -32,15 +32,19 @@ public class PartServiceTests : IDisposable
         var mockCommonRepo = new Mock<ICommonRepository>();
         mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<CustomerEntity> { new() { ID = 101, Name = "Customer A" } });
         mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Taiwan" } });
+        mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<SupplierEntity> { new() { ID = 1, Name = "TechSupply Corp" } });
 
-        _repository = new PartRepository(mockCommonRepo.Object, _testPartsPath);
+        // Repository handles raw entity persistence (倉儲處理原始實體持久化)
+        _repository = new PartRepository(_testPartsPath);
 
         _mockUserContext = new Mock<IUserContext>();
-        _mockUserContext.Setup(u => u.Role).Returns("admin"); // Use admin to bypass role filters initially
+        _mockUserContext.Setup(u => u.Role).Returns("admin"); 
 
-        _queryService = new PartQueryService(_repository, _mockUserContext.Object);
+        // QueryService now handles mapping and requires CommonRepository (Service 現在處理映射，需要 CommonRepository)
+        _queryService = new PartQueryService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
         _excelService = new PartExcelService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
     }
+
     public void Dispose()
     {
         if (Directory.Exists(_testBaseDir))
@@ -50,15 +54,16 @@ public class PartServiceTests : IDisposable
     }
 
     [Fact]
-    public void SearchParts_NoFilters_ReturnsMappedData()
+    public void SearchParts_NoFilters_ReturnsMappedDataWithSla()
     {
         // Act
         var result = _queryService.SearchParts(null, null, null, null, 1, 20);
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(17, result.Total);
-        Assert.Equal("Customer A", result.Data.First().Customer);
+        Assert.Equal(17, result.Total); // Verify initial seeder data count
+        Assert.Equal("Customer A", result.Data.First().Customer); // Verify mapping from Service layer
+        Assert.NotNull(result.Data.First().SlaStatus); // Verify SLA calculated in Service
     }
 
     [Fact]
@@ -70,8 +75,7 @@ public class PartServiceTests : IDisposable
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Length > 0);
-        // Basic check for Excel (ZIP/OpenXML) file signature (PK..)
-        Assert.Equal((byte)'P', result[0]);
+        Assert.Equal((byte)'P', result[0]); // Excel signature PK..
         Assert.Equal((byte)'K', result[1]);
     }
 }

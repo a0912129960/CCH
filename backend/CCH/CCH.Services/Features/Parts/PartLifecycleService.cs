@@ -1,3 +1,4 @@
+using CCH.Core.Entities;
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Features.Parts.Interfaces;
 using CCH.Core.Interfaces.Repositories;
@@ -12,48 +13,98 @@ public class PartLifecycleService : IPartLifecycleService
 {
     private readonly IPartRepository _repository;
 
+    /// <summary>
+    /// Initializes a new instance of PartLifecycleService.
+    /// (繁體中文) 初始化 PartLifecycleService 的新執行個體。
+    /// </summary>
     public PartLifecycleService(IPartRepository repository)
     {
         _repository = repository;
     }
 
+    /// <inheritdoc/>
     public object CreatePart(PartSaveRequest request, string status)
     {
-        var partId = _repository.CreatePart(request, status);
+        var entity = new PartEntity
+        {
+            CustomerID = request.CustomerId ?? 101,
+            PartNo = request.PartNo,
+            CountryID = request.CountryId ?? 1,
+            PartDescription = request.PartDesc,
+            Division = request.Division,
+            SupplierID = request.SupplierId ?? 1,
+            HTSCode = request.HtsCode,
+            DutyRate = request.Rate,
+            AddHTSCode1 = request.HtsCode1,
+            AddDutyRate1 = request.Rate1,
+            AddHTSCode2 = request.HtsCode2,
+            AddDutyRate2 = request.Rate2,
+            AddHTSCode3 = request.HtsCode3,
+            AddDutyRate3 = request.Rate3,
+            AddHTSCode4 = request.HtsCode4,
+            AddDutyRate4 = request.Rate4,
+            Remark = request.Remark,
+            Status = status,
+            CreatedBy = "AI-System",
+            UpdatedBy = "AI-System"
+        };
+
+        var partId = _repository.CreatePart(entity);
         return new { partId, partNo = request.PartNo, status };
     }
 
+    /// <inheritdoc/>
     public object UpdatePart(int partId, PartSaveRequest request)
     {
-        _repository.UpdatePart(partId, request);
+        var existing = _repository.GetPartById(partId);
+        if (existing != null)
+        {
+            existing.PartNo = request.PartNo;
+            existing.PartDescription = request.PartDesc;
+            existing.Division = request.Division;
+            existing.SupplierID = request.SupplierId ?? existing.SupplierID;
+            existing.HTSCode = request.HtsCode;
+            existing.DutyRate = request.Rate;
+            existing.AddHTSCode1 = request.HtsCode1;
+            existing.AddDutyRate1 = request.Rate1;
+            existing.Remark = request.Remark;
+            existing.UpdatedBy = "AI-System";
+            
+            _repository.UpdatePart(existing);
+        }
         return new { };
     }
 
+    /// <inheritdoc/>
     public object SubmitPart(int partId, PartSaveRequest request)
     {
-        _repository.UpdatePart(partId, request);
+        UpdatePart(partId, request);
         _repository.UpdateStatus(partId, "S02");
         return new { partId, status = "S02" };
     }
 
+    /// <inheritdoc/>
     public object AcceptPart(int partId)
     {
         _repository.UpdateStatus(partId, "S04");
         return new { partId, status = "S04" };
     }
 
+    /// <inheritdoc/>
     public object ReturnPart(int partId, string returnReason)
     {
         _repository.UpdateStatus(partId, "S03");
         return new { partId, status = "S03" };
     }
 
+    /// <inheritdoc/>
     public object InactivatePart(int partId)
     {
         _repository.UpdateStatus(partId, "Inactive");
         return new { partId, status = "Inactive" };
     }
 
+    /// <inheritdoc/>
     public object BatchAccept(IEnumerable<int> partIds)
     {
         var failed = new List<object>();
@@ -61,16 +112,16 @@ public class PartLifecycleService : IPartLifecycleService
         {
             try
             {
-                var detail = _repository.GetPartDetail(id);
-                if (detail == null)
+                var entity = _repository.GetPartById(id);
+                if (entity == null)
                 {
                     failed.Add(new { partId = id, errorMessage = "Part not found. / 找不到零件。" });
                     continue;
                 }
 
-                if (detail.Status != "S02" && detail.Status != "S03")
+                if (entity.Status != "S02" && entity.Status != "S03")
                 {
-                    failed.Add(new { partId = id, errorMessage = $"Invalid status: {detail.Status}. Expected S02 or S03. / 錯誤的狀態：{detail.Status}。預期為 S02 或 S03。" });
+                    failed.Add(new { partId = id, errorMessage = $"Invalid status: {entity.Status}. Expected S02 or S03. / 錯誤的狀態：{entity.Status}。預期為 S02 或 S03。" });
                     continue;
                 }
 
