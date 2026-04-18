@@ -1,5 +1,6 @@
 import api from '@src/services/api';
 import { useAuthStore } from '@src/stores/auth';
+import { useTabStore } from '@src/stores/tabs';
 
 /**
  * User Role Types (使用者角色類型)
@@ -58,10 +59,10 @@ export const authService = {
         return true;
       }
       
-      return false; // Error handled by interceptor (錯誤已由攔截器處理)
+      return false; 
     } catch (error) {
       console.error('Login failed (登入失敗):', error);
-      return false; // Network error handled by interceptor (網路錯誤已由攔截器處理)
+      return false;
     }
   },
 
@@ -70,7 +71,10 @@ export const authService = {
    */
   logout() {
     const authStore = useAuthStore();
+    const tabStore = useTabStore();
+    
     authStore.clearAuth();
+    tabStore.closeAll();
   },
 
   /**
