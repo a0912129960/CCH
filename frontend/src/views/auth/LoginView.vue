@@ -1,13 +1,17 @@
+<script lang="ts">
+export default {
+  name: 'LoginView'
+};
+</script>
+
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { authService, UserRole } from '../../services/auth/auth';
-import AppButton from '../../components/common/Button.vue';
-import DimercoLogo from '@/assets/images/DimLogo_Color_background_Transparent.png';
+import { authService, UserRole } from '@src/services/auth/auth';
+import AppButton from '@src/components/common/Button.vue';
+import DimercoLogo from '@src/assets/images/DimLogo_Color_background_Transparent.png';
 
 /**
  * Login View Component (具備視覺升級與多國語系的登入頁面)
- * Update by Gemini AI on 2026-04-15
+ * Update by Gemini AI on 2026-04-18: Explicit name for cache control and path alias refactor. (顯式組件名稱以利緩存控管，並重構路徑別名。)
  */
 
 const router = useRouter();
@@ -56,6 +60,7 @@ const handleLogin = async () => {
               v-model="username" 
               type="text" 
               :placeholder="$t('login.account_placeholder')" 
+              autocomplete="username"
               @keyup.enter="handleLogin"
             />
           </div>
@@ -67,6 +72,7 @@ const handleLogin = async () => {
               v-model="password" 
               type="password" 
               :placeholder="$t('login.password_placeholder')" 
+              autocomplete="current-password"
               @keyup.enter="handleLogin"
             />
           </div>

@@ -68,7 +68,7 @@ watch(
       <!-- 4. Content Area -->
       <main class="content-area">
         <RouterView v-slot="{ Component }">
-          <keep-alive>
+          <keep-alive :exclude="['LoginView']">
             <component :is="Component" :key="route.fullPath" />
           </keep-alive>
         </RouterView>
