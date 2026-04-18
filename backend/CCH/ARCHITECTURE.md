@@ -23,17 +23,7 @@ This document defines the architectural standards and patterns for the CCH proje
 ### 1.5 Dependency Inversion Principle (DIP)
 - High-level modules (Services) must depend on abstractions (Interfaces in `CCH.Core`), not on low-level modules (Repositories).
 
-## 🔐 2. Role-Based Access Control (RBAC)
-
-The system supports three primary roles, each with specific logic boundaries:
-
-| Role | Responsibility | Data Access Boundary |
-| :--- | :--- | :--- |
-| **Customer** | Draft and submit parts. | Can only see/edit their own parts in status S01/S03. |
-| **Dimerco** | Legacy/ReadOnly Support. | Access is maintained for audit; active review migrated to DCB. (繁體中文) 僅供稽核使用；審核功能已移至 DCB。 |
-| **DCB** | Primary review and acceptance. | Can view/accept/return parts in S02. |
-
-## 📊 3. Data Flow Pattern
+## 📊 2. Data Flow Pattern
 1. **API Controller**: Receives request -> Validates `ModelState` -> Calls Service Interface.
 2. **Service Layer**: 
    - Orchestrates logic.
@@ -44,12 +34,12 @@ The system supports three primary roles, each with specific logic boundaries:
    - Returns Entities (`CCH.Core.Entities`).
    - Interacts with JSON Mock files.
 
-## 🧪 4. Testing Standard
+## 🧪 3. Testing Standard
 - **Unit Tests**: Every public method in the Service layer must have a corresponding test in `CCH.Tests`.
 - **Mocking**: Use `Moq` for service dependencies.
 - **Verification**: Tests must verify both "Happy Path" and "Edge Cases" (e.g., invalid status transitions).
 
-## 📋 5. Documentation Maintenance (SOP)
+## 📋 4. Documentation Maintenance (SOP)
 
 To keep the project AI-friendly and human-readable, the following documents must be synchronized:
 

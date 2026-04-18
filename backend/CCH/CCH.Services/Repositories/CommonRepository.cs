@@ -5,8 +5,8 @@ using System.Text.Json;
 namespace CCH.Services.Repositories;
 
 /// <summary>
-/// Implementation of Common repository using JSON files.
-/// (繁體中文) 使用 JSON 檔案的共用倉儲實作。
+/// Implementation of Common repository using JSON file persistence and centralized seeding.
+/// (繁體中文) 使用 JSON 檔案持久化與集中式種子資料的共用倉儲實作。
 /// </summary>
 public class CommonRepository : ICommonRepository
 {
@@ -22,9 +22,13 @@ public class CommonRepository : ICommonRepository
 
     private static readonly object _fileLock = new();
 
+    /// <summary>
+    /// Initializes a new instance of CommonRepository.
+    /// (繁體中文) 初始化 CommonRepository 的新執行個體。
+    /// </summary>
     public CommonRepository()
     {
-        // Force Project Root Discovery: Navigate up 5 levels from bin/Debug/net10.0/
+        // Path discovery relative to project root (相對於專案根目錄的路徑探索)
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
         var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
         var dataDir = Path.Combine(projectRootDir, "Data");
@@ -34,6 +38,12 @@ public class CommonRepository : ICommonRepository
         _statusesPath = Path.Combine(dataDir, "statuses.json");
         _suppliersPath = Path.Combine(dataDir, "suppliers.json");
 
+        // Initialize only what this repository needs (僅初始化此倉儲需要的資料)
+        DataSeeder.SeedCustomers(_customersPath);
+        DataSeeder.SeedCountries(_countriesPath);
+        DataSeeder.SeedStatuses(_statusesPath);
+        DataSeeder.SeedSuppliers(_suppliersPath);
+
         LoadAllData();
     }
 
@@ -41,12 +51,6 @@ public class CommonRepository : ICommonRepository
     {
         lock (_fileLock)
         {
-            if (!File.Exists(_customersPath) || !File.Exists(_countriesPath) || !File.Exists(_statusesPath) || !File.Exists(_suppliersPath))
-            {
-                SeedData();
-                return;
-            }
-
             try
             {
                 _customers = JsonSerializer.Deserialize<List<CustomerEntity>>(File.ReadAllText(_customersPath)) ?? new();
@@ -54,74 +58,27 @@ public class CommonRepository : ICommonRepository
                 _statuses = JsonSerializer.Deserialize<List<StatusEntity>>(File.ReadAllText(_statusesPath)) ?? new();
                 _suppliers = JsonSerializer.Deserialize<List<SupplierEntity>>(File.ReadAllText(_suppliersPath)) ?? new();
             }
-            catch
-            {
-                SeedData();
-            }
-        }
-    }
-
-    private void SeedData()
-    {
-        _customers = new List<CustomerEntity> {
-            new() { ID = 101, Name = "Customer A" },
-            new() { ID = 102, Name = "Customer B" },
-            new() { ID = 103, Name = "Customer C" }
-        };
-
-        _countries = new List<CountryEntity> {
-            new() { ID = 1, Name = "Taiwan", Code = "TW" },
-            new() { ID = 2, Name = "China", Code = "CN" },
-            new() { ID = 3, Name = "USA", Code = "US" },
-            new() { ID = 4, Name = "Japan", Code = "JP" }
-        };
-
-        _statuses = new List<StatusEntity> {
-            new() { Code = "S01", Description = "Unknow" },
-            new() { Code = "S02", Description = "Pending Dimerco Review" },
-            new() { Code = "S03", Description = "Pending Customer Review" },
-            new() { Code = "S04", Description = "Reviewed" },
-            new() { Code = "S05", Description = "Flagged" },
-            new() { Code = "", Description = "Inactive" }
-        };
-
-        _suppliers = new List<SupplierEntity> {
-            new() { ID = 1, CustomerID = 101, Name = "TechSupply Corp" },
-            new() { ID = 2, CustomerID = 101, Name = "SensorTech Solutions" },
-            new() { ID = 3, CustomerID = 101, Name = "AluFab Co" },
-            new() { ID = 4, CustomerID = 102, Name = "FluidDynamics Ltd" },
-            new() { ID = 5, CustomerID = 102, Name = "CableConnect" },
-            new() { ID = 6, CustomerID = 102, Name = "PowerGuard" },
-            new() { ID = 7, CustomerID = 103, Name = "IronWorks Inc" },
-            new() { ID = 8, CustomerID = 103, Name = "OpticView" },
-            new() { ID = 9, CustomerID = 103, Name = "FanTech" }
-        };
-
-        SaveAllData();
-    }
-
-    private void SaveAllData()
-    {
-        lock (_fileLock)
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                File.WriteAllText(_customersPath, JsonSerializer.Serialize(_customers, options));
-                File.WriteAllText(_countriesPath, JsonSerializer.Serialize(_countries, options));
-                File.WriteAllText(_statusesPath, JsonSerializer.Serialize(_statuses, options));
-                File.WriteAllText(_suppliersPath, JsonSerializer.Serialize(_suppliers, options));
-            }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error saving common data: {ex.Message}");
+                Console.WriteLine($"Error loading common data: {ex.Message}");
+                _customers = new();
+                _countries = new();
+                _statuses = new();
+                _suppliers = new();
             }
         }
     }
 
+    /// <inheritdoc/>
     public IEnumerable<CustomerEntity> GetCustomers() => _customers;
+
+    /// <inheritdoc/>
     public IEnumerable<CountryEntity> GetCountries() => _countries;
+
+    /// <inheritdoc/>
     public IEnumerable<StatusEntity> GetStatuses() => _statuses;
+
+    /// <inheritdoc/>
     public IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null)
     {
         if (customerId == null) return _suppliers;
