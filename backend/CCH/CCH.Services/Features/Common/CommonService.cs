@@ -1,8 +1,8 @@
-using CCH.Core.DTOs;
-using CCH.Core.Interfaces;
+using CCH.Core.Features.Common.DTOs;
+using CCH.Core.Features.Common.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 
-namespace CCH.Services.Services;
+namespace CCH.Services.Features.Common;
 
 /// <summary>
 /// Mock common service.

@@ -1,4 +1,4 @@
-namespace CCH.Core.DTOs;
+namespace CCH.Core.Features.Dashboard.DTOs;
 
 /// <summary>
 /// Dashboard summary of part counts by status.

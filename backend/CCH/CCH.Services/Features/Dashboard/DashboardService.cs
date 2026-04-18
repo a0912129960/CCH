@@ -1,7 +1,7 @@
-using CCH.Core.DTOs;
-using CCH.Core.Interfaces;
+using CCH.Core.Features.Dashboard.DTOs;
+using CCH.Core.Features.Dashboard.Interfaces;
 
-namespace CCH.Services.Services;
+namespace CCH.Services.Features.Dashboard;
 
 /// <summary>
 /// Mock dashboard service.

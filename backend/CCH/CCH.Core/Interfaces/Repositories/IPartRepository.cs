@@ -1,4 +1,4 @@
-using CCH.Core.DTOs;
+using CCH.Core.Features.Parts.DTOs;
 
 namespace CCH.Core.Interfaces.Repositories;
 

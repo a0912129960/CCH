@@ -1,6 +1,6 @@
-using CCH.Core.DTOs;
+using CCH.Core.Features.Parts.DTOs;
 
-namespace CCH.Core.Interfaces;
+namespace CCH.Core.Features.Parts.Interfaces;
 
 /// <summary>
 /// Part query service interface.

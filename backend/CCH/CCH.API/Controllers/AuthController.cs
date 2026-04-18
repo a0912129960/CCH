@@ -1,6 +1,7 @@
-using CCH.Core.DTOs;
+using CCH.Core.Features.Auth.DTOs;
+using CCH.Core.Features.Auth.Interfaces;
 using CCH.Core.Interfaces;
-using CCH.Core.Models;
+using CCH.Core.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,8 +23,8 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// User login.
-    /// (繁體中文) 使用者登入。
+    /// Authenticates a user and returns a JWT token.
+    /// (繁體中文) 驗證使用者並回傳 JWT token。
     /// </summary>
     [HttpPost("login")]
     public ActionResult<ApiResponse<LoginResponse>> Login([FromBody] LoginRequest request)
@@ -39,8 +40,8 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Get current user information from token.
-    /// (繁體中文) 從 token 取得目前使用者資訊。
+    /// Retrieves information about the currently authenticated user.
+    /// (繁體中文) 取得目前已驗證使用者的資訊。
     /// </summary>
     [Authorize]
     [HttpGet("whoami")]

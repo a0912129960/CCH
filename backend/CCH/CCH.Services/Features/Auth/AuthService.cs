@@ -2,12 +2,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using CCH.Core.Constants;
-using CCH.Core.DTOs;
+using CCH.Core.Features.Auth.DTOs;
+using CCH.Core.Features.Auth.Interfaces;
 using CCH.Core.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace CCH.Services.Services;
+namespace CCH.Services.Features.Auth;
 
 /// <summary>
 /// Authentication service with real JWT implementation.
