@@ -27,17 +27,17 @@ public class PartRepository : IPartRepository
         }
         else
         {
-            // Default path discovery: Data/parts.json relative to project root
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
             var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
             var dataDir = Path.Combine(projectRootDir, "Data");
             _partsPath = Path.Combine(dataDir, "parts.json");
         }
 
-        // Ensure data exists before loading (確保載入前資料已存在)
-        DataSeeder.EnsureInitialized(_partsPath);
+        // Initialize only what this repository needs (僅初始化此倉儲需要的資料)
+        DataSeeder.SeedParts(_partsPath);
         LoadData();
     }
+
 
     private void LoadData()
     {

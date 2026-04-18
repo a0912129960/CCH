@@ -4,11 +4,13 @@ using System.Text.Json;
 namespace CCH.Services.Repositories;
 
 /// <summary>
-/// Handles one-time initialization of JSON data files with mock data.
-/// (繁體中文) 負責使用測試資料對 JSON 資料檔案進行一次性初始化。
+/// Centralized handler for mock data initialization.
+/// (繁體中文) 測試資料初始化的集中處理器。
 /// </summary>
 public static class DataSeeder
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
     private static readonly List<PartEntity> DefaultParts = new() {
         new() { ID = 1, CustomerID = 101, PartNo = "PART-001", CountryID = 1, PartDescription = "Electronic Controller Unit", Division = "Electronics", SupplierID = 1, HTSCode = "8537.10.9170", DutyRate = 0.0m, Status = "S04", UpdatedBy = "Admin", UpdatedDate = DateTime.Now.AddDays(-5), AddHTSCode1 = "8537.10.0000", AddDutyRate1 = 0.5m },
         new() { ID = 2, CustomerID = 102, PartNo = "PART-002", CountryID = 2, PartDescription = "Hydraulic Pump Assembly", Division = "Mechanical", SupplierID = 4, HTSCode = "8413.50.0010", DutyRate = 5.0m, Status = "S02", UpdatedBy = "User X", UpdatedDate = DateTime.Now.AddDays(-1), AddHTSCode1 = "8413.91.0000", AddDutyRate1 = 2.5m, AddHTSCode2 = "8413.92.0000", AddDutyRate2 = 1.0m },
@@ -29,22 +31,74 @@ public static class DataSeeder
         new() { ID = 17, CustomerID = 101, PartNo = "PART-017", CountryID = 3, PartDescription = "Fuel Injector Nozzle", Division = "Mechanical", SupplierID = 1, HTSCode = "8409.91.4000", DutyRate = 0.0m, Status = "S01", UpdatedBy = "Admin", UpdatedDate = DateTime.Now.AddHours(-1) }
     };
 
-    /// <summary>
-    /// Ensures the data file exists and is initialized.
-    /// (繁體中文) 確保資料檔案存在且已初始化。
-    /// </summary>
-    /// <param name="filePath">Path to the JSON file. (JSON 檔案路徑)</param>
-    public static void EnsureInitialized(string filePath)
+    private static readonly List<CustomerEntity> DefaultCustomers = new() {
+        new() { ID = 101, Name = "Customer A" },
+        new() { ID = 102, Name = "Customer B" },
+        new() { ID = 103, Name = "Customer C" }
+    };
+
+    private static readonly List<CountryEntity> DefaultCountries = new() {
+        new() { ID = 1, Name = "Taiwan", Code = "TW" },
+        new() { ID = 2, Name = "China", Code = "CN" },
+        new() { ID = 3, Name = "USA", Code = "US" },
+        new() { ID = 4, Name = "Japan", Code = "JP" }
+    };
+
+    private static readonly List<StatusEntity> DefaultStatuses = new() {
+        new() { Code = "S01", Description = "Unknow" },
+        new() { Code = "S02", Description = "Pending Dimerco Review" },
+        new() { Code = "S03", Description = "Pending Customer Review" },
+        new() { Code = "S04", Description = "Reviewed" },
+        new() { Code = "S05", Description = "Flagged" },
+        new() { Code = "", Description = "Inactive" }
+    };
+
+    private static readonly List<SupplierEntity> DefaultSuppliers = new() {
+        new() { ID = 1, CustomerID = 101, Name = "TechSupply Corp" },
+        new() { ID = 2, CustomerID = 101, Name = "SensorTech Solutions" },
+        new() { ID = 3, CustomerID = 101, Name = "AluFab Co" },
+        new() { ID = 4, CustomerID = 102, Name = "FluidDynamics Ltd" },
+        new() { ID = 5, CustomerID = 102, Name = "CableConnect" },
+        new() { ID = 6, CustomerID = 102, Name = "PowerGuard" },
+        new() { ID = 7, CustomerID = 103, Name = "IronWorks Inc" },
+        new() { ID = 8, CustomerID = 103, Name = "OpticView" },
+        new() { ID = 9, CustomerID = 103, Name = "FanTech" }
+    };
+
+    public static void SeedParts(string path) => EnsureInitialized(path, DefaultParts);
+    public static void SeedCustomers(string path) => EnsureInitialized(path, DefaultCustomers);
+    public static void SeedCountries(string path) => EnsureInitialized(path, DefaultCountries);
+    public static void SeedStatuses(string path) => EnsureInitialized(path, DefaultStatuses);
+    public static void SeedSuppliers(string path) => EnsureInitialized(path, DefaultSuppliers);
+
+    private static readonly object _fileLock = new();
+
+    private static void EnsureInitialized<T>(string filePath, IEnumerable<T> defaultData)
     {
+        // First check outside the lock for performance (鎖外第一次檢查以提升效能)
         if (File.Exists(filePath)) return;
 
-        var dir = Path.GetDirectoryName(filePath);
-        if (dir != null && !Directory.Exists(dir))
+        lock (_fileLock)
         {
-            Directory.CreateDirectory(dir);
-        }
+            // Double-check inside the lock to handle race conditions (鎖內第二次檢查以處理競爭情況)
+            if (File.Exists(filePath)) return;
 
-        var options = new JsonSerializerOptions { WriteIndented = true };
-        File.WriteAllText(filePath, JsonSerializer.Serialize(DefaultParts, options));
+            var dir = Path.GetDirectoryName(filePath);
+            if (dir != null && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            try
+            {
+                File.WriteAllText(filePath, JsonSerializer.Serialize(defaultData, JsonOptions));
+            }
+            catch (IOException ex)
+            {
+                // Log or handle the case where another process/thread might have just finished writing
+                // (記錄或處理另一個行程/執行序可能剛好完成寫入的情況)
+                Console.WriteLine($"Concurrect initialization handled: {ex.Message}");
+            }
+        }
     }
 }
