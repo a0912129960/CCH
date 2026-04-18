@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { authService } from '../../services/auth/auth';
-import { switchLanguage } from '../../locales';
-import { useRouter } from 'vue-router';
+import { authService } from '@src/services/auth/auth';
+import { switchLanguage } from '@src/locales';
 
 // Import SVG Assets
-import EarthIcon from '@/assets/images/earth.svg';
-import UserIcon from '@/assets/images/user.svg';
-import ChevronIcon from '@/assets/images/chervon.svg';
+import EarthIcon from '@src/assets/images/earth.svg';
+import UserIcon from '@src/assets/images/user.svg';
+import ChevronIcon from '@src/assets/images/chervon.svg';
 
 /**
  * AppHeader Component (上方區塊：精簡化與圖示更換)
+ * Update by Gemini AI on 2026-04-18: Path alias refactor and redundant import cleanup. (路徑別名重構與冗餘匯入清理。)
  */
 
 const router = useRouter();

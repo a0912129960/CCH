@@ -1,10 +1,5 @@
 <script setup lang="ts">
-/*
-import { ref, onMounted, computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
-*/
-import { authService, UserRole } from '../../services/auth/auth';
+import { authService, UserRole } from '@src/services/auth/auth';
 // INTERNAL-AI-20260416: Import real API functions and types. Old mock imports preserved below.
 // (INTERNAL-AI-20260416: 匯入真實 API 函式與型別。舊的 mock 匯入保留如下。)
 /* import { partService, type Part, PartStatus } from '../../services/part/part'; */
@@ -13,8 +8,8 @@ import {
   getPartDetail, updatePart, submitPart, getMilestones, acceptPart, returnPart,
   statusToI18nKey,
   type PartDetailResponse, type PartSavePayload, type Milestone
-} from '../../services/part/part';
-import { useTabStore } from '../../stores/tabs';
+} from '@src/services/part/part';
+import { useTabStore } from '@src/stores/tabs';
 /*
 import { ElMessage, ElMessageBox } from 'element-plus';
 */
@@ -23,6 +18,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
  * Part No Detail View (零件編號詳細頁面)
  * INTERNAL-AI-20260416: Restructured to table layout matching the design specification.
  * (INTERNAL-AI-20260416: 依設計規範改為表格佈局。)
+ * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
  */
 
 const route = useRoute();

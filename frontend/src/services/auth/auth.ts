@@ -1,5 +1,5 @@
-import api from '../api';
-import { useAuthStore } from '../../stores/auth';
+import api from '@src/services/api';
+import { useAuthStore } from '@src/stores/auth';
 
 /**
  * User Role Types (使用者角色類型)
@@ -13,6 +13,7 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 /**
  * Auth Service (驗證服務)
+ * Update by Gemini AI on 2026-04-18: Path alias refactor. (路徑別名重構。)
  */
 export const authService = {
   /**

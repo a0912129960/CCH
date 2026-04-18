@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { authService } from '../../services/auth/auth';
-import { useRouter } from 'vue-router';
-import { dashboardService, type StatusCount, type SLAItem } from '../../services/dashboard/dashboard';
-import Card from '../../components/common/Card.vue';
-import Dot from '../../components/common/Dot.vue';
+import { authService } from '@src/services/auth/auth';
+import { dashboardService, type StatusCount, type SLAItem } from '@src/services/dashboard/dashboard';
+import Card from '@src/components/common/Card.vue';
+import Dot from '@src/components/common/Dot.vue';
 
 /**
  * Customer Dashboard View (客戶儀表板頁面)
  * Style adjusted to match MyDimerco brand language.
  * BR-28: Status Summary | BR-29: SLA Countdown
+ * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
  */
 
 const router = useRouter();
