@@ -25,7 +25,7 @@ public class PartExcelService : IPartExcelService
 
     public byte[] ExportParts(int? customerId, string? status, string? partNo, int? supplierId)
     {
-        var parts = _repository.SearchParts(customerId, status, partNo, supplierId, _userContext.Role);
+        var parts = _repository.SearchParts(customerId, status, partNo, supplierId);
         var statusMap = _commonRepository.GetStatuses().ToDictionary(s => s.Code, s => s.Description);
         
         using var workbook = new XLWorkbook();
