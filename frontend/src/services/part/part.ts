@@ -233,6 +233,43 @@ export const partService = {
       return response.data.data;
     }
     throw new Error('Upload failed');
+  },
+
+  /**
+   * Export Parts to Excel (匯出零件至 Excel)
+   * (繁體中文) 根據當前篩選條件呼叫後端匯出 API。
+   */
+  /**
+   * Export Parts to Excel (匯出零件至 Excel)
+   * (繁體中文) 使用 Blob 處理二進位流並觸發瀏覽器下載。
+   */
+  async exportPartsToExcel(params?: {
+    customerId?: string;
+    status?: string;
+    partNo?: string;
+    supplier?: string;
+  }): Promise<void> {
+    try {
+      const response = await api.get('/parts/export', {
+        params,
+        responseType: 'blob' // 重要：指定回傳格式為二進位 (Binary)
+      });
+
+      // 建立下載連結 (Create download link)
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `PartList_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // 清理 (Cleanup)
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Excel export failed (Excel 匯出失敗):', error);
+      throw error;
+    }
   }
 };
 

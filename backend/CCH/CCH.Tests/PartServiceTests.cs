@@ -1,23 +1,25 @@
-using CCH.Core.DTOs;
+using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Entities;
+using CCH.Core.Features.Parts.Interfaces;
 using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
+using CCH.Services.Features.Parts;
 using CCH.Services.Repositories;
-using CCH.Services.Services;
 using Moq;
 using Xunit;
 
 namespace CCH.Tests;
 
 /// <summary>
-/// Tests for PartService implementation using Relational Repository.
-/// (繁體中文) 使用關聯式 Repository 的 PartService 實作測試。
+/// Tests for PartQueryService and PartExcelService implementation using Relational Repository.
+/// (繁體中文) 使用關聯式 Repository 的 PartQueryService 與 PartExcelService 實作測試。
 /// </summary>
 public class PartServiceTests : IDisposable
 {
     private readonly string _testBaseDir;
     private readonly string _testPartsPath;
-    private readonly PartService _partService;
+    private readonly PartQueryService _queryService;
+    private readonly PartExcelService _excelService;
     private readonly PartRepository _repository;
     private readonly Mock<IUserContext> _mockUserContext;
 
@@ -36,7 +38,8 @@ public class PartServiceTests : IDisposable
         _mockUserContext = new Mock<IUserContext>();
         _mockUserContext.Setup(u => u.Role).Returns("admin"); // Use admin to bypass role filters initially
 
-        _partService = new PartService(_repository, _mockUserContext.Object);
+        _queryService = new PartQueryService(_repository, _mockUserContext.Object);
+        _excelService = new PartExcelService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
     }
     public void Dispose()
     {
@@ -50,11 +53,25 @@ public class PartServiceTests : IDisposable
     public void SearchParts_NoFilters_ReturnsMappedData()
     {
         // Act
-        var result = _partService.SearchParts(null, null, null, null, 1, 20);
+        var result = _queryService.SearchParts(null, null, null, null, 1, 20);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(17, result.Total);
         Assert.Equal("Customer A", result.Data.First().Customer);
+    }
+
+    [Fact]
+    public void ExportParts_ReturnsValidExcelBinary()
+    {
+        // Act
+        var result = _excelService.ExportParts(null, null, null, null);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+        // Basic check for Excel (ZIP/OpenXML) file signature (PK..)
+        Assert.Equal((byte)'P', result[0]);
+        Assert.Equal((byte)'K', result[1]);
     }
 }

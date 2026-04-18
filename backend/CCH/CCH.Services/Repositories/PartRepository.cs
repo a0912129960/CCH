@@ -1,4 +1,4 @@
-using CCH.Core.DTOs;
+using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Entities;
 using CCH.Core.Interfaces.Repositories;
 using System.Text.Json;

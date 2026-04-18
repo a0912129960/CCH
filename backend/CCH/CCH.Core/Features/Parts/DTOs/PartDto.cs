@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace CCH.Core.DTOs;
+namespace CCH.Core.Features.Parts.DTOs;
 
 /// <summary>
 /// Part list item.

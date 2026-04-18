@@ -1,4 +1,4 @@
-namespace CCH.Core.DTOs;
+namespace CCH.Core.Features.Common.DTOs;
 
 /// <summary>
 /// Key-value pair for dropdowns.

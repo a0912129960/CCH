@@ -1,9 +1,17 @@
 using System.Text;
+using CCH.Core.Features.Parts.Interfaces;
+using CCH.Core.Features.Auth.Interfaces;
+using CCH.Core.Features.Common.Interfaces;
+using CCH.Core.Features.Dashboard.Interfaces;
 using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
-using CCH.Core.Models;
+using CCH.Core.Shared;
 using CCH.Services.Repositories;
-using CCH.Services.Services;
+using CCH.Services.Features.Parts;
+using CCH.Services.Features.Auth;
+using CCH.Services.Features.Common;
+using CCH.Services.Features.Dashboard;
+using CCH.Services.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -19,10 +27,10 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IPartRepository, PartRepository>();
 builder.Services.AddScoped<ICommonRepository, CommonRepository>();
 
-// Register split Part interfaces
-builder.Services.AddScoped<IPartQueryService, PartService>();
-builder.Services.AddScoped<IPartLifecycleService, PartService>();
-builder.Services.AddScoped<IPartExcelService, PartService>();
+// Register split Part interfaces / 註冊拆分後的零件服務
+builder.Services.AddScoped<IPartQueryService, PartQueryService>();
+builder.Services.AddScoped<IPartLifecycleService, PartLifecycleService>();
+builder.Services.AddScoped<IPartExcelService, PartExcelService>();
 
 // INTERNAL-AI-20260416: Override default [ApiController] 400 response to use ApiResponse format.
 // (INTERNAL-AI-20260416: 覆寫 [ApiController] 預設 400 回應，改用 ApiResponse 格式。)

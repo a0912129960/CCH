@@ -1,6 +1,6 @@
-using CCH.Core.DTOs;
+using CCH.Core.Features.Common.DTOs;
 
-namespace CCH.Core.Interfaces;
+namespace CCH.Core.Features.Common.Interfaces;
 
 /// <summary>
 /// Common data service interface.

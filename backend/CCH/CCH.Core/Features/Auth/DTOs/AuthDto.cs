@@ -1,4 +1,4 @@
-namespace CCH.Core.DTOs;
+namespace CCH.Core.Features.Auth.DTOs;
 
 /// <summary>
 /// Login request body.

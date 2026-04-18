@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { authService, UserRole } from '@src/services/auth/auth';
-import { partService, acceptPart, batchAcceptParts, type PartListItem } from '@src/services/part/part';
+import { partService, batchAcceptParts, type PartListItem } from '@src/services/part/part';
 import { commonService, type CustomerOption, type StatusOption, type SupplierOption } from '@src/services/common/common';
 
 // Internal components
@@ -20,10 +20,15 @@ const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 
-const { role, customerId: authCustomerId } = authService.state;
-const isEmployee = computed(() => role && role !== UserRole.CUSTOMER);
-const isDcb = computed(() => role === UserRole.DCB);
-const userCustomerId = computed(() => authCustomerId);
+const role = computed(() => authService.state.role);
+const authCustomerId = computed(() => authService.state.customerId);
+const isEmployee = computed(() => role.value && role.value !== UserRole.CUSTOMER);
+const isDcb = computed(() => role.value === UserRole.DCB);
+const userCustomerId = computed(() => authCustomerId.value);
+
+/**
+ * Update by Gemini AI on 2026-04-18: Fixed reactive role detection to ensure feature visibility (Batch Accept) and verified export function. (修復響應式角色偵測以確保功能顯示，並驗證匯出功能。)
+ */
 
 // State Management
 const parts = ref<PartListItem[]>([]);
@@ -145,8 +150,19 @@ const toggleAll = () => {
   }
 };
 
-const exportToExcel = () => {
-  ElMessage.success('Exporting to Excel... (正在匯出至 Excel...)');
+const exportToExcel = async () => {
+  try {
+    ElMessage.success('Exporting to Excel... (正在匯出至 Excel...)');
+    await partService.exportPartsToExcel({
+      customerId: customerFilter.value || undefined,
+      status: statusFilter.value || undefined,
+      partNo: searchQuery.value || undefined,
+      supplier: supplierFilter.value || undefined
+    });
+  } catch (error) {
+    console.error('Export failed (匯出失敗):', error);
+    ElMessage.error('Export failed. (匯出失敗。)');
+  }
 };
 
 const getSLAColor = (slaStatus?: string) => {

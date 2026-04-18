@@ -1,6 +1,6 @@
-using CCH.Core.DTOs;
+using CCH.Core.Features.Dashboard.DTOs;
 
-namespace CCH.Core.Interfaces;
+namespace CCH.Core.Features.Dashboard.Interfaces;
 
 /// <summary>
 /// Dashboard service interface.

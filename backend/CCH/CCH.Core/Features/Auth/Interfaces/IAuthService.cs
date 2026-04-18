@@ -1,6 +1,6 @@
-using CCH.Core.DTOs;
+using CCH.Core.Features.Auth.DTOs;
 
-namespace CCH.Core.Interfaces;
+namespace CCH.Core.Features.Auth.Interfaces;
 
 /// <summary>
 /// Authentication service interface.

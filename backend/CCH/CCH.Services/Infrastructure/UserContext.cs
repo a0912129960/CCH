@@ -2,7 +2,7 @@ using System.Security.Claims;
 using CCH.Core.Interfaces;
 using Microsoft.AspNetCore.Http;
 
-namespace CCH.Services.Services;
+namespace CCH.Services.Infrastructure;
 
 /// <summary>
 /// User context implementation using IHttpContextAccessor.

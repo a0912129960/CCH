@@ -1,4 +1,4 @@
-namespace CCH.Core.Models;
+namespace CCH.Core.Shared;
 
 /// <summary>
 /// Standard API Response wrapper.
