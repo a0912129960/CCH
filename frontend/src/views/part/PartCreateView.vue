@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
-import { authService, UserRole } from '../../services/auth/auth';
-import { partService, PartStatus } from '../../services/part/part';
-import Card from '../../components/common/Card.vue';
-import Button from '../../components/common/Button.vue';
+import { authService, UserRole } from '@src/services/auth/auth';
+import { partService, PartStatus } from '@src/services/part/part';
+import Card from '@src/components/common/Card.vue';
+import Button from '@src/components/common/Button.vue';
 import { ElMessage } from 'element-plus';
 
 /**
  * Part No Creation View (新增零件編號頁面)
  * BR-08: HTS Format Validation | BR-21: Description Quality Scoring
  * Updated: Mandatory Customer ID for Employees and Auto-Activation logic.
+ * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
  */
 
 const router = useRouter();

@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useTabStore } from '../../stores/tabs';
-import { useRouter } from 'vue-router';
+import { useTabStore } from '@src/stores/tabs';
 
 /**
  * Multi-Tab Navigation Component (多標籤導覽組件)
  * Fixed: SVG Close buttons, corrected context menu i18n.
- * Update by Gemini AI on 2026-04-15
+ * Update by Gemini AI on 2026-04-18: Path alias refactor and redundant import cleanup. (路徑別名重構與冗餘匯入清理。)
  */
 
 const tabStore = useTabStore();

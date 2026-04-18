@@ -1,26 +1,17 @@
 <script setup lang="ts">
-/*
-import { RouterView, useRoute } from 'vue-router'
-import { computed, watch } from 'vue';
-*/
-import { authService } from './services/auth/auth';
-/*
-import Sidebar from './components/common/Sidebar.vue';
-import AppHeader from './components/common/AppHeader.vue';
-import AppTabs from './components/common/AppTabs.vue';
-import AppFooter from './components/common/AppFooter.vue';
-import Loading from './components/common/Loading.vue';
-*/
-import { useUIStore } from './stores/ui';
-import { useTabStore } from './stores/tabs';
-/*
-import { storeToRefs } from 'pinia';
-*/
+import { authService } from '@src/services/auth/auth';
+import Sidebar from '@src/components/common/Sidebar.vue';
+import AppHeader from '@src/components/common/AppHeader.vue';
+import AppTabs from '@src/components/common/AppTabs.vue';
+import AppFooter from '@src/components/common/AppFooter.vue';
+import Loading from '@src/components/common/Loading.vue';
+import { useUIStore } from '@src/stores/ui';
+import { useTabStore } from '@src/stores/tabs';
 
 /**
  * Main App Component (主應用程式組件)
  * Integrated Multi-Tab Layout and Global Header.
- * Update by Gemini AI on 2026-04-15
+ * Update by Gemini AI on 2026-04-18: Global import cleanup, path alias refactor, and applied professional standards. (全域匯入清理、路徑別名重構並套用專業標準。)
  */
 const route = useRoute();
 const uiStore = useUIStore();

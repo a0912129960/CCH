@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import { authService } from '../../services/auth/auth';
-import { useRouter } from 'vue-router';
-import { dashboardService, type StatusCount } from '../../services/dashboard/dashboard';
-import { partService, type Part } from '../../services/part/part';
-import Card from '../../components/common/Card.vue';
-import Dot from '../../components/common/Dot.vue';
+import { authService } from '@src/services/auth/auth';
+import { dashboardService, type StatusCount } from '@src/services/dashboard/dashboard';
+import { partService, type Part } from '@src/services/part/part';
+import Card from '@src/components/common/Card.vue';
+import Dot from '@src/components/common/Dot.vue';
 
 /**
  * Employee Dashboard View (員工儀表板頁面)
  * BR-28: Status Summary | BR-30: Pending Review List
- * Updated by AI - 2026-04-10
+ * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
  */
 
 const router = useRouter();
