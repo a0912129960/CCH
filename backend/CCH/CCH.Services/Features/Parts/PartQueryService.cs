@@ -143,15 +143,24 @@ public class PartQueryService : IPartQueryService
         };
     }
 
-    /// <inheritdoc/>
-    public IEnumerable<MilestoneDto> GetMilestones(int partId) => new[]
+    // INTERNAL-AI-20260420: GetMilestones now reads real history from the repository instead of hardcoded data.
+    // (INTERNAL-AI-20260420: GetMilestones 改為從倉儲讀取真實歷程，不再使用硬編碼資料。)
+    /* public IEnumerable<MilestoneDto> GetMilestones(int partId) => new[]
     {
-        new MilestoneDto { Action = "Unknown", UpdatedBy = "Customer001", UpdatedDate = DateTime.Now.AddDays(-5), Remark = "" },
-        new MilestoneDto { Action = "Pending Dimerco Review", UpdatedBy = "Customer001", UpdatedDate = DateTime.Now.AddDays(-4), Remark = "" },
-        new MilestoneDto { Action = "Pending Customer Review", UpdatedBy = "DCB001", UpdatedDate = DateTime.Now.AddDays(-3), Remark = "test remark" },
-        new MilestoneDto { Action = "Pending Dimerco Review", UpdatedBy = "Customer001", UpdatedDate = DateTime.Now.AddDays(-2), Remark = "" },
-        new MilestoneDto { Action = "Reviewed", UpdatedBy = "DCB001", UpdatedDate = DateTime.Now.AddDays(-1), Remark = "" }
-    };
+        new MilestoneDto { Action = "Unknown", ... },
+        ...
+    }; */
+    /// <inheritdoc/>
+    public IEnumerable<MilestoneDto> GetMilestones(int partId) =>
+        _repository.GetHistoryByPartId(partId)
+            .Select(h => new MilestoneDto
+            {
+                Action = h.Action,
+                UpdatedBy = h.UpdatedBy,
+                UpdatedDate = h.UpdatedDate,
+                Remark = h.Remark
+            })
+            .ToList();
 
     /// <inheritdoc/>
     public IEnumerable<PartDetailDto> GetHistory(int partId) => new[]

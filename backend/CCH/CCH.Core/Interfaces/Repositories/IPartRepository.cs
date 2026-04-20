@@ -49,4 +49,19 @@ public interface IPartRepository
     /// <param name="partId">Part ID. (零件 ID)</param>
     /// <param name="status">New status code. (新狀態代碼)</param>
     void UpdateStatus(int partId, string status);
+
+    // INTERNAL-AI-20260420: History methods to support real timeline in Detail view.
+    // (INTERNAL-AI-20260420: 歷程方法，用於支援詳細頁面的真實時間軸。)
+
+    /// <summary>
+    /// Appends a history event for a part.
+    /// (繁體中文) 為零件新增一筆歷程事件。
+    /// </summary>
+    void AddHistory(PartHistoryEntity entity);
+
+    /// <summary>
+    /// Returns all history events for a part, ordered chronologically.
+    /// (繁體中文) 回傳零件所有歷程事件，依時間正序排列。
+    /// </summary>
+    IEnumerable<PartHistoryEntity> GetHistoryByPartId(int partId);
 }

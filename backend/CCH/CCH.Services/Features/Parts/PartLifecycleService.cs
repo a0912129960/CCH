@@ -1,8 +1,10 @@
 using CCH.Core.Entities;
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Features.Parts.Interfaces;
+using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 // INTERNAL-AI-20260420: Added ICommonRepository to resolve Supplier name → ID for entity persistence.
+// INTERNAL-AI-20260420: Added IUserContext to record the acting user in history entries.
 
 namespace CCH.Services.Features.Parts;
 
@@ -16,15 +18,35 @@ public class PartLifecycleService : IPartLifecycleService
     // INTERNAL-AI-20260420: Injected ICommonRepository to resolve Supplier name → SupplierID for entity FK.
     // (INTERNAL-AI-20260420: 注入 ICommonRepository 以從供應商名稱查找對應的 SupplierID 外鍵。)
     private readonly ICommonRepository _commonRepository;
+    // INTERNAL-AI-20260420: Injected IUserContext to record the acting user in history entries.
+    // (INTERNAL-AI-20260420: 注入 IUserContext 以在歷程記錄中紀錄操作使用者。)
+    private readonly IUserContext _userContext;
 
     /// <summary>
     /// Initializes a new instance of PartLifecycleService.
     /// (繁體中文) 初始化 PartLifecycleService 的新執行個體。
     /// </summary>
-    public PartLifecycleService(IPartRepository repository, ICommonRepository commonRepository)
+    public PartLifecycleService(IPartRepository repository, ICommonRepository commonRepository, IUserContext userContext)
     {
         _repository = repository;
         _commonRepository = commonRepository;
+        _userContext = userContext;
+    }
+
+    /// <summary>
+    /// Appends a history entry for a part lifecycle event.
+    /// (繁體中文) 為零件生命週期事件附加一筆歷程記錄。
+    /// </summary>
+    private void RecordHistory(int partId, string action, string remark = "")
+    {
+        _repository.AddHistory(new PartHistoryEntity
+        {
+            PartID = partId,
+            Action = action,
+            UpdatedBy = _userContext.UserName ?? _userContext.UserId ?? "System",
+            UpdatedDate = DateTime.Now,
+            Remark = remark
+        });
     }
 
     /// <summary>
@@ -62,6 +84,8 @@ public class PartLifecycleService : IPartLifecycleService
         };
 
         var partId = _repository.CreatePart(entity);
+        // INTERNAL-AI-20260420: Record creation in history. (記錄建立歷程。)
+        RecordHistory(partId, "Created");
         return new { partId, partNo = request.PartNo, status };
     }
 
@@ -82,9 +106,11 @@ public class PartLifecycleService : IPartLifecycleService
             existing.AddHTSCode1 = request.HtsCode1;
             existing.AddDutyRate1 = request.Rate1;
             existing.Remark = request.Remark;
-            existing.UpdatedBy = "AI-System";
-            
+            existing.UpdatedBy = _userContext.UserName ?? _userContext.UserId ?? "System";
+
             _repository.UpdatePart(existing);
+            // INTERNAL-AI-20260420: Record save in history. (記錄儲存歷程。)
+            RecordHistory(partId, "Updated");
         }
         return new { };
     }
@@ -94,6 +120,8 @@ public class PartLifecycleService : IPartLifecycleService
     {
         UpdatePart(partId, request);
         _repository.UpdateStatus(partId, "S02");
+        // INTERNAL-AI-20260420: Record submit in history. (記錄送審歷程。)
+        RecordHistory(partId, "Submitted to Dimerco");
         return new { partId, status = "S02" };
     }
 
@@ -101,6 +129,8 @@ public class PartLifecycleService : IPartLifecycleService
     public object AcceptPart(int partId)
     {
         _repository.UpdateStatus(partId, "S04");
+        // INTERNAL-AI-20260420: Record accept in history. (記錄接受歷程。)
+        RecordHistory(partId, "Accepted");
         return new { partId, status = "S04" };
     }
 
@@ -108,6 +138,8 @@ public class PartLifecycleService : IPartLifecycleService
     public object ReturnPart(int partId, string returnReason)
     {
         _repository.UpdateStatus(partId, "S03");
+        // INTERNAL-AI-20260420: Record return in history, storing the reason as remark. (記錄退回歷程，退回原因存入備註。)
+        RecordHistory(partId, "Returned to Customer", returnReason);
         return new { partId, status = "S03" };
     }
 
@@ -115,6 +147,8 @@ public class PartLifecycleService : IPartLifecycleService
     public object InactivatePart(int partId)
     {
         _repository.UpdateStatus(partId, "Inactive");
+        // INTERNAL-AI-20260420: Record inactivation in history. (記錄停用歷程。)
+        RecordHistory(partId, "Inactivated");
         return new { partId, status = "Inactive" };
     }
 
@@ -140,6 +174,7 @@ public class PartLifecycleService : IPartLifecycleService
                 }
 
                 _repository.UpdateStatus(id, "S04");
+                RecordHistory(id, "Accepted (Batch)");
             }
             catch (Exception ex)
             {

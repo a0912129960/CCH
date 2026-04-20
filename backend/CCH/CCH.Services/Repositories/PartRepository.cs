@@ -11,7 +11,11 @@ namespace CCH.Services.Repositories;
 public class PartRepository : IPartRepository
 {
     private readonly string _partsPath;
+    // INTERNAL-AI-20260420: Added history file path for real timeline storage.
+    // (INTERNAL-AI-20260420: 新增歷程檔案路徑以支援真實時間軸儲存。)
+    private readonly string _historyPath;
     private List<PartEntity> _parts = new();
+    private List<PartHistoryEntity> _history = new();
     private static readonly object _fileLock = new();
 
     /// <summary>
@@ -24,6 +28,7 @@ public class PartRepository : IPartRepository
         if (!string.IsNullOrEmpty(overridePath))
         {
             _partsPath = overridePath;
+            _historyPath = overridePath.Replace("parts.json", "part_history.json");
         }
         else
         {
@@ -31,10 +36,12 @@ public class PartRepository : IPartRepository
             var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
             var dataDir = Path.Combine(projectRootDir, "Data");
             _partsPath = Path.Combine(dataDir, "parts.json");
+            _historyPath = Path.Combine(dataDir, "part_history.json");
         }
 
         // Initialize only what this repository needs (僅初始化此倉儲需要的資料)
         DataSeeder.SeedParts(_partsPath);
+        DataSeeder.SeedPartHistory(_historyPath);
         LoadData();
     }
 
@@ -50,11 +57,18 @@ public class PartRepository : IPartRepository
                     var json = File.ReadAllText(_partsPath);
                     _parts = JsonSerializer.Deserialize<List<PartEntity>>(json) ?? new();
                 }
+                // INTERNAL-AI-20260420: Load history alongside parts. (一併載入歷程資料。)
+                if (File.Exists(_historyPath))
+                {
+                    var hJson = File.ReadAllText(_historyPath);
+                    _history = JsonSerializer.Deserialize<List<PartHistoryEntity>>(hJson) ?? new();
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading parts data: {ex.Message}");
                 _parts = new();
+                _history = new();
             }
         }
     }
@@ -71,6 +85,23 @@ public class PartRepository : IPartRepository
             catch (Exception ex)
             {
                 Console.WriteLine($"Error saving parts data: {ex.Message}");
+            }
+        }
+    }
+
+    // INTERNAL-AI-20260420: Persist history to its own JSON file. (歷程資料持久化至獨立 JSON 檔案。)
+    private void SaveHistory()
+    {
+        lock (_fileLock)
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                File.WriteAllText(_historyPath, JsonSerializer.Serialize(_history, options));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving history data: {ex.Message}");
             }
         }
     }
@@ -162,4 +193,22 @@ public class PartRepository : IPartRepository
             }
         }
     }
+
+    // INTERNAL-AI-20260420: History methods for real timeline support.
+    // (INTERNAL-AI-20260420: 支援真實時間軸的歷程方法。)
+
+    /// <inheritdoc/>
+    public void AddHistory(PartHistoryEntity entity)
+    {
+        lock (_fileLock)
+        {
+            entity.ID = _history.Any() ? _history.Max(h => h.ID) + 1 : 1;
+            _history.Add(entity);
+            SaveHistory();
+        }
+    }
+
+    /// <inheritdoc/>
+    public IEnumerable<PartHistoryEntity> GetHistoryByPartId(int partId) =>
+        _history.Where(h => h.PartID == partId).OrderBy(h => h.UpdatedDate).ToList();
 }
