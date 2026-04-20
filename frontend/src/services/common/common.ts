@@ -24,6 +24,8 @@ export type StatusOption = CommonOption;
  */
 export type SupplierOption = CommonOption;
 
+export type CountryOption = CommonOption;
+
 /**
  * Mock data for Customers (客戶模擬資料)
  */
@@ -111,6 +113,19 @@ export const commonService = {
       return []; // Removed mock fallback
     } catch (error) {
       console.error('API /common/status failed. (API 失敗。)', error);
+      return [];
+    }
+  },
+
+  async getCountries(): Promise<CountryOption[]> {
+    try {
+      const response = await api.get<{ success: boolean; message: string; data: CountryOption[] }>('/common/countries');
+      if (response.data.success) {
+        return response.data.data;
+      }
+      return []; // Removed mock fallback
+    } catch (error) {
+      console.error('API /common/countries failed. (API 失敗。)', error);
       return [];
     }
   },

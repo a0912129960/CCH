@@ -2,7 +2,6 @@
 import { authService, UserRole } from '@src/services/auth/auth';
 import Card from '@src/components/common/Card.vue';
 import Button from '@src/components/common/Button.vue';
-import { authService } from '@src/services/auth/auth';
 import { partService, type CreatePartRequest } from '@src/services/part/part';
 import { commonService, type CountryOption } from '@src/services/common/common';
 import { ElMessage } from 'element-plus';
