@@ -80,7 +80,24 @@
     "coo": "原產地",
     "duty_rate": "一般關稅率 (%)",
     "updated_by": "更新者",
-    "sla": "SLA"
+    "sla": "SLA",
+    "sla_legend": {
+      "title": "SLA 規則說明",
+      "customer_rule": "目前僅列出「未知」與「待中菲行審核」之紀錄。SLA 計算（自前次提交起）：",
+      "staff_rule": "目前僅列出「待客戶提交」之紀錄。SLA 計算（自前次客戶提交起）：",
+      "range_normal": "正常",
+      "range_warning": "警告",
+      "range_urgent": "緊急",
+      "range_overdue": "逾期",
+      "customer_normal": "0-36h",
+      "customer_warning": "36-48h",
+      "customer_urgent": "48-72h",
+      "customer_overdue": ">72h",
+      "staff_normal": "0-24h",
+      "staff_warning": "24-36h",
+      "staff_urgent": "36-48h",
+      "staff_overdue": ">48h"
+    }
   },
   "part_upload": {
     "title": "批量上傳零件",

@@ -80,7 +80,24 @@
     "coo": "原产地",
     "duty_rate": "一般关税率 (%)",
     "updated_by": "更新者",
-    "sla": "SLA"
+    "sla": "SLA",
+    "sla_legend": {
+      "title": "SLA 规则说明",
+      "customer_rule": "目前仅列出「未知」与「待中菲行审核」之纪录。SLA 计算（自前次提交起）：",
+      "staff_rule": "目前仅列出「待客户提交」之纪录。SLA 计算（自前次客户提交起）：",
+      "range_normal": "正常",
+      "range_warning": "警告",
+      "range_urgent": "紧急",
+      "range_overdue": "逾期",
+      "customer_normal": "0-36h",
+      "customer_warning": "36-48h",
+      "customer_urgent": "48-72h",
+      "customer_overdue": ">72h",
+      "staff_normal": "0-24h",
+      "staff_warning": "24-36h",
+      "staff_urgent": "36-48h",
+      "staff_overdue": ">48h"
+    }
   },
 
   "part_upload": {
