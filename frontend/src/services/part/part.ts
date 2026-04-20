@@ -513,6 +513,9 @@ export interface PartDetailResponse {
   // INTERNAL-AI-20260416: Added status field for status badge display in the detail view.
   // (INTERNAL-AI-20260416: 新增 status 欄位供詳細頁面顯示狀態標籤使用。)
   status: string;
+  // INTERNAL-AI-20260420: Added slaStatus for SLA-based badge color in the detail view.
+  // (INTERNAL-AI-20260420: 新增 slaStatus 供詳細頁面以 SLA 狀態套用標籤顏色。)
+  slaStatus: string;
   before: PartDetailFields;
   modified: PartDetailFields;
 }
@@ -546,6 +549,9 @@ export interface PartSavePayload {
   partNo: string;
   countryId: number | null;
   division: string;
+  // INTERNAL-AI-20260420: Changed back to supplier string (free-text) per spec; backend now accepts string.
+  // (INTERNAL-AI-20260420: 依規格改回供應商字串（自由輸入），後端已接受字串格式。)
+  /* supplierId: number | null; */
   supplier: string;
   partDesc: string;
   htsCode: string;
@@ -629,8 +635,20 @@ export async function acceptPart(partId: number): Promise<void> {
  * Return a part to the customer via POST /api/parts/{partId}/return (DCB only).
  * (DCB 角色退回零件給客戶，呼叫 POST /api/parts/{partId}/return。)
  */
+// INTERNAL-AI-20260420: Changed body field from { reason } to { returnReason } per API spec.
+// (INTERNAL-AI-20260420: 依 API 規格將請求主體欄位由 reason 改為 returnReason。)
 export async function returnPart(partId: number, reason: string): Promise<void> {
-  await api.post(`/parts/${partId}/return`, { reason });
+  await api.post(`/parts/${partId}/return`, { returnReason: reason });
+}
+
+// INTERNAL-AI-20260420: Added inactivatePart for Customer role Inactive button.
+// (INTERNAL-AI-20260420: 新增 inactivatePart 供 Customer 角色的停用按鈕使用。)
+/**
+ * Mark a part as inactive via POST /api/parts/{partId}/inactive (Customer only).
+ * (Customer 角色將零件設為停用，呼叫 POST /api/parts/{partId}/inactive。)
+ */
+export async function inactivatePart(partId: number): Promise<void> {
+  await api.post(`/parts/${partId}/inactive`);
 }
 
 /**
