@@ -115,12 +115,14 @@ public class PartsController : ControllerBase
     /* [HttpPut("{partId}")]
     public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request) =>
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request))); */
+    // INTERNAL-AI-20260420: Opened Save to all roles (Customer, DCB, Dimerco) per spec — removed Customer-only restriction.
+    // (INTERNAL-AI-20260420: 依規格開放所有角色（Customer、DCB、Dimerco）可呼叫 Save，移除僅限 Customer 限制。)
+    /* [Authorize(Roles = "customer")] */
     /// <summary>
-    /// Updates an existing part (Customer only).
-    /// (繁體中文) 更新現有零件（僅限客戶）。
+    /// Updates an existing part (all authenticated roles).
+    /// (繁體中文) 更新現有零件（所有已驗證角色）。
     /// </summary>
     [HttpPut("{partId}")]
-    [Authorize(Roles = "customer")]
     public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request)
     {
         // Return 400 if any required fields or format validation fails (若驗證失敗則回傳 400)

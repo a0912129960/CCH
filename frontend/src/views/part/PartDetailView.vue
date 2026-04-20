@@ -114,9 +114,15 @@ const showCustomerButtons = computed(() =>
 // (DCB 審核面板：退回原因欄位 + 接受 / 退回按鈕，僅在狀態 S02 時顯示。)
 const showDcbReview = computed(() => isDcb.value && currentStatus.value === 'S02');
 
-// S04 (Reviewed) buttons: all roles see Save; Dimerco/Customer additionally see Save & Send to Dimerco.
-// (S04 Reviewed 按鈕：所有角色皆顯示 Save；Dimerco/Customer 額外顯示 Save & Send to Dimerco。)
+// S04 (Reviewed) buttons: all roles see Save; Customer additionally sees Save & Send to Dimerco.
+// (S04 Reviewed 按鈕：所有角色皆顯示 Save；僅 Customer 額外顯示 Save & Send to Dimerco。)
 const showS04Buttons = computed(() => currentStatus.value === 'S04');
+
+// Dimerco Other (non-DCB Dimerco): Save only, for statuses other than S04 and Inactive.
+// (Dimerco Other（非 DCB）：僅顯示 Save，適用於 S04 及 Inactive 以外的狀態。)
+const showDimercoSaveOnly = computed(() =>
+  isDimerco.value && ['S01', 'S02', 'S03'].includes(currentStatus.value)
+);
 
 // INTERNAL-AI-20260420: Inline date formatter for milestone display (YYYY-MM-DD HH:mm).
 // (INTERNAL-AI-20260420: 里程碑日期格式化，顯示為 YYYY-MM-DD HH:mm。)
@@ -625,9 +631,12 @@ const handleReturn = async () => {
                   {{ inactivating ? '...' : 'Inactive' }}
                 </button>
               </template>
-              <!-- DCB: Accept + Return to Customer; only when status is S02 (Pending Dimerco Review) -->
-              <!-- (DCB：接受 + 退回給客戶；僅在狀態為 S02 時顯示) -->
+              <!-- DCB: Save + Accept + Return to Customer; only when status is S02 (Pending Dimerco Review) -->
+              <!-- (DCB：Save + 接受 + 退回給客戶；僅在狀態為 S02 時顯示) -->
               <template v-else-if="showDcbReview">
+                <button class="btn-cch btn-save" :disabled="saving" @click="handleSave">
+                  {{ saving ? '...' : $t('common.save') }}
+                </button>
                 <button class="btn-cch btn-accept" @click="handleAccept">
                   {{ $t('part_detail.btn_accept') }}
                 </button>
@@ -635,19 +644,26 @@ const handleReturn = async () => {
                   {{ $t('part_detail.btn_return_customer') }}
                 </button>
               </template>
-              <!-- S04 (Reviewed): DCB → Save only; Dimerco/Customer → Save + Save & Send to Dimerco -->
-              <!-- (S04 已審核：DCB 僅顯示 Save；Dimerco/Customer 顯示 Save + Save & Send to Dimerco) -->
+              <!-- S04 (Reviewed): all roles see Save; Customer additionally sees Save & Send to Dimerco -->
+              <!-- (S04 已審核：所有角色皆顯示 Save；僅 Customer 額外顯示 Save & Send to Dimerco) -->
               <template v-else-if="showS04Buttons">
                 <button class="btn-cch btn-save" :disabled="saving || submitting" @click="handleSave">
                   {{ saving ? '...' : $t('common.save') }}
                 </button>
                 <button
-                  v-if="!isDcb"
+                  v-if="isCustomer"
                   class="btn-cch btn-submit"
                   :disabled="saving || submitting"
                   @click="handleSaveAndResend"
                 >
                   {{ submitting ? '...' : $t('part_detail.btn_save_send') }}
+                </button>
+              </template>
+              <!-- Dimerco Other (non-DCB): Save only for S01/S02/S03 -->
+              <!-- (Dimerco Other 非 DCB：S01/S02/S03 狀態下僅顯示 Save) -->
+              <template v-else-if="showDimercoSaveOnly">
+                <button class="btn-cch btn-save" :disabled="saving" @click="handleSave">
+                  {{ saving ? '...' : $t('common.save') }}
                 </button>
               </template>
             </div>
