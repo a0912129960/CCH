@@ -8,7 +8,7 @@ namespace CCH.Core.Entities;
 /// (繁體中文) CCHParts 資料表實體。
 /// </summary>
 [Table("CCHParts")]
-public class CchPartEntity
+public class CchParts
 {
     /// <summary>
     /// ID (IDENTITY)

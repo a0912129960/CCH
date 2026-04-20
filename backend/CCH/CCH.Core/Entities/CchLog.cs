@@ -8,7 +8,7 @@ namespace CCH.Core.Entities;
 /// (繁體中文) CCHLog 資料表實體。
 /// </summary>
 [Table("CCHLog")]
-public class CchLogEntity
+public class CchLog
 {
     /// <summary>
     /// ID (BIGINT, IDENTITY)

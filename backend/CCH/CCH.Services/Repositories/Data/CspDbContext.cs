@@ -22,22 +22,22 @@ public class CspDbContext : DbContext
     /// <summary>
     /// Gets or sets parts. (繁體中文) 零件。
     /// </summary>
-    public DbSet<CchPartEntity> Parts { get; set; }
+    public virtual DbSet<CchParts> Parts { get; set; }
 
     /// <summary>
     /// Gets or sets part milestones. (繁體中文) 零件里程碑。
     /// </summary>
-    public DbSet<CchPartMilestoneEntity> PartMilestones { get; set; }
+    public virtual DbSet<CchPartMilestones> PartMilestones { get; set; }
 
     /// <summary>
     /// Gets or sets suppliers. (繁體中文) 供應商。
     /// </summary>
-    public DbSet<CchSupplierEntity> Suppliers { get; set; }
+    public virtual DbSet<CchSuppliers> Suppliers { get; set; }
 
     /// <summary>
     /// Gets or sets logs. (繁體中文) 日誌。
     /// </summary>
-    public DbSet<CchLogEntity> Logs { get; set; }
+    public virtual DbSet<CchLog> Logs { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

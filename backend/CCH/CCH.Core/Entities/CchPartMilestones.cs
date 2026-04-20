@@ -4,11 +4,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace CCH.Core.Entities;
 
 /// <summary>
-/// Entity for CCHSuppliers table.
-/// (繁體中文) CCHSuppliers 資料表實體。
+/// Entity for CCHPartMilestones table.
+/// (繁體中文) CCHPartMilestones 資料表實體。
 /// </summary>
-[Table("CCHSuppliers")]
-public class CchSupplierEntity
+[Table("CCHPartMilestones")]
+public class CchPartMilestones
 {
     /// <summary>
     /// ID (IDENTITY)
@@ -17,21 +17,33 @@ public class CchSupplierEntity
     public int ID { get; set; }
 
     /// <summary>
-    /// Customer ID
+    /// Associated Part ID
     /// </summary>
-    public int? CustomerID { get; set; }
+    public int? PartID { get; set; }
 
     /// <summary>
-    /// Supplier Name
+    /// Action performed
     /// </summary>
-    [MaxLength(200)]
-    public string? SupplierName { get; set; }
+    [MaxLength(20)]
+    public string? Action { get; set; }
 
     /// <summary>
-    /// Status
+    /// Previous status
     /// </summary>
     [MaxLength(10)]
-    public string? Status { get; set; }
+    public string? FromStatus { get; set; }
+
+    /// <summary>
+    /// Target status
+    /// </summary>
+    [MaxLength(10)]
+    public string? ToStatus { get; set; }
+
+    /// <summary>
+    /// Milestone remark
+    /// </summary>
+    [MaxLength(2000)]
+    public string? Remark { get; set; }
 
     /// <summary>
     /// Created By

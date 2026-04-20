@@ -13,6 +13,7 @@ using CCH.Services.Features.Common;
 using CCH.Services.Features.Dashboard;
 using CCH.Services.Infrastructure;
 using CCH.Services.Repositories.Data;
+using CCH.API.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -103,6 +104,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
+app.UseMiddleware<CchAuditLogMiddleware>();
 
 // Use CORS middleware / 使用 CORS 中介軟體
 // Update by AI (2026-04-15): Apply "AllowAll" policy
