@@ -68,13 +68,19 @@ export const authService = {
 
   /**
    * Logout function (登出功能)
+   * Completely clears session and local storage then reloads. (徹底清除工作階段與本地儲存後重載。)
    */
   logout() {
-    const authStore = useAuthStore();
-    const tabStore = useTabStore();
+    /* const authStore = useAuthStore(); */
+    /* const tabStore = useTabStore(); */
     
-    authStore.clearAuth();
-    tabStore.closeAll();
+    /* authStore.clearAuth(); */
+    /* tabStore.closeAll(); */
+
+    // Nuclear option: clear everything and reload (核彈級方案：清除一切並重載)
+    localStorage.clear();
+    sessionStorage.clear();
+    window.location.href = '/'; // This will trigger a redirect to login via guards and fresh Pinia state (透過守衛與新的 Pinia 狀態觸發重新導向至登入頁)
   },
 
   /**

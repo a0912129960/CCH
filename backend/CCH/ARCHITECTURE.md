@@ -32,7 +32,7 @@ This document defines the architectural standards and patterns for the CCH proje
 3. **Repository Layer**: 
    - **Pure CRUD**: No business logic or DTO mapping.
    - Returns Entities (`CCH.Core.Entities`).
-   - Interacts with JSON Mock files.
+   - Interacts with JSON Mock files or SQL Server databases via `DbContext` (e.g., `CspY2023DbContext`, `ReSmDbContext`). (繁體中文) 透過 `DbContext`（如 `CspY2023DbContext`、`ReSmDbContext`）與 JSON 模擬檔案或 SQL Server 資料庫互動。
 
 ## 🧪 3. Testing Standard
 - **Unit Tests**: Every public method in the Service layer must have a corresponding test in `CCH.Tests`.

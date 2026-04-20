@@ -82,7 +82,24 @@
     "coo": "Country of Origin",
     "duty_rate": "General Duty Rate (%)",
     "updated_by": "Updated By",
-    "sla": "SLA"
+    "sla": "SLA",
+    "sla_legend": {
+      "title": "SLA Rule Guide",
+      "customer_rule": "Currently listing Unknown and Pending Review records. SLA (from last submission):",
+      "staff_rule": "Currently listing Pending Customer records. SLA (from last customer submission):",
+      "range_normal": "Normal",
+      "range_warning": "Warning",
+      "range_urgent": "Urgent",
+      "range_overdue": "Overdue",
+      "customer_normal": "0-36h",
+      "customer_warning": "36-48h",
+      "customer_urgent": "48-72h",
+      "customer_overdue": ">72h",
+      "staff_normal": "0-24h",
+      "staff_warning": "24-36h",
+      "staff_urgent": "36-48h",
+      "staff_overdue": ">48h"
+    }
   },
   "part_upload": {
     "title": "Bulk Upload Parts",
@@ -202,20 +219,19 @@
     "updated_date": "Updated Date"
   },
   "status": {
-    "unknown": "Unknown",
-    "pending_customer": "Pending Customer",
+    "s01": "Unknow",
+    "s02": "Pending Dimerco Review",
+    "s03": "Pending Customer Review",
+    "s04": "Reviewed",
+    "s05": "Flagged",
+    "inactive": "Inactive",
+    "unknown": "Unknow",
+    "pending_customer": "Pending Customer Review",
     "pending_review": "Pending Dimerco Review",
-    "returned": "Returned",
-    "active": "Active",
+    "returned": "Pending Customer Review",
+    "active": "Reviewed",
     "flagged": "Flagged",
-    "superseded": "Superseded",
-    "s01": "Unknown",
-    "s02": "Pending Customer",
-    "s03": "Pending Review",
-    "s04": "Active",
-    "s05": "Returned",
-    "s06": "Flagged",
-    "s07": "Superseded"
+    "superseded": "Inactive"
   },
   "sla": {
     "green": "Normal",

@@ -167,7 +167,8 @@ const exportToExcel = async () => {
 
 const getSLAColor = (slaStatus?: string) => {
   if (!slaStatus) return 'transparent';
-  return SLA_COLOR_MAP[slaStatus.toLowerCase()] || '#909399';
+  /* return SLA_COLOR_MAP[slaStatus.toLowerCase()] || '#909399'; */
+  return SLA_COLOR_MAP[slaStatus.toLowerCase()] || 'transparent';
 };
 
 /**
@@ -281,6 +282,7 @@ watch([currentPage, pageSize], fetchParts);
                 />
               </div>
             </div>
+
             <div class="action-row">
               <Button @click="router.push({ name: 'part-create' })">
                 {{ $t('part_list.add_new') }}
@@ -312,6 +314,35 @@ watch([currentPage, pageSize], fetchParts);
           </div>
         </div>
       </Card>
+
+      <!-- SLA Rule Legend (SLA 規則圖例) - Moved between Filter and Grid (移至篩選與網格之間) -->
+      <div class="sla-legend-row">
+        <span class="legend-desc">
+          {{ isEmployee ? $t('part_list.sla_legend.staff_rule') : $t('part_list.sla_legend.customer_rule') }}
+        </span>
+        <div class="legend-items">
+          <div class="legend-item">
+            <Dot dotColor="#67C23A" size="8px" />
+            <span class="label">{{ $t('part_list.sla_legend.range_normal') }}:</span>
+            <span class="val">{{ isEmployee ? $t('part_list.sla_legend.staff_normal') : $t('part_list.sla_legend.customer_normal') }}</span>
+          </div>
+          <div class="legend-item">
+            <Dot dotColor="#FADB14" size="8px" />
+            <span class="label">{{ $t('part_list.sla_legend.range_warning') }}:</span>
+            <span class="val">{{ isEmployee ? $t('part_list.sla_legend.staff_warning') : $t('part_list.sla_legend.customer_warning') }}</span>
+          </div>
+          <div class="legend-item">
+            <Dot dotColor="#FF9900" size="8px" />
+            <span class="label">{{ $t('part_list.sla_legend.range_urgent') }}:</span>
+            <span class="val">{{ isEmployee ? $t('part_list.sla_legend.staff_urgent') : $t('part_list.sla_legend.customer_urgent') }}</span>
+          </div>
+          <div class="legend-item">
+            <Dot dotColor="#F56C6C" size="8px" />
+            <span class="label">{{ $t('part_list.sla_legend.range_overdue') }}:</span>
+            <span class="val">{{ isEmployee ? $t('part_list.sla_legend.staff_overdue') : $t('part_list.sla_legend.customer_overdue') }}</span>
+          </div>
+        </div>
+      </div>
 
       <div class="table-wrapper">
         <table class="data-table">
@@ -366,7 +397,7 @@ watch([currentPage, pageSize], fetchParts);
                 </td>
                 <td v-if="isDcb" class="text-center col-checkbox">
                   <el-checkbox 
-                    v-if="part.status === 'S02' || part.status === 'S03'"
+                    v-if="part.status === 'S02'"
                     :model-value="selectedIds.has(part.id)" 
                     @change="toggleSelection(part.id)"
                   />
@@ -381,10 +412,9 @@ watch([currentPage, pageSize], fetchParts);
                 <td class="col-updatedby" :title="part.updatedBy">{{ part.updatedBy || '-' }}</td>
                 <td class="col-updateddate">{{ commonService.formatDateTime(part.updatedDate) }}</td>
                 <td class="col-sla">
-                  <div v-if="part.slaStatus" class="status-cell">
+                  <div v-if="part.slaStatus && getSLAColor(part.slaStatus) !== 'transparent'" class="status-cell">
                     <Dot :dotColor="getSLAColor(part.slaStatus)" size="8px" />
                   </div>
-                  <span v-else>-</span>
                 </td>
                 <td class="col-actions">
                   <Button class="btn-compact" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
@@ -455,6 +485,45 @@ h1 {
   font-size: 1.5rem;
   color: var(--sidebar-color);
   margin: 0;
+}
+
+.sla-legend-row {
+  margin-top: 0.8rem;
+  padding: 0.5rem 0.8rem;
+  background-color: #f8f9fe;
+  border-radius: 6px;
+}
+
+.legend-desc {
+  display: block;
+  font-size: 0.75rem;
+  color: #525f7f;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-item .label {
+  font-size: 0.7rem;
+  color: #8898aa;
+  font-weight: 600;
+}
+
+.legend-item .val {
+  font-size: 0.75rem;
+  color: var(--sidebar-color);
+  font-weight: 700;
 }
 
 .filter-card {

@@ -41,9 +41,9 @@ public class PartExcelService : IPartExcelService
         var worksheet = workbook.Worksheets.Add("Parts");
         
         string[] headers = { 
-            "Customer", "Part No", "Description", "Country", "HTS Code", "Duty Rate", "Status",
-            "301 Duty Code", "301 Duty Rate", "IEEPA Duty Code", "IEEPA Duty Rate", 
-            "232 Aluminum Code", "232 Aluminum Rate", "Reciprocal Tariff Code", "Reciprocal Tariff Rate",
+            "Customer", "Part No", "Description", "Country", "HTS Code", "Duty Rate (%)", "Status",
+            "301 Duty Code", "301 Duty Rate (%)", "IEEPA Duty Code", "IEEPA Duty Rate (%)", 
+            "232 Aluminum Code", "232 Aluminum Rate (%)", "Reciprocal Tariff Code", "Reciprocal Tariff Rate (%)",
             "Updated By", "Last Updated"
         };
         

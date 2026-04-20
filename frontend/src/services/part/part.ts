@@ -5,13 +5,15 @@ import { commonService } from '../common/common';
  * Part Status (零件狀態)
  */
 export const PartStatus = {
-  UNKNOWN: 'UNKNOWN',
-  PENDING_CUSTOMER: 'PENDING_CUSTOMER',
-  PENDING_REVIEW: 'PENDING_REVIEW',
-  RETURNED: 'RETURNED',
-  ACTIVE: 'ACTIVE',
-  FLAGGED: 'FLAGGED',
-  SUPERSEDED: 'SUPERSEDED'
+  UNKNOWN: 'S01',
+  PENDING_REVIEW: 'S02',
+  PENDING_CUSTOMER: 'S03',
+  ACTIVE: 'S04',
+  FLAGGED: 'S05',
+  INACTIVE: '',
+  // Legacy mappings for compatibility during transition (保留舊名稱以維持過渡期相容性)
+  RETURNED: 'S03',
+  SUPERSEDED: ''
 } as const;
 export type PartStatus = typeof PartStatus[keyof typeof PartStatus];
 
@@ -30,7 +32,7 @@ export interface Part {
   countryOfOrigin?: string;
   partDescription?: string;
   usHtsCode?: string;
-  generalDutyRate?: string;
+  generalDutyRate?: number | string;
   htsCode301?: string;
   rate301?: string;
   htsCodeIeepa?: string;
@@ -254,7 +256,7 @@ export const partService = {
     division?: string;
     partDescription?: string;
     usHtsCode?: string;
-    generalDutyRate?: string;
+    generalDutyRate?: number | string;
     htsCode301?: string;
     rate301?: string;
     htsCodeIeepa?: string;
