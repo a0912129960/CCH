@@ -28,7 +28,6 @@ export interface Part {
   division: string;
   partNo: string;
   countryOfOrigin?: string;
-  division?: string;
   partDescription?: string;
   usHtsCode?: string;
   generalDutyRate?: string;
@@ -42,7 +41,6 @@ export interface Part {
   rateReciprocalTariff?: string;
   remark?: string;
   htsCode: string;
-  generalDutyRate: number;
   status: PartStatus;
   updatedBy: string;
   lastUpdated: string;
