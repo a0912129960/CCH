@@ -80,6 +80,7 @@ const userRole = computed(() => authService.state.role);
 // const isEmployee = computed(() => userRole.value === UserRole.DIMERCO || userRole.value === UserRole.DCB);
 const isCustomer = computed(() => userRole.value === UserRole.CUSTOMER);
 const isDcb = computed(() => userRole.value === UserRole.DCB);
+const isDimerco = computed(() => userRole.value === UserRole.DIMERCO);
 
 const modified = computed(() => partDetail.value?.modified ?? null);
 const before = computed(() => partDetail.value?.before ?? null);
@@ -112,6 +113,23 @@ const showCustomerButtons = computed(() =>
 // DCB review panel: Return Reason field + Accept / Return to Customer buttons, shown only for S02.
 // (DCB 審核面板：退回原因欄位 + 接受 / 退回按鈕，僅在狀態 S02 時顯示。)
 const showDcbReview = computed(() => isDcb.value && currentStatus.value === 'S02');
+
+// S04 (Reviewed) buttons: all roles see Save; Dimerco/Customer additionally see Save & Send to Dimerco.
+// (S04 Reviewed 按鈕：所有角色皆顯示 Save；Dimerco/Customer 額外顯示 Save & Send to Dimerco。)
+const showS04Buttons = computed(() => currentStatus.value === 'S04');
+
+// INTERNAL-AI-20260420: Inline date formatter for milestone display (YYYY-MM-DD HH:mm).
+// (INTERNAL-AI-20260420: 里程碑日期格式化，顯示為 YYYY-MM-DD HH:mm。)
+const formatDate = (iso: string): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${mo}-${day} ${h}:${mi}`;
+};
 const returnReason = ref('');
 const returnReasonError = ref('');
 
@@ -283,6 +301,42 @@ const handleInactivate = async () => {
     // interceptor handles error (攔截器顯示錯誤)
   } finally {
     inactivating.value = false;
+  }
+};
+
+// INTERNAL-AI-20260420: S04 — Save & Send to Dimerco handler for Dimerco/Customer role.
+// Validates HTS Code is required, then re-submits (status → S02 Pending Dimerco Review).
+// (INTERNAL-AI-20260420: S04 狀態下 Dimerco/Customer 的 Save & Send to Dimerco 處理函式。
+// 驗證 HTS Code 必填後重新送審，狀態變更為 S02。)
+const handleSaveAndResend = async () => {
+  if (!form.value.htsCode?.trim()) {
+    ElMessage.error('US HTS Code is required before submitting. / 送審前 HTS Code 為必填。');
+    return;
+  }
+  if (!validateHts(form.value.htsCode, htsError)) {
+    ElMessage.error('US HTS Code format is invalid. / HTS Code 格式錯誤。');
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      t('part_detail.btn_save_send') + '?',
+      t('part_detail.btn_save_send'),
+      { confirmButtonClass: 'btn-confirm-orange', type: 'warning' }
+    );
+  } catch {
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    await submitPart(partId, buildPayload());
+    ElMessage.success('Submitted to Dimerco for review. / 已送審給 Dimerco。');
+    router.push('/parts');
+  } catch {
+    // interceptor handles error (攔截器顯示錯誤)
+  } finally {
+    submitting.value = false;
   }
 };
 
@@ -581,6 +635,21 @@ const handleReturn = async () => {
                   {{ $t('part_detail.btn_return_customer') }}
                 </button>
               </template>
+              <!-- S04 (Reviewed): DCB → Save only; Dimerco/Customer → Save + Save & Send to Dimerco -->
+              <!-- (S04 已審核：DCB 僅顯示 Save；Dimerco/Customer 顯示 Save + Save & Send to Dimerco) -->
+              <template v-else-if="showS04Buttons">
+                <button class="btn-cch btn-save" :disabled="saving || submitting" @click="handleSave">
+                  {{ saving ? '...' : $t('common.save') }}
+                </button>
+                <button
+                  v-if="!isDcb"
+                  class="btn-cch btn-submit"
+                  :disabled="saving || submitting"
+                  @click="handleSaveAndResend"
+                >
+                  {{ submitting ? '...' : $t('part_detail.btn_save_send') }}
+                </button>
+              </template>
             </div>
           </div>
         </div>
@@ -608,7 +677,7 @@ const handleReturn = async () => {
                 ></div>
                 <div class="timeline-content">
                   <div class="ms-action" :style="{ color: milestoneColor(ms.action) }">{{ ms.action }}</div>
-                  <div class="ms-date">{{ ms.updatedDate }}</div>
+                  <div class="ms-date">{{ formatDate(ms.updatedDate) }}</div>
                   <div class="ms-by">By: {{ ms.updatedBy }}</div>
                   <div v-if="ms.remark" class="ms-remark">"{{ ms.remark }}"</div>
                 </div>
