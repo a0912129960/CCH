@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { authService } from '../../services/auth/auth';
-import { partService, type ImportBatchReport, ImportResultStatus } from '../../services/part/part';
-import Card from '../../components/common/Card.vue';
-import Button from '../../components/common/Button.vue';
+import { authService, UserRole } from '@src/services/auth/auth';
+import { partService, type ImportBatchReport, ImportResultStatus } from '@src/services/part/part';
+import Card from '@src/components/common/Card.vue';
+import Button from '@src/components/common/Button.vue';
 import { ElMessage, type UploadFile } from 'element-plus';
 
 /**
@@ -13,11 +11,12 @@ import { ElMessage, type UploadFile } from 'element-plus';
  * BR-18: Progress display
  * BR-19: Import report
  * Updated: Mandatory Customer ID for Employees and Breadcrumb Navigation.
+ * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
  */
 
 const router = useRouter();
 const { role, customerId: userCustomerId } = authService.state;
-const isEmployee = role === 'EMPLOYEE';
+const isEmployee = role && role !== UserRole.CUSTOMER;
 
 const uploadFile = ref<File | null>(null);
 const uploading = ref(false);

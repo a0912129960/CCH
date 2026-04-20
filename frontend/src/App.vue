@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { RouterView, useRoute } from 'vue-router'
-import { computed, watch } from 'vue';
-import { authService, UserRole } from './services/auth/auth';
-import Sidebar from './components/common/Sidebar.vue';
-import AppHeader from './components/common/AppHeader.vue';
-import AppTabs from './components/common/AppTabs.vue';
-import AppFooter from './components/common/AppFooter.vue';
-import Loading from './components/common/Loading.vue';
-import { useUIStore } from './stores/ui';
-import { useTabStore } from './stores/tabs';
-import { storeToRefs } from 'pinia';
+import { authService } from '@src/services/auth/auth';
+import Sidebar from '@src/components/common/Sidebar.vue';
+import AppHeader from '@src/components/common/AppHeader.vue';
+import AppTabs from '@src/components/common/AppTabs.vue';
+import AppFooter from '@src/components/common/AppFooter.vue';
+import Loading from '@src/components/common/Loading.vue';
+import { useUIStore } from '@src/stores/ui';
+import { useTabStore } from '@src/stores/tabs';
 
 /**
  * Main App Component (主應用程式組件)
  * Integrated Multi-Tab Layout and Global Header.
- * Update by Gemini AI on 2026-04-15
+ * Update by Gemini AI on 2026-04-18: Global import cleanup, path alias refactor, and applied professional standards. (全域匯入清理、路徑別名重構並套用專業標準。)
  */
 const route = useRoute();
 const uiStore = useUIStore();
@@ -36,8 +33,12 @@ watch(
   () => {
     // Only add tab if it's not the root path (僅在非根目錄時新增頁籤)
     if (isSidebarLayout.value && route.meta.requiresAuth && route.path !== '/') {
+      // INTERNAL-AI-20260417: If navigating to part-detail, check if we already have a better title or use a placeholder that gets updated.
+      // (INTERNAL-AI-20260417: 若導向零件詳情，檢查是否已有更好的標題，或使用會被更新的預設值。)
+      const existingTab = tabStore.openTabs.find(t => t.path === route.path);
+      
       tabStore.addTab({
-        title: (route.meta.title as string) || 'common.home',
+        title: existingTab?.title || (route.meta.title as string) || 'common.home',
         path: route.path,
         name: (route.name as string) || ''
       });
@@ -67,7 +68,7 @@ watch(
       <!-- 4. Content Area -->
       <main class="content-area">
         <RouterView v-slot="{ Component }">
-          <keep-alive>
+          <keep-alive :exclude="['LoginView']">
             <component :is="Component" :key="route.fullPath" />
           </keep-alive>
         </RouterView>
@@ -104,7 +105,7 @@ watch(
 
 .content-area {
   flex: 1;
-  padding: 24px;
+  padding: 0; /* Set to 0 to maximize space (設為 0 以極大化空間) */
   overflow-y: auto;
   background-color: #f5f7f9;
   position: relative;

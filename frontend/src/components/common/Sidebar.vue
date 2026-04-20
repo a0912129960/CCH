@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { RouterLink, useRouter } from 'vue-router';
-import { authService, UserRole } from '../../services/auth/auth';
-import { useUIStore } from '../../stores/ui';
-import { storeToRefs } from 'pinia';
-import { computed } from 'vue';
+import { authService, UserRole } from '@src/services/auth/auth';
+import { useUIStore } from '@src/stores/ui';
 
 // Import SVG Assets
-import MyDimercoLogo from '@/assets/images/circle-logo.svg';
-import HomeIcon from '@/assets/images/home.svg';
-import SearchIcon from '@/assets/images/search_icon.svg';
-import ChevronIcon from '@/assets/images/chervon.svg';
+import MyDimercoLogo from '@src/assets/images/circle-logo.svg';
+import HomeIcon from '@src/assets/images/home.svg';
+import SearchIcon from '@src/assets/images/search_icon.svg';
+import ChevronIcon from '@src/assets/images/chervon.svg';
 
 /**
  * Sidebar Component (左側區塊：包含 Hover 觸發的收合箭頭)
- * Update by Gemini AI on 2026-04-15
+ * Update by Gemini AI on 2026-04-18: Refactored to use path aliases (@src/) for better maintainability. (重構為使用路徑別名以提升可維護性。)
  */
 
-const router = useRouter();
+// const router = useRouter();
 const uiStore = useUIStore();
 const { isSidebarCollapsed: isCollapsed } = storeToRefs(uiStore);
 

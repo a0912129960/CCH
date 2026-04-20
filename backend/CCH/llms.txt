@@ -1,0 +1,34 @@
+# CCH Project Map (llms.txt)
+
+The CCH project is a parts management system built with .NET 10, using a Modular Layered Architecture following SOLID principles.
+
+## Core Metadata
+- **Tech Stack**: ASP.NET Core 10, ClosedXML, Entity Framework Core (planned), JSON Mock Persistence.
+- **Roles**: Customer, Dimerco, DCB.
+
+## Project Structure & Navigation
+### Business Logic (Modular Features)
+- **Parts Module**: 
+  - Contracts: `CCH.Core/Features/Parts/`
+  - Implementation: `CCH.Services/Features/Parts/`
+  - **Key Services (SRP Split)**:
+    - `PartQueryService.cs`: Search, details, and history.
+    - `PartLifecycleService.cs`: Create, Update, and Status flow.
+    - `PartExcelService.cs`: Excel Export (ClosedXML) and Bulk Upload.
+- **Common Module**:
+  - `CCH.Core/Features/Common/`
+  - `CCH.Services/Features/Common/`
+- **Auth Module**:
+  - `CCH.Core/Features/Auth/`
+  - `CCH.Services/Features/Auth/`
+
+### Infrastructure & Shared
+- **Shared Components**: `CCH.Core/Shared/` (e.g., `ApiResponse.cs`)
+- **Repositories**: `CCH.Services/Repositories/` (JSON persistence)
+- **Infrastructure Support**: `CCH.Services/Infrastructure/` (e.g., `UserContext.cs`)
+- **API Controllers**: `CCH.API/Controllers/`
+- **Unit Tests**: `CCH.Tests/` (Organized by Feature)
+
+## Compliance Documents
+- **Coding Standards**: See `AI_RULES.md`
+- **Architectural Specification**: See `ARCHITECTURE.md`

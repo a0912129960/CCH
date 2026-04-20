@@ -1,6 +1,6 @@
-using CCH.Core.DTOs;
-using CCH.Core.Interfaces;
-using CCH.Core.Models;
+using CCH.Core.Features.Parts.DTOs;
+using CCH.Core.Features.Parts.Interfaces;
+using CCH.Core.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,21 +26,37 @@ public class PartsController : ControllerBase
         _excelService = excelService;
     }
 
+    /// <summary>
+    /// Searches for parts based on various criteria.
+    /// (繁體中文) 根據多種條件搜尋零件。
+    /// </summary>
     [HttpGet]
-    public ActionResult<ApiResponse<PartListResponseDto>> SearchParts([FromQuery] string? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] string? supplier, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
+    public ActionResult<ApiResponse<PartListResponseDto>> SearchParts([FromQuery] int? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] int? supplier, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
         Ok(ApiResponse<PartListResponseDto>.SuccessResponse(_queryService.SearchParts(customerId, status, partNo, supplier, page, pageSize)));
 
+    /// <summary>
+    /// Exports parts to an Excel file.
+    /// (繁體中文) 將零件匯出至 Excel 檔案。
+    /// </summary>
     [HttpGet("export")]
-    public IActionResult ExportParts([FromQuery] string? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] string? supplier)
+    public IActionResult ExportParts([FromQuery] int? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] int? supplier)
     {
         var file = _excelService.ExportParts(customerId, status, partNo, supplier);
         return File(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "parts_export.xlsx");
     }
 
+    /// <summary>
+    /// Bulk accepts a list of parts.
+    /// (繁體中文) 批次接受零件清單。
+    /// </summary>
     [HttpPost("batch-accept")]
     public ActionResult<ApiResponse<object>> BatchAccept([FromBody] IEnumerable<int> partIds) =>
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.BatchAccept(partIds)));
 
+    /// <summary>
+    /// Uploads parts in bulk from an Excel file.
+    /// (繁體中文) 從 Excel 檔案批次上傳零件。
+    /// </summary>
     [HttpPost("bulk-upload")]
     public ActionResult<ApiResponse<List<BulkUploadResponseDto>>> BulkUpload(IFormFile file)
     {
@@ -48,6 +64,10 @@ public class PartsController : ControllerBase
         return Ok(ApiResponse<List<BulkUploadResponseDto>>.SuccessResponse(_excelService.BulkUpload(stream)));
     }
 
+    /// <summary>
+    /// Retrieves the Excel template for bulk upload.
+    /// (繁體中文) 取得批次上傳用的 Excel 範本。
+    /// </summary>
     [HttpGet("bulk-upload/template")]
     public IActionResult GetUploadTemplate()
     {
@@ -55,10 +75,18 @@ public class PartsController : ControllerBase
         return File(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "parts_template.xlsx");
     }
 
+    /// <summary>
+    /// Creates a new part in draft status.
+    /// (繁體中文) 建立處於草稿狀態的新零件。
+    /// </summary>
     [HttpPost]
     public ActionResult<ApiResponse<object>> CreatePart([FromBody] PartSaveRequest request) =>
         Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(request, "S01")));
 
+    /// <summary>
+    /// Creates and submits a new part.
+    /// (繁體中文) 建立並提交新零件。
+    /// </summary>
     [HttpPost("submit")]
     public ActionResult<ApiResponse<object>> CreateAndSubmitPart([FromBody] PartSaveRequest request) =>
         Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(request, "S02")));
@@ -68,6 +96,10 @@ public class PartsController : ControllerBase
     /* [HttpGet("{partId}")]
     public ActionResult<ApiResponse<PartDetailResponseDto>> GetPartDetail(int partId) =>
         Ok(ApiResponse<PartDetailResponseDto>.SuccessResponse(_queryService.GetPartDetail(partId))); */
+    /// <summary>
+    /// Retrieves detailed information for a specific part.
+    /// (繁體中文) 取得特定零件的詳細資訊。
+    /// </summary>
     [HttpGet("{partId}")]
     public ActionResult<ApiResponse<PartDetailResponseDto>> GetPartDetail(int partId)
     {
@@ -83,6 +115,10 @@ public class PartsController : ControllerBase
     /* [HttpPut("{partId}")]
     public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request) =>
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request))); */
+    /// <summary>
+    /// Updates an existing part (Customer only).
+    /// (繁體中文) 更新現有零件（僅限客戶）。
+    /// </summary>
     [HttpPut("{partId}")]
     [Authorize(Roles = "customer")]
     public ActionResult<ApiResponse<object>> UpdatePart(int partId, [FromBody] PartSaveRequest request)
@@ -99,26 +135,83 @@ public class PartsController : ControllerBase
         return Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.UpdatePart(partId, request)));
     }
 
-    [HttpPost("{partId}/submit")]
+    // INTERNAL-AI-20260416: Customer only; same validation as PUT. Status S01/S03 → S02.
+    // (INTERNAL-AI-20260416: 僅限 Customer；與 PUT 相同驗證邏輯。狀態 S01/S03 → S02。)
+    /* [HttpPost("{partId}/submit")]
     public ActionResult<ApiResponse<object>> SubmitPart(int partId, [FromBody] PartSaveRequest request) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.SubmitPart(partId, request)));
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.SubmitPart(partId, request))); */
+    /// <summary>
+    /// Submits a part for review (Customer only).
+    /// (繁體中文) 提交零件以供審核（僅限客戶）。
+    /// </summary>
+    [HttpPost("{partId}/submit")]
+    [Authorize(Roles = "customer")]
+    public ActionResult<ApiResponse<object>> SubmitPart(int partId, [FromBody] PartSaveRequest request)
+    {
+        // Return 400 if validation fails (驗證失敗回傳 400)
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+            return BadRequest(ApiResponse<object>.FailureResponse(string.Join(" | ", errors)));
+        }
 
+        return Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.SubmitPart(partId, request)));
+    }
+
+    // INTERNAL-AI-20260416: Both Dimerco and DCB can review (accept/return) parts temporarily.
+    // (INTERNAL-AI-20260416: 暫時允許 Dimerco 與 DCB 兩個角色皆可審核（接受/退回）零件。)
+    /* [HttpPost("{partId}/accept")]
+    public ActionResult<ApiResponse<object>> AcceptPart(int partId) =>
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.AcceptPart(partId))); */
+    // INTERNAL-AI-20260416: Only DCB can review (accept/return) parts.
+    // (INTERNAL-AI-20260416: 僅 DCB 角色可審核（接受/退回）零件。)
+    /* [Authorize(Roles = "dimerco,dcb")] */
+    /// <summary>
+    /// Accepts a part after review (DCB only).
+    /// (繁體中文) 審核後接受零件（僅限 DCB）。
+    /// </summary>
     [HttpPost("{partId}/accept")]
+    [Authorize(Roles = "dcb")]
     public ActionResult<ApiResponse<object>> AcceptPart(int partId) =>
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.AcceptPart(partId)));
 
-    [HttpPost("{partId}/return")]
+    // INTERNAL-AI-20260416: Changed body from raw string to ReturnReasonDto to avoid Content-Type issues.
+    // (INTERNAL-AI-20260416: 將請求主體從原始字串改為 ReturnReasonDto，避免 Content-Type 問題。)
+    /* [HttpPost("{partId}/return")]
+    [Authorize(Roles = "dcb")]
     public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] string returnReason) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, returnReason)));
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, returnReason))); */
+    /// <summary>
+    /// Returns a part to the customer with a reason (DCB only).
+    /// (繁體中文) 將零件退回給客戶並附上原因（僅限 DCB）。
+    /// </summary>
+    [HttpPost("{partId}/return")]
+    [Authorize(Roles = "dcb")]
+    public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] ReturnReasonDto body) =>
+        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, body.Reason)));
 
+    /// <summary>
+    /// Marks a part as inactive.
+    /// (繁體中文) 將零件標記為停用。
+    /// </summary>
     [HttpPost("{partId}/inactive")]
     public ActionResult<ApiResponse<object>> InactivatePart(int partId) =>
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.InactivatePart(partId)));
 
+    /// <summary>
+    /// Retrieves milestones for a specific part.
+    /// (繁體中文) 取得特定零件的里程碑（歷程）。
+    /// </summary>
     [HttpGet("{partId}/milestones")]
     public ActionResult<ApiResponse<IEnumerable<MilestoneDto>>> GetMilestones(int partId) =>
         Ok(ApiResponse<IEnumerable<MilestoneDto>>.SuccessResponse(_queryService.GetMilestones(partId)));
 
+    /// <summary>
+    /// Retrieves the change history of a specific part.
+    /// (繁體中文) 取得特定零件的變更歷史。
+    /// </summary>
     [HttpGet("{partId}/history")]
     public ActionResult<ApiResponse<IEnumerable<PartDetailDto>>> GetHistory(int partId) =>
         Ok(ApiResponse<IEnumerable<PartDetailDto>>.SuccessResponse(_queryService.GetHistory(partId)));

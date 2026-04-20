@@ -1,5 +1,6 @@
-import api from '../api';
-import { useAuthStore } from '../../stores/auth';
+import api from '@src/services/api';
+import { useAuthStore } from '@src/stores/auth';
+import { useTabStore } from '@src/stores/tabs';
 
 /**
  * User Role Types (使用者角色類型)
@@ -13,6 +14,7 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 /**
  * Auth Service (驗證服務)
+ * Update by Gemini AI on 2026-04-18: Path alias refactor. (路徑別名重構。)
  */
 export const authService = {
   /**
@@ -57,10 +59,10 @@ export const authService = {
         return true;
       }
       
-      return false; // Error handled by interceptor (錯誤已由攔截器處理)
+      return false; 
     } catch (error) {
       console.error('Login failed (登入失敗):', error);
-      return false; // Network error handled by interceptor (網路錯誤已由攔截器處理)
+      return false;
     }
   },
 
@@ -69,7 +71,10 @@ export const authService = {
    */
   logout() {
     const authStore = useAuthStore();
+    const tabStore = useTabStore();
+    
     authStore.clearAuth();
+    tabStore.closeAll();
   },
 
   /**

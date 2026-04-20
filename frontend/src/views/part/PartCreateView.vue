@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
-import { authService } from '../../services/auth/auth';
-import { partService, type CreatePartRequest } from '../../services/part/part';
-import { commonService, type CountryOption } from '../../services/common/common';
-import Card from '../../components/common/Card.vue';
-import Button from '../../components/common/Button.vue';
+import { authService, UserRole } from '@src/services/auth/auth';
+import Card from '@src/components/common/Card.vue';
+import Button from '@src/components/common/Button.vue';
+import { authService } from '@src/services/auth/auth';
+import { partService, type CreatePartRequest } from '@src/services/part/part';
+import { commonService, type CountryOption } from '@src/services/common/common';
 import { ElMessage } from 'element-plus';
 
 /**
  * Part No Creation View (新增零件編號頁面)
  * BR-08: HTS Format Validation | BR-21: Description Quality Scoring
  * Updated: Mandatory Customer ID for Employees and Auto-Activation logic.
+ * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
  */
 
 const router = useRouter();
 const { t } = useI18n();
 
 const { role, customerId: userCustomerId } = authService.state;
-const isEmployee = role === 'EMPLOYEE';
+const isEmployee = role && role !== UserRole.CUSTOMER;
 
 const countries = ref<CountryOption[]>([]);
 

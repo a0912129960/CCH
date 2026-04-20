@@ -27,9 +27,11 @@
     "accept": "Accept",
     "resubmit": "Resubmit",
     "back": "Back",
+    "no_data": "No data found",
     "confirm": "Confirm",
     "close_all": "Close All",
-    "close_others": "Close Others"
+    "close_others": "Close Others",
+    "collapse_all": "Collapse All"
   },
   "login": {
     "title": "Login",
@@ -72,7 +74,15 @@
     "filter_status": "Status Filter",
     "filter_supplier": "Supplier Filter",
     "add_new": "Add New Part",
-    "bulk_upload": "Bulk Upload"
+    "bulk_upload": "Bulk Upload",
+    "batch_accept": "Batch Accept",
+    "export_excel": "Export to Excel",
+    "division": "Division",
+    "description": "Part Description",
+    "coo": "Country of Origin",
+    "duty_rate": "General Duty Rate (%)",
+    "updated_by": "Updated By",
+    "sla": "SLA"
   },
   "part_upload": {
     "title": "Bulk Upload Parts",
@@ -153,6 +163,8 @@
   "part_detail": {
     "title": "Part Detail",
     "basic_info": "Basic Information",
+    "part_information": "Part Information",
+    "timeline": "Timeline",
     "history": "Classification History Timeline",
     "dimerco_feedback": "Dimerco Feedback",
     "reason": "Return Reason",
@@ -164,9 +176,26 @@
     "return_reason_label": "Return Reason",
     "return_placeholder": "Please explain why this part is being returned to the customer...",
     "btn_return_customer": "Return to Customer",
+    "btn_accept": "Accept",
+    "btn_save_send": "Save & Send to Dimerco",
+    "field": "Field",
+    "before": "Before",
+    "modified_label": "Modified",
     "country": "Country",
+    "country_of_origin": "Country of Origin",
     "division": "Division",
     "rate": "Rate (%)",
+    "us_hts_code": "US HTS Code",
+    "general_duty_rate": "General Duty Rate (%)",
+    "additional_duty": "Additional Duty",
+    "hts_code_301": "HTS Code (301)",
+    "rate_301": "Rate (301) (%)",
+    "hts_code_ieepa": "HTS Code (IEEPA)",
+    "rate_ieepa": "Rate (IEEPA) (%)",
+    "hts_code_232": "HTS Code (232 Aluminum)",
+    "rate_232": "Rate (232 Aluminum) (%)",
+    "hts_code_reciprocal": "HTS Code (Reciprocal Tariff)",
+    "rate_reciprocal": "Rate (Reciprocal Tariff) (%)",
     "hts_and_rate": "HTS Code & Rate",
     "remark": "Remark",
     "updated_by": "Updated By",
@@ -175,10 +204,22 @@
   "status": {
     "unknown": "Unknown",
     "pending_customer": "Pending Customer",
-    "pending_review": "Pending Review",
+    "pending_review": "Pending Dimerco Review",
     "returned": "Returned",
     "active": "Active",
     "flagged": "Flagged",
-    "superseded": "Superseded"
+    "superseded": "Superseded",
+    "s01": "Unknown",
+    "s02": "Pending Customer",
+    "s03": "Pending Review",
+    "s04": "Active",
+    "s05": "Returned",
+    "s06": "Flagged",
+    "s07": "Superseded"
+  },
+  "sla": {
+    "green": "Normal",
+    "yellow": "Warning",
+    "red": "Urgent"
   }
 }

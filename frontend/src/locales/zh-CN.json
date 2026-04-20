@@ -27,8 +27,10 @@
     "accept": "接受",
     "resubmit": "重新提交",
     "back": "返回",
+    "no_data": "暂无数据",
     "close_all": "关闭全部",
-    "close_others": "关闭其他"
+    "close_others": "关闭其他",
+    "collapse_all": "全数收合"
   },
   "login": {
     "title": "登录",
@@ -70,8 +72,17 @@
     "filter_status": "状态筛选",
     "filter_supplier": "供应商筛选",
     "add_new": "新增零件",
-    "bulk_upload": "批量上传"
+    "bulk_upload": "批量上传",
+    "batch_accept": "批量接受",
+    "export_excel": "导出至 Excel",
+    "division": "部门",
+    "description": "零件描述",
+    "coo": "原产地",
+    "duty_rate": "一般关税率 (%)",
+    "updated_by": "更新者",
+    "sla": "SLA"
   },
+
   "part_upload": {
     "title": "批量上传零件",
     "dragger_text": "点击或将文件拖拽到此区域上传",
@@ -151,6 +162,8 @@
   "part_detail": {
     "title": "零件详情",
     "basic_info": "基本信息",
+    "part_information": "零件信息",
+    "timeline": "时间轴",
     "history": "分类历史时间轴",
     "dimerco_feedback": "中菲行反馈",
     "reason": "退回理由",
@@ -162,9 +175,26 @@
     "return_reason_label": "退回原因",
     "return_placeholder": "请说明退回给客户的原因...",
     "btn_return_customer": "退回给客户",
+    "btn_accept": "接受",
+    "btn_save_send": "保存并提交给 Dimerco",
+    "field": "字段",
+    "before": "变更前",
+    "modified_label": "变更后",
     "country": "国家",
+    "country_of_origin": "原产地",
     "division": "部门",
     "rate": "税率 (%)",
+    "us_hts_code": "美国 HTS Code",
+    "general_duty_rate": "一般关税税率 (%)",
+    "additional_duty": "附加关税",
+    "hts_code_301": "HTS Code (301)",
+    "rate_301": "税率 (301) (%)",
+    "hts_code_ieepa": "HTS Code (IEEPA)",
+    "rate_ieepa": "税率 (IEEPA) (%)",
+    "hts_code_232": "HTS Code (232 铝制品)",
+    "rate_232": "税率 (232 铝制品) (%)",
+    "hts_code_reciprocal": "HTS Code (对等关税)",
+    "rate_reciprocal": "税率 (对等关税) (%)",
     "hts_and_rate": "HTS 代码与税率",
     "remark": "备注",
     "updated_by": "更新者",
@@ -177,6 +207,18 @@
     "returned": "退回 (待修正)",
     "active": "生效中",
     "flagged": "标记重估",
-    "superseded": "已取代"
+    "superseded": "已取代",
+    "s01": "未知",
+    "s02": "待客户提交",
+    "s03": "待中菲行审核",
+    "s04": "生效中",
+    "s05": "退回 (待修正)",
+    "s06": "标记重估",
+    "s07": "已取代"
+  },
+  "sla": {
+    "green": "正常",
+    "yellow": "警告",
+    "red": "紧急"
   }
 }

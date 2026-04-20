@@ -1,5 +1,5 @@
-using CCH.Core.DTOs;
-using CCH.Services.Services;
+using CCH.Core.Features.Auth.DTOs;
+using CCH.Services.Features.Auth;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
