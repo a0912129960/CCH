@@ -21,7 +21,7 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 // Register DbContexts / 註冊資料庫內容
-builder.Services.AddDbContext<CspY2023DbContext>(options =>
+builder.Services.AddDbContext<CspDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CspConnection")));
 builder.Services.AddDbContext<ReSmDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ReSmConnection")));
