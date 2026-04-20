@@ -33,9 +33,11 @@ public class PartLifecycleService : IPartLifecycleService
         _userContext = userContext;
     }
 
+    private string CurrentUser => _userContext.UserName ?? _userContext.UserId ?? "System";
+
     /// <summary>
-    /// Appends a history entry for a part lifecycle event.
-    /// (繁體中文) 為零件生命週期事件附加一筆歷程記錄。
+    /// Appends a milestone event (status/action label) for a part.
+    /// (繁體中文) 為零件附加一筆里程碑事件（狀態/動作標籤）。
     /// </summary>
     private void RecordHistory(int partId, string action, string remark = "")
     {
@@ -43,9 +45,40 @@ public class PartLifecycleService : IPartLifecycleService
         {
             PartID = partId,
             Action = action,
-            UpdatedBy = _userContext.UserName ?? _userContext.UserId ?? "System",
+            UpdatedBy = CurrentUser,
             UpdatedDate = DateTime.Now,
             Remark = remark
+        });
+    }
+
+    // INTERNAL-AI-20260420: Take a full data snapshot of a part after every save operation.
+    // (INTERNAL-AI-20260420: 每次儲存操作後為零件拍攝完整資料快照。)
+    private void RecordSnapshot(int partId, PartEntity entity)
+    {
+        var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? string.Empty;
+        var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.Name ?? string.Empty;
+
+        _repository.AddSnapshot(new PartSnapshotEntity
+        {
+            PartID = partId,
+            PartNo = entity.PartNo,
+            Country = countryName,
+            Division = entity.Division,
+            Supplier = supplierName,
+            PartDesc = entity.PartDescription,
+            HtsCode = entity.HTSCode,
+            Rate = entity.DutyRate,
+            HtsCode1 = entity.AddHTSCode1,
+            Rate1 = entity.AddDutyRate1,
+            HtsCode2 = entity.AddHTSCode2,
+            Rate2 = entity.AddDutyRate2,
+            HtsCode3 = entity.AddHTSCode3,
+            Rate3 = entity.AddDutyRate3,
+            HtsCode4 = entity.AddHTSCode4,
+            Rate4 = entity.AddDutyRate4,
+            Remark = entity.Remark,
+            UpdatedBy = entity.UpdatedBy,
+            UpdatedDate = DateTime.Now
         });
     }
 
@@ -79,13 +112,14 @@ public class PartLifecycleService : IPartLifecycleService
             AddDutyRate4 = request.Rate4,
             Remark = request.Remark,
             Status = status,
-            CreatedBy = "AI-System",
-            UpdatedBy = "AI-System"
+            CreatedBy = CurrentUser,
+            UpdatedBy = CurrentUser
         };
 
         var partId = _repository.CreatePart(entity);
-        // INTERNAL-AI-20260420: Record creation in history. (記錄建立歷程。)
+        // INTERNAL-AI-20260420: Record creation in history + take initial snapshot. (記錄建立歷程並拍攝初始快照。)
         RecordHistory(partId, "Created");
+        RecordSnapshot(partId, entity);
         return new { partId, partNo = request.PartNo, status };
     }
 
@@ -109,8 +143,9 @@ public class PartLifecycleService : IPartLifecycleService
             existing.UpdatedBy = _userContext.UserName ?? _userContext.UserId ?? "System";
 
             _repository.UpdatePart(existing);
-            // INTERNAL-AI-20260420: Record save in history. (記錄儲存歷程。)
+            // INTERNAL-AI-20260420: Record save in history + take data snapshot. (記錄儲存歷程並拍攝資料快照。)
             RecordHistory(partId, "Updated");
+            RecordSnapshot(partId, existing);
         }
         return new { };
     }

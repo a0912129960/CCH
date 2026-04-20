@@ -150,9 +150,12 @@ public class PartQueryService : IPartQueryService
         new MilestoneDto { Action = "Unknown", ... },
         ...
     }; */
+    // INTERNAL-AI-20260420: Milestones sorted DESC per spec (依修改時間由近到遠排序).
+    // (INTERNAL-AI-20260420: 依規格將里程碑排序改為由近到遠 DESC。)
     /// <inheritdoc/>
     public IEnumerable<MilestoneDto> GetMilestones(int partId) =>
         _repository.GetHistoryByPartId(partId)
+            .OrderByDescending(h => h.UpdatedDate)
             .Select(h => new MilestoneDto
             {
                 Action = h.Action,
@@ -162,34 +165,33 @@ public class PartQueryService : IPartQueryService
             })
             .ToList();
 
+    // INTERNAL-AI-20260420: GetHistory now reads real snapshots instead of hardcoded mock data.
+    // Sorted DESC per spec (依修改時間由近到遠排序). (改為從倉儲讀取真實快照，並依規格排序。)
+    /* public IEnumerable<PartDetailDto> GetHistory(int partId) => new[] { ... }; */
     /// <inheritdoc/>
-    public IEnumerable<PartDetailDto> GetHistory(int partId) => new[]
-    {
-        new PartDetailDto 
-        { 
-            PartNo = "PART-001", 
-            Country = "TW",
-            Division = "DIV1",
-            Supplier = "SUP1",
-            PartDesc = "Version 2 (Current)", 
-            HtsCode = "8471.30",
-            Rate = 0,
-            Remark = "Updated HTS description",
-            UpdatedBy = "Customer001",
-            UpdatedDate = DateTime.Now.AddDays(-1)
-        },
-        new PartDetailDto 
-        { 
-            PartNo = "PART-001", 
-            Country = "TW",
-            Division = "DIV1",
-            Supplier = "SUP1",
-            PartDesc = "Version 1 (Initial)", 
-            HtsCode = "8471.30",
-            Rate = 0,
-            Remark = "Initial entry",
-            UpdatedBy = "Customer001",
-            UpdatedDate = DateTime.Now.AddDays(-5)
-        }
-    };
+    public IEnumerable<PartDetailDto> GetHistory(int partId) =>
+        _repository.GetSnapshotsByPartId(partId)
+            .OrderByDescending(s => s.UpdatedDate)
+            .Select(s => new PartDetailDto
+            {
+                PartNo = s.PartNo,
+                Country = s.Country,
+                Division = s.Division,
+                Supplier = s.Supplier,
+                PartDesc = s.PartDesc,
+                HtsCode = s.HtsCode,
+                Rate = s.Rate,
+                HtsCode1 = s.HtsCode1,
+                Rate1 = s.Rate1,
+                HtsCode2 = s.HtsCode2,
+                Rate2 = s.Rate2,
+                HtsCode3 = s.HtsCode3,
+                Rate3 = s.Rate3,
+                HtsCode4 = s.HtsCode4,
+                Rate4 = s.Rate4,
+                Remark = s.Remark,
+                UpdatedBy = s.UpdatedBy,
+                UpdatedDate = s.UpdatedDate
+            })
+            .ToList();
 }
