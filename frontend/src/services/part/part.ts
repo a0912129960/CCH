@@ -27,8 +27,20 @@ export interface Part {
   id: string;
   division: string;
   partNo: string;
-  description?: string;
-  countryOfOrigin: string;
+  countryOfOrigin?: string;
+  division?: string;
+  partDescription?: string;
+  usHtsCode?: string;
+  generalDutyRate?: string;
+  htsCode301?: string;
+  rate301?: string;
+  htsCodeIeepa?: string;
+  rateIeepa?: string;
+  htsCode232Aluminum?: string;
+  rate232Aluminum?: string;
+  htsCodeReciprocalTariff?: string;
+  rateReciprocalTariff?: string;
+  remark?: string;
   htsCode: string;
   generalDutyRate: number;
   status: PartStatus;
@@ -135,6 +147,55 @@ export interface PartListItem {
   rate4?: number | null;
 }
 
+/**
+ * Create Part API Request Body (新增零件 API 請求參數)
+ */
+export interface CreatePartRequest {
+  customerId?: string;
+  partNo: string;
+  countryId?: string | number;
+  division?: string;
+  supplier?: string;
+  partDesc?: string;
+  htsCode?: string;
+  rate?: number;
+  htsCode1?: string;
+  rate1?: number;
+  htsCode2?: string;
+  rate2?: number;
+  htsCode3?: string;
+  rate3?: number;
+  htsCode4?: string;
+  rate4?: number;
+  remark?: string;
+}
+
+/**
+ * Create Part API Response Data (新增零件 API 回傳資料)
+ */
+export interface CreatePartResponse {
+  success: boolean;
+  message: string;
+  data: {
+    partId: string;
+    partNo: string;
+    status: string;
+  };
+}
+
+/**
+ * Submit Part API Response Data (提交零件 API 回傳資料)
+ */
+export interface SubmitPartResponse {
+  success: boolean;
+  message: string;
+  data: {
+    partId: string;
+    partNo: string;
+    status: 'S02';
+  };
+}
+
 export interface PartListResponse {
   total: number;
   page: number;
@@ -188,21 +249,82 @@ export const partService = {
     // INTERNAL-AI-20260416: Redirect to commonService or real parts supplier API if exists
     return [];
   },
-  async createPart(data: { 
-    partNo: string; 
-    description: string; 
-    htsCode: string; 
-    supplier: string; 
-    customerId?: string; 
+  async createPart(data: {
+    partNo: string;
+    countryOfOrigin?: string;
+    division?: string;
+    partDescription?: string;
+    usHtsCode?: string;
+    generalDutyRate?: string;
+    htsCode301?: string;
+    rate301?: string;
+    htsCodeIeepa?: string;
+    rateIeepa?: string;
+    htsCode232Aluminum?: string;
+    rate232Aluminum?: string;
+    htsCodeReciprocalTariff?: string;
+    rateReciprocalTariff?: string;
+    remark?: string;
+    description?: string;
+    htsCode?: string;
+    supplier: string;
+    customerId?: string;
     customerName?: string;
     status?: PartStatus;
   }): Promise<Part> {
-    const response = await api.post<{ success: boolean; data: Part }>('/parts', data);
-    if (response.data.success) {
-      return response.data.data;
-    }
-    throw new Error('Failed to create part');
+    const newPart: Part = {
+      id: (MOCK_PARTS.length + 1).toString(),
+      partNo: data.partNo,
+      countryOfOrigin: data.countryOfOrigin,
+      division: data.division,
+      partDescription: data.partDescription,
+      usHtsCode: data.usHtsCode,
+      generalDutyRate: data.generalDutyRate,
+      htsCode301: data.htsCode301,
+      rate301: data.rate301,
+      htsCodeIeepa: data.htsCodeIeepa,
+      rateIeepa: data.rateIeepa,
+      htsCode232Aluminum: data.htsCode232Aluminum,
+      rate232Aluminum: data.rate232Aluminum,
+      htsCodeReciprocalTariff: data.htsCodeReciprocalTariff,
+      rateReciprocalTariff: data.rateReciprocalTariff,
+      remark: data.remark,
+      htsCode: data.htsCode,
+      status: data.status || PartStatus.PENDING_REVIEW,
+      supplier: data.supplier || 'Unknown Source',
+      customerId: data.customerId || 'customer001',
+      customerName: data.customerName || 'Dimerco Electronics',
+      lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      description: data.description,
+      history: [
+        {
+          id: 'h-new',
+          status: data.status || PartStatus.PENDING_REVIEW,
+          updatedBy: data.status === PartStatus.ACTIVE ? 'Dimerco Employee' : 'Customer A',
+          updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          remark: data.status === PartStatus.ACTIVE ? 'Part created and auto-approved by employee.' : 'Part created and submitted for review.'
+        }
+      ]
+    };
+    MOCK_PARTS.unshift(newPart);
+    return newPart;
   },
+  /**
+   * Create Part via real API  POST /api/parts
+   */
+  async createPartApi(body: CreatePartRequest): Promise<CreatePartResponse> {
+    const response = await api.post<CreatePartResponse>('/parts', body);
+    return response.data;
+  },
+
+  /**
+   * Submit Part to Dimerco via real API  POST /api/parts/submit
+   */
+  async submitPartApi(body: CreatePartRequest): Promise<SubmitPartResponse> {
+    const response = await api.post<SubmitPartResponse>('/parts/submit', body);
+    return response.data;
+  },
+
   async updatePartStatus(id: string, newStatus: PartStatus, remark?: string): Promise<boolean> {
     const response = await api.patch<{ success: boolean }>(`/parts/${id}/status`, { status: newStatus, remark });
     return response.data.success;
