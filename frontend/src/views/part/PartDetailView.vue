@@ -5,10 +5,13 @@ import { authService, UserRole } from '@src/services/auth/auth';
 /* import { partService, type Part, PartStatus } from '../../services/part/part'; */
 import {
   /* partService, PartStatus, */
-  getPartDetail, updatePart, submitPart, getMilestones, acceptPart, returnPart,
+  getPartDetail, updatePart, submitPart, getMilestones, acceptPart, returnPart, inactivatePart,
   statusToI18nKey,
   type PartDetailResponse, type PartSavePayload, type Milestone
 } from '@src/services/part/part';
+// INTERNAL-AI-20260420: commonService import removed (supplier is now free-text, no dropdown needed).
+// (INTERNAL-AI-20260420: 移除 commonService 匯入，供應商改為自由輸入文字，不需下拉清單。)
+/* import { commonService, type SupplierOption } from '@src/services/common/common'; */
 import { useTabStore } from '@src/stores/tabs';
 /*
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -34,10 +37,29 @@ const milestones = ref<Milestone[]>([]);
 const loading = ref(true);
 const saving = ref(false);
 const submitting = ref(false);
+const inactivating = ref(false);
 
-// INTERNAL-AI-20260416: Hardcoded supplier options matching backend mock data.
-// (INTERNAL-AI-20260416: 供應商選項，與後端 mock 資料一致。)
-const SUPPLIER_OPTIONS = ['Supplier Alpha', 'Supplier Beta', 'Supplier Gamma', 'Supplier Delta'];
+// INTERNAL-AI-20260420: Supplier is now free-text; dropdown and supplierOptions removed.
+// (INTERNAL-AI-20260420: 供應商改為自由輸入文字，已移除下拉選單與 supplierOptions。)
+/* const supplierOptions = ref<SupplierOption[]>([]); */
+
+// HTS Code format validation (HTS Code 格式驗證)
+const HTS_PATTERN = /^\d{4}\.\d{2}\.\d{4}$/;
+const htsError = ref('');
+const htsCode1Error = ref('');
+const htsCode2Error = ref('');
+const htsCode3Error = ref('');
+const htsCode4Error = ref('');
+
+const validateHts = (val: string | null | undefined, errRef: typeof htsError): boolean => {
+  if (!val) { errRef.value = ''; return true; }
+  if (!HTS_PATTERN.test(val)) {
+    errRef.value = 'Format must be XXXX.XX.XXXX';
+    return false;
+  }
+  errRef.value = '';
+  return true;
+};
 
 const form = ref<PartSavePayload>({
   partNo: '',
@@ -65,12 +87,27 @@ const before = computed(() => partDetail.value?.before ?? null);
 // Status badge (狀態標籤)
 const currentStatus = computed(() => partDetail.value?.status ?? '');
 const statusBadgeLabel = computed(() => t('status.' + statusToI18nKey(currentStatus.value)).toUpperCase());
-const statusBadgeBg = computed(() => {
+// INTERNAL-AI-20260420: Changed badge background to use SLA-based color per spec.
+// (INTERNAL-AI-20260420: 依規格將標籤背景色改為 SLA 狀態顏色。)
+/* const statusBadgeBg = computed(() => {
   const s = currentStatus.value;
   if (s === 'S04') return '#67C23A';
   if (s === 'S01' || s === 'Inactive') return '#909399';
-  return '#E6673A'; // Orange-red for any pending state (S02, S03 均顯示橙紅色)
+  return '#E6673A';
+}); */
+const statusBadgeBg = computed(() => {
+  const sla = partDetail.value?.slaStatus ?? 'green';
+  if (sla === 'red')    return '#F56C6C';
+  if (sla === 'orange') return '#FF9800';
+  if (sla === 'yellow') return '#E6A23C';
+  return '#67C23A'; // green (default)
 });
+
+// Customer buttons visible only when status is Unknown (S01) or Pending Customer Review (S03).
+// (Customer 按鈕僅在狀態為 S01 或 S03 時顯示。)
+const showCustomerButtons = computed(() =>
+  isCustomer.value && (currentStatus.value === 'S01' || currentStatus.value === 'S03')
+);
 
 // Dynamic breadcrumb (動態麵包屑)
 const prevPageLabel = computed(() => {
@@ -97,9 +134,12 @@ const milestoneColor = (action: string): string => {
 const initLoad = async (id: number) => {
   loading.value = true;
   try {
+    // INTERNAL-AI-20260420: Supplier is free-text; only need detail + milestones.
+    // (INTERNAL-AI-20260420: 供應商改為自由輸入，只需載入詳情與里程碑。)
+    /* const [detailData, milestoneData, suppliersData] = await Promise.all([...]) */
     const [detailData, milestoneData] = await Promise.all([
       getPartDetail(id),
-      getMilestones(id).catch(() => [] as Milestone[])
+      getMilestones(id).catch(() => [] as Milestone[]),
     ]);
 
     if (detailData) {
@@ -182,6 +222,17 @@ const handleSave = async () => {
 // INTERNAL-AI-20260416: Submit handler for Customer — calls POST /api/parts/{partId}/submit.
 // (INTERNAL-AI-20260416: Customer 角色的送審處理函式，呼叫 POST /api/parts/{partId}/submit。)
 const handleSubmit = async () => {
+  // INTERNAL-AI-20260420: Validate HTS Code is required before submitting.
+  // (INTERNAL-AI-20260420: 送審前驗證 HTS Code 為必填。)
+  if (!form.value.htsCode?.trim()) {
+    ElMessage.error('US HTS Code is required before submitting. / 送審前 HTS Code 為必填。');
+    return;
+  }
+  if (!validateHts(form.value.htsCode, htsError)) {
+    ElMessage.error('US HTS Code format is invalid. / HTS Code 格式錯誤。');
+    return;
+  }
+
   try {
     await ElMessageBox.confirm(
       t('part_detail.btn_save_send') + '?',
@@ -201,6 +252,31 @@ const handleSubmit = async () => {
     // interceptor handles error (攔截器顯示錯誤)
   } finally {
     submitting.value = false;
+  }
+};
+
+// INTERNAL-AI-20260420: Inactivate handler for Customer role — confirms then sets status to Inactive.
+// (INTERNAL-AI-20260420: Customer 角色停用處理函式，確認後將狀態設為停用。)
+const handleInactivate = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to set ${modified.value?.partNo ?? partId} as Inactive? This part will no longer be active in the system.`,
+      'Confirm Inactivate',
+      { confirmButtonText: 'Inactive', cancelButtonText: 'Cancel', type: 'warning' }
+    );
+  } catch {
+    return;
+  }
+
+  inactivating.value = true;
+  try {
+    await inactivatePart(partId);
+    ElMessage.success('Part has been set as Inactive. / 零件已停用。');
+    router.push('/parts');
+  } catch {
+    // interceptor handles error (攔截器顯示錯誤)
+  } finally {
+    inactivating.value = false;
   }
 };
 
@@ -307,14 +383,12 @@ const handleReturn = async () => {
                     <span v-else class="cell-text">{{ modified.division }}</span>
                   </td>
                 </tr>
-                <!-- Supplier: dropdown for Customer (供應商：Customer 顯示下拉) -->
+                <!-- Supplier: free-text input for Customer (供應商：Customer 顯示自由輸入框) -->
                 <tr>
-                  <td class="field-label">{{ $t('common.supplier') }}<span v-if="isCustomer" class="req">*</span></td>
+                  <td class="field-label">{{ $t('common.supplier') }}</td>
                   <td class="before-val">{{ before?.supplier || '—' }}</td>
                   <td>
-                    <select v-if="isCustomer" v-model="form.supplier" class="cell-select">
-                      <option v-for="s in SUPPLIER_OPTIONS" :key="s" :value="s">{{ s }}</option>
-                    </select>
+                    <input v-if="isCustomer" v-model="form.supplier" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.supplier }}</span>
                   </td>
                 </tr>
@@ -327,12 +401,22 @@ const handleReturn = async () => {
                     <span v-else class="cell-text">{{ modified.partDesc }}</span>
                   </td>
                 </tr>
-                <!-- US HTS Code -->
+                <!-- US HTS Code (with format validation) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.us_hts_code') }}<span v-if="isCustomer" class="req">*</span></td>
                   <td class="before-val mono">{{ before?.htsCode || '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model="form.htsCode" class="cell-input mono" placeholder="XXXX.XX.XXXX" />
+                    <template v-if="isCustomer">
+                      <input
+                        v-model="form.htsCode"
+                        class="cell-input mono"
+                        :class="{ 'input-error': htsError }"
+                        placeholder="XXXX.XX.XXXX"
+                        @blur="validateHts(form.htsCode, htsError)"
+                        @input="validateHts(form.htsCode, htsError)"
+                      />
+                      <div v-if="htsError" class="field-error">{{ htsError }}</div>
+                    </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode }}</span>
                   </td>
                 </tr>
@@ -356,7 +440,10 @@ const handleReturn = async () => {
                   <td class="field-label">{{ $t('part_detail.hts_code_301') }}</td>
                   <td class="before-val mono">{{ before?.htsCode1 || '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model="form.htsCode1" class="cell-input mono" placeholder="XXXX.XX.XXXX" />
+                    <template v-if="isCustomer">
+                      <input v-model="form.htsCode1" class="cell-input mono" :class="{ 'input-error': htsCode1Error }" placeholder="XXXX.XX.XXXX" @blur="validateHts(form.htsCode1, htsCode1Error)" @input="validateHts(form.htsCode1, htsCode1Error)" />
+                      <div v-if="htsCode1Error" class="field-error">{{ htsCode1Error }}</div>
+                    </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode1 || '—' }}</span>
                   </td>
                 </tr>
@@ -374,7 +461,10 @@ const handleReturn = async () => {
                   <td class="field-label">{{ $t('part_detail.hts_code_ieepa') }}</td>
                   <td class="before-val mono">{{ before?.htsCode2 || '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model="form.htsCode2" class="cell-input mono" placeholder="XXXX.XX.XXXX" />
+                    <template v-if="isCustomer">
+                      <input v-model="form.htsCode2" class="cell-input mono" :class="{ 'input-error': htsCode2Error }" placeholder="XXXX.XX.XXXX" @blur="validateHts(form.htsCode2, htsCode2Error)" @input="validateHts(form.htsCode2, htsCode2Error)" />
+                      <div v-if="htsCode2Error" class="field-error">{{ htsCode2Error }}</div>
+                    </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode2 || '—' }}</span>
                   </td>
                 </tr>
@@ -392,7 +482,10 @@ const handleReturn = async () => {
                   <td class="field-label">{{ $t('part_detail.hts_code_232') }}</td>
                   <td class="before-val mono">{{ before?.htsCode3 || '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model="form.htsCode3" class="cell-input mono" placeholder="XXXX.XX.XXXX" />
+                    <template v-if="isCustomer">
+                      <input v-model="form.htsCode3" class="cell-input mono" :class="{ 'input-error': htsCode3Error }" placeholder="XXXX.XX.XXXX" @blur="validateHts(form.htsCode3, htsCode3Error)" @input="validateHts(form.htsCode3, htsCode3Error)" />
+                      <div v-if="htsCode3Error" class="field-error">{{ htsCode3Error }}</div>
+                    </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode3 || '—' }}</span>
                   </td>
                 </tr>
@@ -410,7 +503,10 @@ const handleReturn = async () => {
                   <td class="field-label">{{ $t('part_detail.hts_code_reciprocal') }}</td>
                   <td class="before-val mono">{{ before?.htsCode4 || '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model="form.htsCode4" class="cell-input mono" placeholder="XXXX.XX.XXXX" />
+                    <template v-if="isCustomer">
+                      <input v-model="form.htsCode4" class="cell-input mono" :class="{ 'input-error': htsCode4Error }" placeholder="XXXX.XX.XXXX" @blur="validateHts(form.htsCode4, htsCode4Error)" @input="validateHts(form.htsCode4, htsCode4Error)" />
+                      <div v-if="htsCode4Error" class="field-error">{{ htsCode4Error }}</div>
+                    </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode4 || '—' }}</span>
                   </td>
                 </tr>
@@ -437,13 +533,17 @@ const handleReturn = async () => {
 
             <!-- Action buttons (操作按鈕) -->
             <div class="action-footer">
-              <!-- Customer: Save + Save & Send (Customer：儲存 + 儲存並送審) -->
-              <template v-if="isCustomer">
-                <button class="btn-cch btn-save" :disabled="saving || submitting" @click="handleSave">
+              <!-- Customer: Save + Save & Send + Inactive; only shown when status is S01 or S03 -->
+              <!-- (Customer：儲存 + 儲存並送審 + 停用，僅在狀態為 S01 或 S03 時顯示) -->
+              <template v-if="showCustomerButtons">
+                <button class="btn-cch btn-save" :disabled="saving || submitting || inactivating" @click="handleSave">
                   {{ saving ? '...' : $t('common.save') }}
                 </button>
-                <button class="btn-cch btn-submit" :disabled="saving || submitting" @click="handleSubmit">
+                <button class="btn-cch btn-submit" :disabled="saving || submitting || inactivating" @click="handleSubmit">
                   {{ submitting ? '...' : $t('part_detail.btn_save_send') }}
+                </button>
+                <button class="btn-cch btn-inactive" :disabled="saving || submitting || inactivating" @click="handleInactivate">
+                  {{ inactivating ? '...' : 'Inactive' }}
                 </button>
               </template>
               <!-- DCB: Accept + Return (DCB：接受 + 退回) -->
@@ -690,6 +790,16 @@ h1 {
   box-shadow: 0 0 0 2px rgba(64,158,255,0.1);
 }
 
+.cell-input.input-error {
+  border-color: #f56c6c;
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: #f56c6c;
+  margin-top: 3px;
+}
+
 .cell-select {
   width: 100%;
   box-sizing: border-box;
@@ -760,6 +870,13 @@ h1 {
   border: 1px solid #d0d7de !important;
 }
 .btn-return-outline:hover { background-color: #f8f9fe; }
+
+.btn-inactive {
+  background-color: #909399;
+  color: #fff;
+}
+.btn-inactive:hover:not(:disabled) { background-color: #73767a; }
+.btn-inactive:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* Timeline */
 .timeline-card { padding-bottom: 0.5rem; }

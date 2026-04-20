@@ -60,10 +60,13 @@ public class PartQueryService : IPartQueryService
 
         var listItem = MapToListItemDto(entity);
 
+        // INTERNAL-AI-20260420: Include SlaStatus in detail response so frontend can apply SLA badge color.
+        // (INTERNAL-AI-20260420: 詳細回應中加入 SlaStatus，供前端套用 SLA 標籤顏色。)
         return new PartDetailResponseDto
         {
             Status = entity.Status,
-            Before = new PartDetailDto 
+            SlaStatus = listItem.SlaStatus,
+            Before = new PartDetailDto
             { 
                 PartNo = listItem.PartNo, 
                 Country = listItem.Country, 

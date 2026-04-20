@@ -2,6 +2,7 @@ using CCH.Core.Entities;
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Features.Parts.Interfaces;
 using CCH.Core.Interfaces.Repositories;
+// INTERNAL-AI-20260420: Added ICommonRepository to resolve Supplier name → ID for entity persistence.
 
 namespace CCH.Services.Features.Parts;
 
@@ -12,15 +13,26 @@ namespace CCH.Services.Features.Parts;
 public class PartLifecycleService : IPartLifecycleService
 {
     private readonly IPartRepository _repository;
+    // INTERNAL-AI-20260420: Injected ICommonRepository to resolve Supplier name → SupplierID for entity FK.
+    // (INTERNAL-AI-20260420: 注入 ICommonRepository 以從供應商名稱查找對應的 SupplierID 外鍵。)
+    private readonly ICommonRepository _commonRepository;
 
     /// <summary>
     /// Initializes a new instance of PartLifecycleService.
     /// (繁體中文) 初始化 PartLifecycleService 的新執行個體。
     /// </summary>
-    public PartLifecycleService(IPartRepository repository)
+    public PartLifecycleService(IPartRepository repository, ICommonRepository commonRepository)
     {
         _repository = repository;
+        _commonRepository = commonRepository;
     }
+
+    /// <summary>
+    /// Resolves a supplier name to its ID, defaulting to 1 if not found.
+    /// (繁體中文) 將供應商名稱轉換為 ID，若找不到則預設為 1。
+    /// </summary>
+    private int ResolveSupplierIdByName(string supplierName) =>
+        _commonRepository.GetSuppliers().FirstOrDefault(s => s.Name == supplierName)?.ID ?? 1;
 
     /// <inheritdoc/>
     public object CreatePart(PartSaveRequest request, string status)
@@ -32,7 +44,7 @@ public class PartLifecycleService : IPartLifecycleService
             CountryID = request.CountryId ?? 1,
             PartDescription = request.PartDesc,
             Division = request.Division,
-            SupplierID = request.SupplierId ?? 1,
+            SupplierID = ResolveSupplierIdByName(request.Supplier),
             HTSCode = request.HtsCode,
             DutyRate = request.Rate,
             AddHTSCode1 = request.HtsCode1,
@@ -62,7 +74,9 @@ public class PartLifecycleService : IPartLifecycleService
             existing.PartNo = request.PartNo;
             existing.PartDescription = request.PartDesc;
             existing.Division = request.Division;
-            existing.SupplierID = request.SupplierId ?? existing.SupplierID;
+            existing.SupplierID = !string.IsNullOrEmpty(request.Supplier)
+                ? ResolveSupplierIdByName(request.Supplier)
+                : existing.SupplierID;
             existing.HTSCode = request.HtsCode;
             existing.DutyRate = request.Rate;
             existing.AddHTSCode1 = request.HtsCode1;
