@@ -40,6 +40,7 @@ export interface Part {
   htsCodeReciprocalTariff?: string;
   rateReciprocalTariff?: string;
   remark?: string;
+  description?: string;
   htsCode: string;
   status: PartStatus;
   updatedBy: string;
@@ -274,7 +275,7 @@ export const partService = {
       id: (MOCK_PARTS.length + 1).toString(),
       partNo: data.partNo,
       countryOfOrigin: data.countryOfOrigin,
-      division: data.division,
+      division: data.division || '',
       partDescription: data.partDescription,
       usHtsCode: data.usHtsCode,
       generalDutyRate: data.generalDutyRate,
@@ -287,11 +288,12 @@ export const partService = {
       htsCodeReciprocalTariff: data.htsCodeReciprocalTariff,
       rateReciprocalTariff: data.rateReciprocalTariff,
       remark: data.remark,
-      htsCode: data.htsCode,
+      htsCode: data.htsCode || '',
       status: data.status || PartStatus.PENDING_REVIEW,
       supplier: data.supplier || 'Unknown Source',
       customerId: data.customerId || 'customer001',
       customerName: data.customerName || 'Dimerco Electronics',
+      updatedBy: '',
       lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 16),
       description: data.description,
       history: [
