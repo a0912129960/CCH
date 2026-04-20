@@ -109,6 +109,12 @@ const showCustomerButtons = computed(() =>
   isCustomer.value && (currentStatus.value === 'S01' || currentStatus.value === 'S03')
 );
 
+// DCB review panel: Return Reason field + Accept / Return to Customer buttons, shown only for S02.
+// (DCB 審核面板：退回原因欄位 + 接受 / 退回按鈕，僅在狀態 S02 時顯示。)
+const showDcbReview = computed(() => isDcb.value && currentStatus.value === 'S02');
+const returnReason = ref('');
+const returnReasonError = ref('');
+
 // Dynamic breadcrumb (動態麵包屑)
 const prevPageLabel = computed(() => {
   const backState = (window.history.state as any)?.back;
@@ -282,37 +288,32 @@ const handleInactivate = async () => {
 
 // INTERNAL-AI-20260416: Accept/Return handlers for DCB role.
 // (INTERNAL-AI-20260416: DCB 角色的接受/退回處理函式。)
+// INTERNAL-AI-20260420: Accept no longer shows a dialog — direct API call per spec.
+// (INTERNAL-AI-20260420: 接受不再顯示確認對話框，依規格直接呼叫 API。)
 const handleAccept = async () => {
   try {
-    await ElMessageBox.confirm(
-      t('part_detail.accept_confirm'),
-      t('part_detail.btn_accept'),
-      { confirmButtonClass: 'btn-confirm-orange', type: 'warning' }
-    );
     await acceptPart(partId);
     ElMessage.success('Part accepted. / 零件已接受。');
     router.push('/parts');
   } catch {
-    // cancelled or error (取消或錯誤)
+    // interceptor handles error (攔截器顯示錯誤)
   }
 };
 
+// INTERNAL-AI-20260420: Return reason is now an inline field; validate before calling API.
+// (INTERNAL-AI-20260420: 退回原因改為頁面內欄位，呼叫 API 前先驗證。)
 const handleReturn = async () => {
+  if (!returnReason.value.trim()) {
+    returnReasonError.value = 'Return Reason is required. / 退回原因為必填。';
+    return;
+  }
+  returnReasonError.value = '';
   try {
-    const { value: reason } = await ElMessageBox.prompt(
-      t('part_detail.return_placeholder'),
-      t('part_detail.btn_return_customer'),
-      { inputPlaceholder: t('part_detail.return_reason_label'), inputType: 'textarea' }
-    );
-    if (!reason?.trim()) {
-      ElMessage.warning('Return reason is required. / 退回原因為必填。');
-      return;
-    }
-    await returnPart(partId, reason.trim());
+    await returnPart(partId, returnReason.value.trim());
     ElMessage.success('Returned to customer. / 已退回給客戶。');
     router.push('/parts');
   } catch {
-    // cancelled or error (取消或錯誤)
+    // interceptor handles error (攔截器顯示錯誤)
   }
 };
 </script>
@@ -528,6 +529,30 @@ const handleReturn = async () => {
                     <span v-else class="cell-text">{{ modified.remark || '—' }}</span>
                   </td>
                 </tr>
+
+                <!-- Return Reason: DCB only, visible when status is S02 (Pending Dimerco Review) -->
+                <!-- (退回原因：僅 DCB 角色可見，且僅在狀態為 S02 時顯示) -->
+                <template v-if="showDcbReview">
+                  <tr class="section-divider">
+                    <td colspan="3">{{ $t('part_detail.review_action') }}</td>
+                  </tr>
+                  <tr>
+                    <td class="field-label">
+                      {{ $t('part_detail.return_reason_label') }}
+                    </td>
+                    <td colspan="2">
+                      <textarea
+                        v-model="returnReason"
+                        class="cell-textarea"
+                        :class="{ 'input-error': returnReasonError }"
+                        :placeholder="$t('part_detail.return_placeholder')"
+                        rows="3"
+                        @input="returnReasonError = ''"
+                      ></textarea>
+                      <div v-if="returnReasonError" class="field-error">{{ returnReasonError }}</div>
+                    </td>
+                  </tr>
+                </template>
               </tbody>
             </table>
 
@@ -546,8 +571,9 @@ const handleReturn = async () => {
                   {{ inactivating ? '...' : 'Inactive' }}
                 </button>
               </template>
-              <!-- DCB: Accept + Return (DCB：接受 + 退回) -->
-              <template v-else-if="isDcb">
+              <!-- DCB: Accept + Return to Customer; only when status is S02 (Pending Dimerco Review) -->
+              <!-- (DCB：接受 + 退回給客戶；僅在狀態為 S02 時顯示) -->
+              <template v-else-if="showDcbReview">
                 <button class="btn-cch btn-accept" @click="handleAccept">
                   {{ $t('part_detail.btn_accept') }}
                 </button>
@@ -791,6 +817,30 @@ h1 {
 }
 
 .cell-input.input-error {
+  border-color: #f56c6c;
+}
+
+.cell-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #32325d;
+  background: #fff;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.cell-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(64,158,255,0.1);
+}
+
+.cell-textarea.input-error {
   border-color: #f56c6c;
 }
 
