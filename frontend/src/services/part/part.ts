@@ -30,7 +30,7 @@ export interface Part {
   countryOfOrigin?: string;
   partDescription?: string;
   usHtsCode?: string;
-  generalDutyRate?: string;
+  generalDutyRate?: number | string;
   htsCode301?: string;
   rate301?: string;
   htsCodeIeepa?: string;
@@ -254,7 +254,7 @@ export const partService = {
     division?: string;
     partDescription?: string;
     usHtsCode?: string;
-    generalDutyRate?: string;
+    generalDutyRate?: number | string;
     htsCode301?: string;
     rate301?: string;
     htsCodeIeepa?: string;

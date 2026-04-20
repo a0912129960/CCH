@@ -167,7 +167,8 @@ const exportToExcel = async () => {
 
 const getSLAColor = (slaStatus?: string) => {
   if (!slaStatus) return 'transparent';
-  return SLA_COLOR_MAP[slaStatus.toLowerCase()] || '#909399';
+  /* return SLA_COLOR_MAP[slaStatus.toLowerCase()] || '#909399'; */
+  return SLA_COLOR_MAP[slaStatus.toLowerCase()] || 'transparent';
 };
 
 /**
@@ -381,10 +382,9 @@ watch([currentPage, pageSize], fetchParts);
                 <td class="col-updatedby" :title="part.updatedBy">{{ part.updatedBy || '-' }}</td>
                 <td class="col-updateddate">{{ commonService.formatDateTime(part.updatedDate) }}</td>
                 <td class="col-sla">
-                  <div v-if="part.slaStatus" class="status-cell">
+                  <div v-if="part.slaStatus && getSLAColor(part.slaStatus) !== 'transparent'" class="status-cell">
                     <Dot :dotColor="getSLAColor(part.slaStatus)" size="8px" />
                   </div>
-                  <span v-else>-</span>
                 </td>
                 <td class="col-actions">
                   <Button class="btn-compact" @click="router.push({ name: 'part-detail', params: { id: part.id } })">
