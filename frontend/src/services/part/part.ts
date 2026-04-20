@@ -633,8 +633,10 @@ export async function acceptPart(partId: number): Promise<void> {
  * Return a part to the customer via POST /api/parts/{partId}/return (DCB only).
  * (DCB 角色退回零件給客戶，呼叫 POST /api/parts/{partId}/return。)
  */
+// INTERNAL-AI-20260420: Changed body field from { reason } to { returnReason } per API spec.
+// (INTERNAL-AI-20260420: 依 API 規格將請求主體欄位由 reason 改為 returnReason。)
 export async function returnPart(partId: number, reason: string): Promise<void> {
-  await api.post(`/parts/${partId}/return`, { reason });
+  await api.post(`/parts/${partId}/return`, { returnReason: reason });
 }
 
 // INTERNAL-AI-20260420: Added inactivatePart for Customer role Inactive button.

@@ -63,9 +63,12 @@ public class PartDetailResponseDto
 /// Request body for returning a part to the customer.
 /// (繁體中文) 退回零件給客戶的請求主體。
 /// </summary>
+// INTERNAL-AI-20260420: Renamed Reason → ReturnReason to match API spec body field { returnReason }.
+// (INTERNAL-AI-20260420: 依 API 規格將欄位名稱由 Reason 改為 ReturnReason。)
+/* public string Reason { get; set; } = string.Empty; */
 public class ReturnReasonDto
 {
-    public string Reason { get; set; } = string.Empty;
+    public string ReturnReason { get; set; } = string.Empty;
 }
 
 /// <summary>

@@ -168,35 +168,50 @@ public class PartsController : ControllerBase
     // INTERNAL-AI-20260416: Only DCB can review (accept/return) parts.
     // (INTERNAL-AI-20260416: 僅 DCB 角色可審核（接受/退回）零件。)
     /* [Authorize(Roles = "dimerco,dcb")] */
+    // INTERNAL-AI-20260420: Added S02 status guard per spec (S02 → S04). (依規格加入 S02 狀態驗證。)
     /// <summary>
-    /// Accepts a part after review (DCB only).
-    /// (繁體中文) 審核後接受零件（僅限 DCB）。
+    /// Accepts a part after review (DCB only). Requires status S02.
+    /// (繁體中文) 審核後接受零件（僅限 DCB）。狀態須為 S02。
     /// </summary>
     [HttpPost("{partId}/accept")]
     [Authorize(Roles = "dcb")]
-    public ActionResult<ApiResponse<object>> AcceptPart(int partId) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.AcceptPart(partId)));
+    public ActionResult<ApiResponse<object>> AcceptPart(int partId)
+    {
+        var part = _queryService.GetPartDetail(partId);
+        if (part == null)
+            return NotFound(ApiResponse<object>.FailureResponse("Part not found. / 零件不存在。"));
+        if (part.Status != "S02")
+            return BadRequest(ApiResponse<object>.FailureResponse("Part must be in Pending Dimerco Review (S02) status. / 零件狀態須為 S02。"));
+        return Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.AcceptPart(partId)));
+    }
 
-    // INTERNAL-AI-20260416: Changed body from raw string to ReturnReasonDto to avoid Content-Type issues.
-    // (INTERNAL-AI-20260416: 將請求主體從原始字串改為 ReturnReasonDto，避免 Content-Type 問題。)
-    /* [HttpPost("{partId}/return")]
-    [Authorize(Roles = "dcb")]
-    public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] string returnReason) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, returnReason))); */
+    // INTERNAL-AI-20260420: Added 400 for missing returnReason and S02 status guard per spec.
+    // (INTERNAL-AI-20260420: 依規格加入 returnReason 必填驗證與 S02 狀態驗證。)
     /// <summary>
-    /// Returns a part to the customer with a reason (DCB only).
-    /// (繁體中文) 將零件退回給客戶並附上原因（僅限 DCB）。
+    /// Returns a part to the customer with a reason (DCB only). Body: { returnReason }. Requires status S02.
+    /// (繁體中文) 將零件退回給客戶並附上原因（僅限 DCB）。請求主體：{ returnReason }。狀態須為 S02。
     /// </summary>
     [HttpPost("{partId}/return")]
     [Authorize(Roles = "dcb")]
-    public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] ReturnReasonDto body) =>
-        Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, body.Reason)));
+    public ActionResult<ApiResponse<object>> ReturnPart(int partId, [FromBody] ReturnReasonDto body)
+    {
+        if (string.IsNullOrWhiteSpace(body.ReturnReason))
+            return BadRequest(ApiResponse<object>.FailureResponse("returnReason is required. / 退回原因為必填。"));
+        var part = _queryService.GetPartDetail(partId);
+        if (part == null)
+            return NotFound(ApiResponse<object>.FailureResponse("Part not found. / 零件不存在。"));
+        if (part.Status != "S02")
+            return BadRequest(ApiResponse<object>.FailureResponse("Part must be in Pending Dimerco Review (S02) status. / 零件狀態須為 S02。"));
+        return Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.ReturnPart(partId, body.ReturnReason)));
+    }
 
+    // INTERNAL-AI-20260420: Added Customer-only role restriction per spec. (依規格加入僅限 Customer 角色限制。)
     /// <summary>
-    /// Marks a part as inactive.
-    /// (繁體中文) 將零件標記為停用。
+    /// Marks a part as inactive (Customer only).
+    /// (繁體中文) 將零件標記為停用（僅限客戶）。
     /// </summary>
     [HttpPost("{partId}/inactive")]
+    [Authorize(Roles = "customer")]
     public ActionResult<ApiResponse<object>> InactivatePart(int partId) =>
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.InactivatePart(partId)));
 
