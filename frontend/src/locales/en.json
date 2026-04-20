@@ -219,20 +219,19 @@
     "updated_date": "Updated Date"
   },
   "status": {
-    "unknown": "Unknown",
-    "pending_customer": "Pending Customer",
+    "s01": "Unknow",
+    "s02": "Pending Dimerco Review",
+    "s03": "Pending Customer Review",
+    "s04": "Reviewed",
+    "s05": "Flagged",
+    "inactive": "Inactive",
+    "unknown": "Unknow",
+    "pending_customer": "Pending Customer Review",
     "pending_review": "Pending Dimerco Review",
-    "returned": "Returned",
-    "active": "Active",
+    "returned": "Pending Customer Review",
+    "active": "Reviewed",
     "flagged": "Flagged",
-    "superseded": "Superseded",
-    "s01": "Unknown",
-    "s02": "Pending Customer",
-    "s03": "Pending Review",
-    "s04": "Active",
-    "s05": "Returned",
-    "s06": "Flagged",
-    "s07": "Superseded"
+    "superseded": "Inactive"
   },
   "sla": {
     "green": "Normal",

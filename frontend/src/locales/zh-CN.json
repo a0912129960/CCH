@@ -218,20 +218,19 @@
     "updated_date": "更新日期"
   },
   "status": {
-    "unknown": "未知",
-    "pending_customer": "待客户提交",
-    "pending_review": "待中菲行审核",
-    "returned": "退回 (待修正)",
-    "active": "生效中",
-    "flagged": "标记重估",
-    "superseded": "已取代",
     "s01": "未知",
-    "s02": "待客户提交",
-    "s03": "待中菲行审核",
-    "s04": "生效中",
-    "s05": "退回 (待修正)",
-    "s06": "标记重估",
-    "s07": "已取代"
+    "s02": "待中菲行审核",
+    "s03": "待客户审核",
+    "s04": "已审核",
+    "s05": "标记",
+    "inactive": "停用",
+    "unknown": "未知",
+    "pending_customer": "待客户审核",
+    "pending_review": "待中菲行审核",
+    "returned": "待客户审核",
+    "active": "已审核",
+    "flagged": "标记",
+    "superseded": "停用"
   },
   "sla": {
     "green": "正常",

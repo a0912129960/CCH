@@ -397,7 +397,7 @@ watch([currentPage, pageSize], fetchParts);
                 </td>
                 <td v-if="isDcb" class="text-center col-checkbox">
                   <el-checkbox 
-                    v-if="part.status === 'S02' || part.status === 'S03'"
+                    v-if="part.status === 'S02'"
                     :model-value="selectedIds.has(part.id)" 
                     @change="toggleSelection(part.id)"
                   />
