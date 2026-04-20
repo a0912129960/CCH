@@ -25,6 +25,20 @@ export interface PartHistory {
 export interface Part {
   id: string;
   partNo: string;
+  countryOfOrigin?: string;
+  division?: string;
+  partDescription?: string;
+  usHtsCode?: string;
+  generalDutyRate?: string;
+  htsCode301?: string;
+  rate301?: string;
+  htsCodeIeepa?: string;
+  rateIeepa?: string;
+  htsCode232Aluminum?: string;
+  rate232Aluminum?: string;
+  htsCodeReciprocalTariff?: string;
+  rateReciprocalTariff?: string;
+  remark?: string;
   htsCode: string;
   status: PartStatus;
   supplier: string;
@@ -119,6 +133,55 @@ export const MOCK_SUPPLIERS = [
   'Omega Industrial'
 ];
 
+/**
+ * Create Part API Request Body (新增零件 API 請求參數)
+ */
+export interface CreatePartRequest {
+  customerId?: string;
+  partNo: string;
+  countryId?: string | number;
+  division?: string;
+  supplier?: string;
+  partDesc?: string;
+  htsCode?: string;
+  rate?: number;
+  htsCode1?: string;
+  rate1?: number;
+  htsCode2?: string;
+  rate2?: number;
+  htsCode3?: string;
+  rate3?: number;
+  htsCode4?: string;
+  rate4?: number;
+  remark?: string;
+}
+
+/**
+ * Create Part API Response Data (新增零件 API 回傳資料)
+ */
+export interface CreatePartResponse {
+  success: boolean;
+  message: string;
+  data: {
+    partId: string;
+    partNo: string;
+    status: string;
+  };
+}
+
+/**
+ * Submit Part API Response Data (提交零件 API 回傳資料)
+ */
+export interface SubmitPartResponse {
+  success: boolean;
+  message: string;
+  data: {
+    partId: string;
+    partNo: string;
+    status: 'S02';
+  };
+}
+
 export const partService = {
   async getParts(): Promise<Part[]> {
     return MOCK_PARTS;
@@ -132,18 +195,46 @@ export const partService = {
   async getCustomers(): Promise<{ id: string; name: string }[]> {
     return MOCK_CUSTOMERS;
   },
-  async createPart(data: { 
-    partNo: string; 
-    description: string; 
-    htsCode: string; 
-    supplier: string; 
-    customerId?: string; 
+  async createPart(data: {
+    partNo: string;
+    countryOfOrigin?: string;
+    division?: string;
+    partDescription?: string;
+    usHtsCode?: string;
+    generalDutyRate?: string;
+    htsCode301?: string;
+    rate301?: string;
+    htsCodeIeepa?: string;
+    rateIeepa?: string;
+    htsCode232Aluminum?: string;
+    rate232Aluminum?: string;
+    htsCodeReciprocalTariff?: string;
+    rateReciprocalTariff?: string;
+    remark?: string;
+    description?: string;
+    htsCode?: string;
+    supplier: string;
+    customerId?: string;
     customerName?: string;
     status?: PartStatus;
   }): Promise<Part> {
     const newPart: Part = {
       id: (MOCK_PARTS.length + 1).toString(),
       partNo: data.partNo,
+      countryOfOrigin: data.countryOfOrigin,
+      division: data.division,
+      partDescription: data.partDescription,
+      usHtsCode: data.usHtsCode,
+      generalDutyRate: data.generalDutyRate,
+      htsCode301: data.htsCode301,
+      rate301: data.rate301,
+      htsCodeIeepa: data.htsCodeIeepa,
+      rateIeepa: data.rateIeepa,
+      htsCode232Aluminum: data.htsCode232Aluminum,
+      rate232Aluminum: data.rate232Aluminum,
+      htsCodeReciprocalTariff: data.htsCodeReciprocalTariff,
+      rateReciprocalTariff: data.rateReciprocalTariff,
+      remark: data.remark,
       htsCode: data.htsCode,
       status: data.status || PartStatus.PENDING_REVIEW,
       supplier: data.supplier || 'Unknown Source',
@@ -164,6 +255,22 @@ export const partService = {
     MOCK_PARTS.unshift(newPart);
     return newPart;
   },
+  /**
+   * Create Part via real API  POST /api/parts
+   */
+  async createPartApi(body: CreatePartRequest): Promise<CreatePartResponse> {
+    const response = await api.post<CreatePartResponse>('/parts', body);
+    return response.data;
+  },
+
+  /**
+   * Submit Part to Dimerco via real API  POST /api/parts/submit
+   */
+  async submitPartApi(body: CreatePartRequest): Promise<SubmitPartResponse> {
+    const response = await api.post<SubmitPartResponse>('/parts/submit', body);
+    return response.data;
+  },
+
   async updatePartStatus(id: string, newStatus: PartStatus, remark?: string): Promise<boolean> {
     const part = MOCK_PARTS.find(p => p.id === id);
     if (part) {
