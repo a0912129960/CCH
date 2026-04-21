@@ -94,5 +94,54 @@ public class PartExcelService : IPartExcelService
     };
 
     /// <inheritdoc/>
-    public byte[] GetUploadTemplate() => System.Text.Encoding.UTF8.GetBytes("Mock Template Content");
+    public byte[] GetUploadTemplate()
+    {
+        var countries = _commonRepository.GetCountries().ToList();
+
+        using var workbook = new XLWorkbook();
+        var templateSheet = workbook.Worksheets.Add("Template");
+        var dataSheet = workbook.Worksheets.Add("DataLists");
+        dataSheet.Visibility = XLWorksheetVisibility.Hidden;
+
+        // 1. Populate DataLists with Countries (填寫國家清單)
+        for (int i = 0; i < countries.Count; i++)
+        {
+            dataSheet.Cell(i + 1, 1).Value = countries[i].Name;
+        }
+        
+        // Ensure there's at least one cell for validation range even if list is empty
+        var countryCount = Math.Max(1, countries.Count);
+
+        // 2. Setup Template Headers (設定範本表頭)
+        string[] headers = {
+            "Part No", "Country", "Division", "Supplier", "Description", "HTS Code", "Duty Rate (%)",
+            "301 Duty Code", "301 Duty Rate (%)", "IEEPA Duty Code", "IEEPA Duty Rate (%)",
+            "232 Aluminum Code", "232 Aluminum Rate (%)", "Reciprocal Tariff Code", "Reciprocal Tariff Rate (%)", "Remark"
+        };
+
+        for (int i = 0; i < headers.Length; i++)
+        {
+            var cell = templateSheet.Cell(1, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.LightGray;
+        }
+
+        // 3. Add Data Validation for countryName (Column B) (為國家名稱加入資料驗證)
+        var validationRange = templateSheet.Range("B2:B1000");
+        var validation = validationRange.CreateDataValidation();
+        validation.AllowedValues = XLAllowedValues.List;
+        validation.List($"='DataLists'!$A$1:$A${countryCount}");
+        validation.IgnoreBlanks = true;
+        validation.InCellDropdown = true;
+        validation.ShowErrorMessage = true;
+        validation.ErrorTitle = "Invalid Selection";
+        validation.ErrorMessage = "Please select a country from the dropdown list.";
+
+        templateSheet.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
+    }
 }

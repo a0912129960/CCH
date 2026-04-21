@@ -70,8 +70,13 @@ const handleUpload = async () => {
   }
 };
 
-const handleDownloadTemplate = () => {
-  partService.downloadTemplate();
+const handleDownloadTemplate = async () => {
+  try {
+    await partService.downloadTemplate();
+  } catch (error) {
+    // Error is handled by api interceptor (錯誤已由 api 攔截器處理)
+    console.error('Template download failed (範本下載失敗):', error);
+  }
 };
 
 const getStatusType = (status: ImportResultStatus) => {

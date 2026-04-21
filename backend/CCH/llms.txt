@@ -24,9 +24,14 @@ The CCH project is a parts management system built with .NET 10, using a Modular
 
 ### Infrastructure & Shared
 - **Shared Components**: `CCH.Core/Shared/` (e.g., `ApiResponse.cs`)
+- **Entities**: `CCH.Core/Entities/`
+  - `CchPartEntity.cs`: Entity for CCHParts table.
+  - `CchPartMilestoneEntity.cs`: Entity for CCHPartMilestones table.
+  - `CchSupplierEntity.cs`: Entity for CCHSuppliers table.
+  - `CchLogEntity.cs`: Entity for CCHLog table.
 - **Repositories**: `CCH.Services/Repositories/` (JSON persistence)
 - **Database Contexts**: `CCH.Services/Repositories/Data/`
-  - `CspDbContext.cs`: Context for CSP (SQL Server).
+  - `CspY2023DbContext.cs`: Context for CSP_Y2023 (SQL Server).
   - `ReSmDbContext.cs`: Context for ReSM (SQL Server).
 - **Infrastructure Support**: `CCH.Services/Infrastructure/` (e.g., `UserContext.cs`)
 - **API Controllers**: `CCH.API/Controllers/`
