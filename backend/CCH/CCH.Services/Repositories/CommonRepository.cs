@@ -1,22 +1,23 @@
 using CCH.Core.Entities;
 using CCH.Core.Interfaces.Repositories;
+using CCH.Services.Repositories.Data;
 using System.Text.Json;
 
 namespace CCH.Services.Repositories;
 
 /// <summary>
-/// Implementation of Common repository using JSON file persistence and centralized seeding.
-/// (繁體中文) 使用 JSON 檔案持久化與集中式種子資料的共用倉儲實作。
+/// Implementation of Common repository using SQL Database for Countries (ReSm) 
+/// and JSON files for other common entities.
+/// (繁體中文) 共用倉儲實作：國家資料使用 SQL 資料庫 (ReSm)，其餘實體維持使用 JSON 檔案。
 /// </summary>
 public class CommonRepository : ICommonRepository
 {
+    private readonly ReSmDbContext _resmContext;
     private readonly string _customersPath;
-    private readonly string _countriesPath;
     private readonly string _statusesPath;
     private readonly string _suppliersPath;
 
     private List<CustomerEntity> _customers = new();
-    private List<CountryEntity> _countries = new();
     private List<StatusEntity> _statuses = new();
     private List<SupplierEntity> _suppliers = new();
 
@@ -26,46 +27,36 @@ public class CommonRepository : ICommonRepository
     /// Initializes a new instance of CommonRepository.
     /// (繁體中文) 初始化 CommonRepository 的新執行個體。
     /// </summary>
-    public CommonRepository()
+    public CommonRepository(ReSmDbContext resmContext)
     {
-        // Path discovery relative to project root (相對於專案根目錄的路徑探索)
+        _resmContext = resmContext;
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
         var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
         var dataDir = Path.Combine(projectRootDir, "Data");
 
         _customersPath = Path.Combine(dataDir, "customers.json");
-        _countriesPath = Path.Combine(dataDir, "countries.json");
         _statusesPath = Path.Combine(dataDir, "statuses.json");
         _suppliersPath = Path.Combine(dataDir, "suppliers.json");
 
-        // Initialize only what this repository needs (僅初始化此倉儲需要的資料)
+        // Seed remaining JSON data (國家部分已移除，改由 DB 提供)
         DataSeeder.SeedCustomers(_customersPath);
-        DataSeeder.SeedCountries(_countriesPath);
         DataSeeder.SeedStatuses(_statusesPath);
         DataSeeder.SeedSuppliers(_suppliersPath);
 
-        LoadAllData();
+        LoadJsonData();
     }
 
-    private void LoadAllData()
+    private void LoadJsonData()
     {
         lock (_fileLock)
         {
             try
             {
                 _customers = JsonSerializer.Deserialize<List<CustomerEntity>>(File.ReadAllText(_customersPath)) ?? new();
-                _countries = JsonSerializer.Deserialize<List<CountryEntity>>(File.ReadAllText(_countriesPath)) ?? new();
                 _statuses = JsonSerializer.Deserialize<List<StatusEntity>>(File.ReadAllText(_statusesPath)) ?? new();
                 _suppliers = JsonSerializer.Deserialize<List<SupplierEntity>>(File.ReadAllText(_suppliersPath)) ?? new();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading common data: {ex.Message}");
-                _customers = new();
-                _countries = new();
-                _statuses = new();
-                _suppliers = new();
-            }
+            catch (Exception ex) { Console.WriteLine($"Error loading common JSON data: {ex.Message}"); }
         }
     }
 
@@ -73,17 +64,15 @@ public class CommonRepository : ICommonRepository
     public IEnumerable<CustomerEntity> GetCustomers() => _customers;
 
     /// <inheritdoc/>
-    public IEnumerable<CountryEntity> GetCountries() => _countries;
+    public IEnumerable<CountryEntity> GetCountries() => 
+        _resmContext.SmCountry.Where(x=>x.Status == "Active").AsEnumerable().Select(MapToCountryDomain).ToList();
 
     /// <inheritdoc/>
     public IEnumerable<StatusEntity> GetStatuses() => _statuses;
 
     /// <inheritdoc/>
-    public IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null)
-    {
-        if (customerId == null) return _suppliers;
-        return _suppliers.Where(s => s.CustomerID == customerId.Value);
-    }
+    public IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null) => 
+        customerId == null ? _suppliers : _suppliers.Where(s => s.CustomerID == customerId.Value);
 
     /// <inheritdoc/>
     public int CreateSupplier(SupplierEntity entity)
@@ -97,6 +86,17 @@ public class CommonRepository : ICommonRepository
         }
     }
 
+    /// <summary>
+    /// Maps an SmCountry to a CountryEntity domain model. (SSoT)
+    /// (繁體中文) 將 SmCountry 映射至 CountryEntity 領域模型 (單一事實來源)。
+    /// </summary>
+    private CountryEntity MapToCountryDomain(SmCountry e) => new()
+    {
+        ID = e.HQID,
+        Name = e.CountryName ?? "Unknown",
+        Code = e.CountryCode
+    };
+
     private void SaveSuppliers()
     {
         lock (_fileLock)
@@ -106,10 +106,7 @@ public class CommonRepository : ICommonRepository
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 File.WriteAllText(_suppliersPath, JsonSerializer.Serialize(_suppliers, options));
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving suppliers data: {ex.Message}");
-            }
+            catch (Exception ex) { Console.WriteLine($"Error saving suppliers data: {ex.Message}"); }
         }
     }
 }

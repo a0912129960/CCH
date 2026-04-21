@@ -1,3 +1,4 @@
+using CCH.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace CCH.Services.Repositories.Data;
@@ -17,6 +18,11 @@ public class ReSmDbContext : DbContext
         : base(options)
     {
     }
+
+    /// <summary>
+    /// Gets or sets SMCountries. (繁體中文) 國家主檔。
+    /// </summary>
+    public virtual DbSet<SmCountry> SmCountry { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -1,7 +1,6 @@
 using CCH.Core.Entities;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories.Data;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace CCH.Services.Repositories;
