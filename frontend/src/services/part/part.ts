@@ -336,7 +336,29 @@ export const partService = {
    * Bulk Upload Methods (批量上傳方法)
    */
   async downloadTemplate(): Promise<void> {
-    window.location.href = `${api.defaults.baseURL}/parts/template`;
+    /* window.location.href = `${api.defaults.baseURL}/parts/template`; */
+    try {
+      // INTERNAL-AI-20260420: Call new bulk-upload template endpoint and handle blob response.
+      // (INTERNAL-AI-20260420: 呼叫新的批量上傳範本端點並處理 Blob 回應。)
+      const response = await api.get('/parts/bulk-upload/template', {
+        responseType: 'blob'
+      });
+
+      // Create download link (建立下載連結)
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'PartBulkUploadTemplate.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup (清理)
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Template download failed (範本下載失敗):', error);
+      throw error;
+    }
   },
 
   async uploadParts(file: File, customerId?: string, onProgress?: (percent: number) => void): Promise<ImportBatchReport> {
