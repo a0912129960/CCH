@@ -1,23 +1,19 @@
-using System.Text.Json;
 using CCH.Core.Entities;
 using CCH.Core.Entities.CSP;
-using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories.Data;
+using System.Text.Json;
 
 namespace CCH.Services.Repositories;
 
 /// <summary>
-/// Implementation of Part repository using SQL Database (CCHParts) for Parts 
-/// and JSON files for History/Snapshots.
-/// (繁體中文) 零件倉儲實作：零件使用 SQL 資料庫 (CCHParts)，歷程與快照維持使用 JSON 檔案。
+/// Implementation of Part repository using SQL Database for all entities.
+/// (繁體中文) 零件倉儲實作：所有實體皆使用 SQL 資料庫。
 /// </summary>
 public class PartRepository : IPartRepository
 {
     private readonly CspDbContext _context;
-    private readonly string _historyPath;
     private readonly string _snapshotPath;
-    private List<PartHistoryEntity> _history = new();
     private List<PartSnapshotEntity> _snapshots = new();
     private static readonly object _fileLock = new();
 
@@ -27,7 +23,6 @@ public class PartRepository : IPartRepository
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
         var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
         var dataDir = Path.Combine(projectRootDir, "Data");
-        _historyPath = Path.Combine(dataDir, "part_history.json");
         _snapshotPath = Path.Combine(dataDir, "part_snapshots.json");
         LoadJsonData();
     }
@@ -36,8 +31,6 @@ public class PartRepository : IPartRepository
     {
         lock (_fileLock)
         {
-            if (File.Exists(_historyPath))
-                _history = JsonSerializer.Deserialize<List<PartHistoryEntity>>(File.ReadAllText(_historyPath)) ?? new();
             if (File.Exists(_snapshotPath))
                 _snapshots = JsonSerializer.Deserialize<List<PartSnapshotEntity>>(File.ReadAllText(_snapshotPath)) ?? new();
         }
@@ -152,34 +145,22 @@ public class PartRepository : IPartRepository
     }
 
     /// <inheritdoc/>
-    public void AddHistory(PartHistoryEntity entity)
+    public void AddHistory(CchPartMilestones entity)
     {
-        lock (_fileLock)
-        {
-            entity.ID = _history.Any() ? _history.Max(h => h.ID) + 1 : 1;
-            _history.Add(entity);
-            File.WriteAllText(_historyPath, JsonSerializer.Serialize(_history, new JsonSerializerOptions { WriteIndented = true }));
-        }
+        _context.CchPartMilestones.Add(entity);
+        _context.SaveChanges();
     }
 
     /// <inheritdoc/>
-    public void AddHistoryBatch(IEnumerable<PartHistoryEntity> entities)
+    public void AddHistoryBatch(IEnumerable<CchPartMilestones> entities)
     {
-        lock (_fileLock)
-        {
-            var nextId = _history.Any() ? _history.Max(h => h.ID) + 1 : 1;
-            foreach (var entity in entities)
-            {
-                entity.ID = nextId++;
-                _history.Add(entity);
-            }
-            File.WriteAllText(_historyPath, JsonSerializer.Serialize(_history, new JsonSerializerOptions { WriteIndented = true }));
-        }
+        _context.CchPartMilestones.AddRange(entities);
+        _context.SaveChanges();
     }
 
     /// <inheritdoc/>
-    public IEnumerable<PartHistoryEntity> GetHistoryByPartId(int partId) =>
-        _history.Where(h => h.PartID == partId).OrderBy(h => h.UpdatedDate).ToList();
+    public IEnumerable<CchPartMilestones> GetHistoryByPartId(int partId) =>
+        _context.CchPartMilestones.Where(h => h.PartID == partId).OrderBy(h => h.CreatedDate).ToList();
 
     /// <inheritdoc/>
     public void AddSnapshot(PartSnapshotEntity entity)

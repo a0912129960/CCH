@@ -53,7 +53,7 @@ public class AuthService : IAuthService
                 // (繁體中文) 由 AI 新增 (2026-04-21)：根據業務實體父層對照檢查使用者是否屬於 DCB 站點
                 bool isDCB = _reSmContext.SmBusinessEntity.Any(b => 
                     b.StationId == smUser.StationID && 
-                    _reSmContext.SmStation.Any(s => s.StationID == b.ParentId && (s.StationCode == "DCBORD" || s.StationCode == "DCBLAX")));
+                    _reSmContext.SmStation.Any(s => s.StationId == b.ParentId && (s.StationCode == "DCBORD" || s.StationCode == "DCBLAX")));
 
                 string role = (isBIT || isDCB) ? "dcb" : "dimerco";
 

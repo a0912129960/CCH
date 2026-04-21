@@ -71,19 +71,19 @@ public interface IPartRepository
     /// Appends a milestone event (status change) for a part.
     /// (繁體中文) 為零件新增一筆里程碑事件（狀態變更）。
     /// </summary>
-    void AddHistory(PartHistoryEntity entity);
+    void AddHistory(Entities.CSP.CchPartMilestones entity);
 
     /// <summary>
     /// Adds multiple history entries in a single operation.
     /// (繁體中文) 在單次操作中新增多筆歷程記錄。
     /// </summary>
-    void AddHistoryBatch(IEnumerable<PartHistoryEntity> entities);
+    void AddHistoryBatch(IEnumerable<Entities.CSP.CchPartMilestones> entities);
 
     /// <summary>
     /// Returns all milestone events for a part, stored in insertion order (caller sorts as needed).
     /// (繁體中文) 回傳零件的所有里程碑事件（依插入順序，由呼叫方決定排序）。
     /// </summary>
-    IEnumerable<PartHistoryEntity> GetHistoryByPartId(int partId);
+    IEnumerable<Entities.CSP.CchPartMilestones> GetHistoryByPartId(int partId);
 
     // INTERNAL-AI-20260420: Snapshot methods — full field-level data snapshots for the history API.
     // (INTERNAL-AI-20260420: 快照方法 — 完整欄位資料快照，用於歷程 API。)

@@ -67,22 +67,7 @@ public static class DataSeeder
         EnsureInitialized(path, snapshots);
     }
 
-    public static void SeedPartHistory(string path)
-    {
-        if (File.Exists(path)) return;
-        var history = new List<PartHistoryEntity>();
-        int id = 1;
-        foreach (var part in DefaultParts)
-        {
-            var baseDate = part.UpdatedDate;
-            history.Add(new() { ID = id++, PartID = part.ID, Action = "Created", UpdatedBy = "System", UpdatedDate = baseDate.AddDays(-7), Remark = "" });
-            if (part.Status == "S01") continue;
-            history.Add(new() { ID = id++, PartID = part.ID, Action = "Submitted to Dimerco", UpdatedBy = "Customer", UpdatedDate = baseDate.AddDays(-5), Remark = "" });
-            if (part.Status == "S04")
-                history.Add(new() { ID = id++, PartID = part.ID, Action = "Accepted", UpdatedBy = "DCB", UpdatedDate = part.UpdatedDate, Remark = "" });
-        }
-        EnsureInitialized(path, history);
-    }
+    /* INTERNAL-AI-20260421: SeedPartHistory removed as PartHistoryEntity is replaced by database-driven CchPartMilestones. */
 
     private static readonly object _fileLock = new();
     private static void EnsureInitialized<T>(string filePath, IEnumerable<T> defaultData)

@@ -159,12 +159,12 @@ public class PartQueryService : IPartQueryService
     /// <inheritdoc/>
     public IEnumerable<MilestoneDto> GetMilestones(int partId) =>
         _repository.GetHistoryByPartId(partId)
-            .OrderByDescending(h => h.UpdatedDate)
+            .OrderByDescending(h => h.CreatedDate)
             .Select(h => new MilestoneDto
             {
                 Action = h.Action,
-                UpdatedBy = h.UpdatedBy,
-                UpdatedDate = h.UpdatedDate,
+                UpdatedBy = h.CreatedBy,
+                UpdatedDate = h.CreatedDate ?? DateTime.MinValue,
                 Remark = h.Remark
             })
             .ToList();

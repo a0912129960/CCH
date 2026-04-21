@@ -35,7 +35,7 @@ public class PartServiceTests : IDisposable
         SeedData();
 
         var mockCommonRepo = new Mock<ICommonRepository>();
-        // mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<CustomerEntity> { new() { ID = 101, Name = "Customer A" } });
+        mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<SmCustomer> { new() { HQID = 101, CustomerName = "Customer A" } });
         mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Taiwan" } });
         mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<SupplierEntity> { new() { ID = 1, Name = "TechSupply Corp" } });
         mockCommonRepo.Setup(r => r.GetStatuses()).Returns(new List<StatusEntity> { new() { Code = "S01", Description = "Active" } });
@@ -93,5 +93,28 @@ public class PartServiceTests : IDisposable
         Assert.True(result.Length > 0);
         Assert.Equal((byte)'P', result[0]); // Excel signature PK..
         Assert.Equal((byte)'K', result[1]);
+    }
+
+    [Fact]
+    public void GetMilestones_ReturnsDatabaseHistory()
+    {
+        // Arrange
+        _context.CchPartMilestones.Add(new CchPartMilestones
+        {
+            PartID = 1,
+            Action = "Test Action",
+            CreatedBy = "Tester",
+            CreatedDate = DateTime.Now,
+            Remark = "Test Remark"
+        });
+        _context.SaveChanges();
+
+        // Act
+        var result = _queryService.GetMilestones(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Test Action", result.First().Action);
+        Assert.Equal("Tester", result.First().UpdatedBy);
     }
 }

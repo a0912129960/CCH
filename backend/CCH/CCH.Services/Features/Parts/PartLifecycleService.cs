@@ -31,7 +31,7 @@ public class PartLifecycleService : IPartLifecycleService
         var entity = new PartEntity { Status = status, CreatedBy = _userContext.UserName ?? "system" };
         MapRequestToEntity(request, entity);
         var id = _repository.CreatePart(entity);
-        RecordHistory(id, "Created");
+        RecordHistory(id, "Created", null, status);
         return new { partId = id, status };
     }
 
@@ -39,9 +39,10 @@ public class PartLifecycleService : IPartLifecycleService
     public object UpdatePart(int partId, PartSaveRequest request)
     {
         var existing = GetExistingPart(partId);
+        var oldStatus = existing.Status;
         MapRequestToEntity(request, existing);
         _repository.UpdatePart(existing);
-        RecordHistory(partId, "Modified");
+        RecordHistory(partId, "Modified", oldStatus, existing.Status);
         return new { partId };
     }
 
@@ -49,35 +50,42 @@ public class PartLifecycleService : IPartLifecycleService
     public object SubmitPart(int partId, PartSaveRequest request)
     {
         var existing = GetExistingPart(partId);
+        var oldStatus = existing.Status;
         MapRequestToEntity(request, existing);
         existing.Status = "S02";
         _repository.UpdatePart(existing);
         _repository.UpdateStatus(partId, "S02");
-        RecordHistory(partId, "Submitted");
+        RecordHistory(partId, "Submitted", oldStatus, "S02");
         return new { partId, status = "S02" };
     }
 
     /// <inheritdoc/>
     public object AcceptPart(int partId)
     {
+        var existing = _repository.GetPartById(partId);
+        var oldStatus = existing?.Status;
         _repository.UpdateStatus(partId, "S04");
-        RecordHistory(partId, "Accepted");
+        RecordHistory(partId, "Accepted", oldStatus, "S04");
         return new { partId, status = "S04" };
     }
 
     /// <inheritdoc/>
     public object ReturnPart(int partId, string returnReason)
     {
+        var existing = _repository.GetPartById(partId);
+        var oldStatus = existing?.Status;
         _repository.UpdateStatus(partId, "S03");
-        RecordHistory(partId, $"Returned: {returnReason}");
+        RecordHistory(partId, "Returned", oldStatus, "S03", returnReason);
         return new { partId, status = "S03" };
     }
 
     /// <inheritdoc/>
     public object InactivatePart(int partId)
     {
+        var existing = _repository.GetPartById(partId);
+        var oldStatus = existing?.Status;
         _repository.UpdateStatus(partId, "Inactive");
-        RecordHistory(partId, "Inactivated");
+        RecordHistory(partId, "Inactivated", oldStatus, "Inactive");
         return new { partId, status = "Inactive" };
     }
 
@@ -86,7 +94,7 @@ public class PartLifecycleService : IPartLifecycleService
     {
         var failed = new List<object>();
         var validIds = new List<int>();
-        var user = _userContext.UserId ?? "system";
+        var user = _userContext.UserName ?? "system";
         var now = DateTime.Now;
 
         foreach (var id in partIds)
@@ -100,9 +108,15 @@ public class PartLifecycleService : IPartLifecycleService
         if (validIds.Any())
         {
             _repository.BatchUpdateStatus(validIds, "S04", user);
-            _repository.AddHistoryBatch(validIds.Select(id => new PartHistoryEntity
+            _repository.AddHistoryBatch(validIds.Select(id => new CchPartMilestones
             {
-                PartID = id, Action = "Accepted (Batch)", UpdatedBy = user, UpdatedDate = now, Remark = ""
+                PartID = id, 
+                Action = "Accepted (Batch)", 
+                FromStatus = "S02",
+                ToStatus = "S04",
+                CreatedBy = user, 
+                CreatedDate = now, 
+                Remark = ""
             }));
         }
         return new { failed };
@@ -115,12 +129,17 @@ public class PartLifecycleService : IPartLifecycleService
         return existing;
     }
 
-    private void RecordHistory(int partId, string action)
+    private void RecordHistory(int partId, string action, string? fromStatus, string? toStatus, string remark = "")
     {
-        var history = new PartHistoryEntity
+        var history = new CchPartMilestones
         {
-            PartID = partId, Action = action, Remark = "",
-            UpdatedBy = _userContext.UserName ?? "system", UpdatedDate = DateTime.Now
+            PartID = partId, 
+            Action = action, 
+            FromStatus = fromStatus,
+            ToStatus = toStatus,
+            Remark = remark,
+            CreatedBy = _userContext.UserName ?? "system", 
+            CreatedDate = DateTime.Now
         };
         _repository.AddHistory(history);
     }

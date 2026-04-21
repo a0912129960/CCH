@@ -198,7 +198,7 @@ public class AuthServiceTests
 
         _reSmContext.SmStation.Add(new SmStation
         {
-            StationID = "ORD",
+            StationId = "ORD",
             StationCode = "DCBORD",
             StationName = "Chicago DCB"
         });
@@ -206,7 +206,10 @@ public class AuthServiceTests
         _reSmContext.SmBusinessEntity.Add(new SmBusinessEntity
         {
             StationId = "CHI",
-            ParentId = "ORD"
+            ParentId = "ORD",
+            Version = new byte[8],
+            EffectiveDate = DateTime.Now,
+            CreatedDate = DateTime.Now
         });
 
         _reSmContext.SaveChanges();
