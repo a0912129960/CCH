@@ -84,4 +84,32 @@ public class CommonRepository : ICommonRepository
         if (customerId == null) return _suppliers;
         return _suppliers.Where(s => s.CustomerID == customerId.Value);
     }
+
+    /// <inheritdoc/>
+    public int CreateSupplier(SupplierEntity entity)
+    {
+        lock (_fileLock)
+        {
+            entity.ID = _suppliers.Any() ? _suppliers.Max(s => s.ID) + 1 : 1;
+            _suppliers.Add(entity);
+            SaveSuppliers();
+            return entity.ID;
+        }
+    }
+
+    private void SaveSuppliers()
+    {
+        lock (_fileLock)
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                File.WriteAllText(_suppliersPath, JsonSerializer.Serialize(_suppliers, options));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving suppliers data: {ex.Message}");
+            }
+        }
+    }
 }

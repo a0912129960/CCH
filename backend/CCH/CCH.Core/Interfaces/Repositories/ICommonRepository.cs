@@ -12,4 +12,10 @@ public interface ICommonRepository
     IEnumerable<CountryEntity> GetCountries();
     IEnumerable<StatusEntity> GetStatuses();
     IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null);
+
+    /// <summary>
+    /// Creates a new supplier.
+    /// (繁體中文) 建立新供應商。
+    /// </summary>
+    int CreateSupplier(SupplierEntity entity);
 }

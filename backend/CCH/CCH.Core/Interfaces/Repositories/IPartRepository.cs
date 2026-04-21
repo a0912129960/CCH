@@ -20,6 +20,12 @@ public interface IPartRepository
     IEnumerable<PartEntity> SearchParts(int? customerId, string? status, string? partNo, int? supplierId);
 
     /// <summary>
+    /// Retrieves a specific part entity by Customer ID and Part No.
+    /// (繁體中文) 根據客戶 ID 與零件編號取得特定零件實體。
+    /// </summary>
+    PartEntity? GetPartByNo(int customerId, string partNo);
+
+    /// <summary>
     /// Retrieves a specific part entity by ID.
     /// (繁體中文) 根據 ID 取得特定零件實體。
     /// </summary>

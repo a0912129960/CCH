@@ -220,3 +220,32 @@ public class MilestoneDto
     public DateTime UpdatedDate { get; set; }
     public string Remark { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Part data transfer object for bulk upload and preview.
+/// (繁體中文) 用於批次上傳與預覽的零件資料傳輸物件。
+/// </summary>
+public class PartDto
+{
+    public int? Id { get; set; }
+    public int? CustomerId { get; set; }
+    public string PartNo { get; set; } = string.Empty;
+    public int? CountryId { get; set; }
+    public string Country { get; set; } = string.Empty;
+    public string Division { get; set; } = string.Empty;
+    public string Supplier { get; set; } = string.Empty;
+    public int? SupplierId { get; set; }
+    public string PartDesc { get; set; } = string.Empty;
+    public string HtsCode { get; set; } = string.Empty;
+    public decimal Rate { get; set; }
+    public string? HtsCode1 { get; set; }
+    public decimal? Rate1 { get; set; }
+    public string? HtsCode2 { get; set; }
+    public decimal? Rate2 { get; set; }
+    public string? HtsCode3 { get; set; }
+    public decimal? Rate3 { get; set; }
+    public string? HtsCode4 { get; set; }
+    public decimal? Rate4 { get; set; }
+    public string Remark { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+}

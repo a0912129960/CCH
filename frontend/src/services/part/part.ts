@@ -230,7 +230,91 @@ export interface PartListResponse {
   data: PartListItem[];
 }
 
+/**
+ * Bulk Upload Preview Types (批量上傳預覽型別)
+ */
+export interface BulkUploadPartData {
+  id?: number;
+  customerId: number;
+  partNo: string;
+  countryId?: number;
+  country?: string;
+  division?: string;
+  supplier?: string;
+  supplierId?: number;
+  partDesc?: string;
+  htsCode?: string;
+  rate?: number;
+  htsCode1?: string;
+  rate1?: number;
+  htsCode2?: string;
+  rate2?: number;
+  htsCode3?: string;
+  rate3?: number;
+  htsCode4?: string;
+  rate4?: number;
+  remark?: string;
+  status?: string;
+}
+
+export interface BulkUploadPreviewRow {
+  rowIndex: number;
+  rowStatus: string; // e.g., 'NEW', 'MODIFIED', 'ERROR', 'NO_CHANGE'
+  errors: string[];
+  newData: BulkUploadPartData;
+  originalData?: BulkUploadPartData | null;
+}
+
+export interface BulkUploadPreviewReport {
+  summary: {
+    totalRows: number;
+    newCount: number;
+    modifiedCount: number;
+    errorCount: number;
+    noChangeCount: number;
+  };
+  rows: BulkUploadPreviewRow[];
+}
+
 export const partService = {
+  /**
+   * Bulk Upload Preview (批量上傳預覽)
+   * INTERNAL-AI-20260420: Call preview API and return comparison report.
+   * (INTERNAL-AI-20260420: 呼叫預覽 API 並回傳比對報告。)
+   */
+  async previewBulkUpload(file: File, customerId: number): Promise<BulkUploadPreviewReport> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('customerId', customerId.toString());
+
+    const response = await api.post<{ success: boolean; data: BulkUploadPreviewReport; message?: string }>(
+      '/parts/bulk-upload/preview',
+      formData
+    );
+
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Preview failed');
+  },
+
+  /**
+   * Bulk Upload Confirm (批量上傳確認)
+   * INTERNAL-AI-20260421: Call confirm API to save previewed data.
+   * (INTERNAL-AI-20260421: 呼叫確認 API 以儲存預覽資料。)
+   */
+  async confirmBulkUpload(data: BulkUploadPartData[]): Promise<BulkUploadConfirmResponse> {
+    const response = await api.post<{ success: boolean; data: BulkUploadConfirmResponse; message?: string }>(
+      '/parts/bulk-upload/confirm',
+      data
+    );
+
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Bulk upload failed');
+  },
+
   /**
    * Fetch parts list with pagination and search (獲取分頁與搜尋的零件清單)
    * Updated by Gemini AI on 2026-04-17 (INTERNAL-AI-20260417)
@@ -365,7 +449,29 @@ export const partService = {
    * Bulk Upload Methods (批量上傳方法)
    */
   async downloadTemplate(): Promise<void> {
-    window.location.href = `${api.defaults.baseURL}/parts/template`;
+    /* window.location.href = `${api.defaults.baseURL}/parts/template`; */
+    try {
+      // INTERNAL-AI-20260420: Call new bulk-upload template endpoint and handle blob response.
+      // (INTERNAL-AI-20260420: 呼叫新的批量上傳範本端點並處理 Blob 回應。)
+      const response = await api.get('/parts/bulk-upload/template', {
+        responseType: 'blob'
+      });
+
+      // Create download link (建立下載連結)
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'PartBulkUploadTemplate.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup (清理)
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Template download failed (範本下載失敗):', error);
+      throw error;
+    }
   },
 
   async uploadParts(file: File, customerId?: string, onProgress?: (percent: number) => void): Promise<ImportBatchReport> {

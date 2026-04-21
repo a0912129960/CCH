@@ -44,6 +44,11 @@ const closeOthers = () => {
   closeMenu();
 };
 
+const handleRefresh = () => {
+  tabStore.refreshTab(selectedPath.value);
+  closeMenu();
+};
+
 onMounted(() => {
   window.addEventListener('click', closeMenu);
 });
@@ -66,17 +71,20 @@ onUnmounted(() => {
         <!-- Use i18n for title, but if title doesn't contain '.' it's likely a part no -->
         <span class="tab-title">{{ tab.title.includes('.') ? $t(tab.title) : tab.title }}</span>
         
-        <!-- SVG Close Button (確保絕對可見) -->
-        <span class="close-btn-wrapper" @click.stop="handleTabRemove(tab.path)">
-          <svg viewBox="0 0 1024 1024" class="close-svg" xmlns="http://www.w3.org/2000/svg">
-            <path fill="currentColor" d="M764.288 214.592 512 466.88 259.712 214.592a31.936 31.936 0 0 0-45.12 45.12L466.88 512 214.592 764.288a31.936 31.936 0 1 0 45.12 45.12L512 557.12l252.288 252.288a31.936 31.936 0 1 0 45.12-45.12L557.12 512l252.288-252.288a31.936 31.936 0 0 0-45.12-45.12z"></path>
-          </svg>
-        </span>
+        <div class="tab-actions">
+          <!-- SVG Close Button -->
+          <span class="action-btn close-btn" @click.stop="handleTabRemove(tab.path)">
+            <svg viewBox="0 0 1024 1024" class="action-svg" xmlns="http://www.w3.org/2000/svg">
+              <path fill="currentColor" d="M764.288 214.592 512 466.88 259.712 214.592a31.936 31.936 0 0 0-45.12 45.12L466.88 512 214.592 764.288a31.936 31.936 0 1 0 45.12 45.12L512 557.12l252.288 252.288a31.936 31.936 0 1 0 45.12-45.12L557.12 512l252.288-252.288a31.936 31.936 0 0 0-45.12-45.12z"></path>
+            </svg>
+          </span>
+        </div>
       </div>
     </div>
 
     <!-- Context Menu (純多語系) -->
     <ul v-if="showMenu" class="context-menu" :style="{ top: menuPos.y + 'px', left: menuPos.x + 'px' }">
+      <li @click="handleRefresh">{{ $t('common.refresh') }}</li>
       <li @click="closeOthers">{{ $t('common.close_others') }}</li>
       <li @click="closeAll">{{ $t('common.close_all') }}</li>
     </ul>
@@ -103,8 +111,8 @@ onUnmounted(() => {
 
   .tab-item {
     height: 34px;
-    min-width: 120px;
-    padding: 0 12px;
+    min-width: 140px;
+    padding: 0 10px;
     background: #f5f7f9;
     border: 1px solid #e1e8ed;
     border-bottom: none;
@@ -132,9 +140,8 @@ onUnmounted(() => {
       border-top: 2px solid #00a8e2;
       z-index: 2;
 
-      .close-svg {
+      .action-svg {
         color: #909399;
-        &:hover { color: #f56c6c; }
       }
     }
 
@@ -142,24 +149,34 @@ onUnmounted(() => {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 100px;
+      flex: 1;
     }
 
-    .close-btn-wrapper {
+    .tab-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .action-btn {
       display: flex;
       align-items: center;
       justify-content: center;
       width: 18px;
       height: 18px;
       border-radius: 50%;
-      transition: background 0.2s;
+      transition: all 0.2s;
 
       &:hover {
         background: rgba(0, 0, 0, 0.05);
       }
     }
 
-    .close-svg {
+    .close-btn:hover {
+      .action-svg { color: #f56c6c; }
+    }
+
+    .action-svg {
       width: 12px;
       height: 12px;
       color: #c0c4cc;

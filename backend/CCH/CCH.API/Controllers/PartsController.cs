@@ -54,14 +54,24 @@ public class PartsController : ControllerBase
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.BatchAccept(partIds)));
 
     /// <summary>
-    /// Uploads parts in bulk from an Excel file.
-    /// (繁體中文) 從 Excel 檔案批次上傳零件。
+    /// Previews parts in bulk from an Excel file.
+    /// (繁體中文) 從 Excel 檔案預覽批次上傳零件。
     /// </summary>
-    [HttpPost("bulk-upload")]
-    public ActionResult<ApiResponse<List<BulkUploadResponseDto>>> BulkUpload(IFormFile file)
+    [HttpPost("bulk-upload/preview")]
+    public ActionResult<ApiResponse<BulkUploadPreviewDto>> PreviewBulkUpload([FromForm] int customerId, IFormFile file)
     {
         using var stream = file.OpenReadStream();
-        return Ok(ApiResponse<List<BulkUploadResponseDto>>.SuccessResponse(_excelService.BulkUpload(stream)));
+        return Ok(ApiResponse<BulkUploadPreviewDto>.SuccessResponse(_excelService.PreviewBulkUpload(customerId, stream)));
+    }
+
+    /// <summary>
+    /// Confirms and persists the uploaded parts.
+    /// (繁體中文) 確認並持久化上傳的零件。
+    /// </summary>
+    [HttpPost("bulk-upload/confirm")]
+    public ActionResult<ApiResponse<BulkUploadConfirmResponseDto>> ConfirmBulkUpload([FromBody] List<PartDto> parts)
+    {
+        return Ok(ApiResponse<BulkUploadConfirmResponseDto>.SuccessResponse(_excelService.ConfirmBulkUpload(parts)));
     }
 
     /// <summary>

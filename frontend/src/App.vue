@@ -69,7 +69,7 @@ watch(
       <main class="content-area">
         <RouterView v-slot="{ Component }">
           <keep-alive :exclude="['LoginView']">
-            <component :is="Component" :key="route.fullPath" />
+            <component :is="Component" :key="`${route.fullPath}-${tabStore.refreshKeys[route.path] || 0}`" />
           </keep-alive>
         </RouterView>
       </main>

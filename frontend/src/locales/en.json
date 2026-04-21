@@ -29,6 +29,7 @@
     "back": "Back",
     "no_data": "No data found",
     "confirm": "Confirm",
+    "refresh": "Refresh",
     "close_all": "Close All",
     "close_others": "Close Others",
     "collapse_all": "Collapse All"
@@ -124,6 +125,25 @@
       "updated": "Updated",
       "unchanged": "Unchanged",
       "rejected": "Rejected"
+    },
+    "preview_details": "Preview Details",
+    "summary": {
+      "total": "Total",
+      "new": "New",
+      "modified": "Modified",
+      "error": "Error",
+      "nochange": "No Change"
+    },
+    "confirm_button": "Bulk Upload",
+    "confirm_success": "Bulk upload completed.",
+    "confirm_failed": "Bulk upload failed.",
+    "success_title": "Upload Successful",
+    "success_message": "Data has been processed successfully.",
+    "re_upload": "Upload Other Data",
+    "comparison": {
+      "field": "Field",
+      "original": "Original",
+      "new": "New"
     }
   },
   "part_create": {
