@@ -16,6 +16,7 @@ namespace CCH.Services.Repositories;
 public class CommonRepository : ICommonRepository
 {
     private readonly ReSmDbContext _resmContext;
+    private readonly CspDbContext _cspContext;
     private readonly string _suppliersPath;
 
     private List<SupplierEntity> _suppliers = new();
@@ -26,9 +27,10 @@ public class CommonRepository : ICommonRepository
     /// Initializes a new instance of CommonRepository.
     /// (繁體中文) 初始化 CommonRepository 的新執行個體。
     /// </summary>
-    public CommonRepository(ReSmDbContext resmContext)
+    public CommonRepository(ReSmDbContext resmContext, CspDbContext cspContext)
     {
         _resmContext = resmContext;
+        _cspContext = cspContext;
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
         var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
         var dataDir = Path.Combine(projectRootDir, "Data");
@@ -55,8 +57,22 @@ public class CommonRepository : ICommonRepository
     }
 
     /// <inheritdoc/>
-    public IEnumerable<SmCustomer> GetCustomers() => 
-        _resmContext.SmCustomer.Where(x => x.Status == "Active").AsEnumerable().ToList();
+    public IEnumerable<SmCustomer> GetCustomers()
+    {
+        // 1. Get all CustomerIDs from CchParts where Status is not null/whitespace.
+        // (繁體中文) 從 CchParts 取得所有 Status 非 null/空白的 CustomerID。
+        var usedCustomerIds = _cspContext.CchParts
+            .Where(p => !string.IsNullOrWhiteSpace(p.Status))
+            .Select(p => p.CustomerID)
+            .Distinct()
+            .ToList();
+
+        // 2. Join with active SmCustomers from ReSm database.
+        // (繁體中文) 與 ReSm 資料庫中 Active 的 SmCustomer 關聯。
+        return _resmContext.SmCustomer
+            .Where(c => c.Status == "Active" && usedCustomerIds.Contains(c.HQID))
+            .ToList();
+    }
 
     /// <inheritdoc/>
     public IEnumerable<CountryEntity> GetCountries() => 

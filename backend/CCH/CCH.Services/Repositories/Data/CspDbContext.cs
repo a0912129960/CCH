@@ -41,10 +41,10 @@ public class CspDbContext : DbContext
     /// </summary>
     public virtual DbSet<CchLog> CchLog { get; set; }
 
-    /// <inheritdoc/>
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-        // Add configurations for CSP_Y2023 entities here (在此加入 CSP_Y2023 實體的組態)
-    }
+    /// <summary>
+    /// Gets or sets projects. (繁體中文) 專案。
+    /// </summary>
+    public virtual DbSet<CpProject> CpProject { get; set; }
+
+
 }
