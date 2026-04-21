@@ -2,12 +2,14 @@ using CCH.Core.Entities;
 using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Features.Parts;
+using CCH.Core.Features.Parts.DTOs;
 using Moq;
 using Xunit;
 using ClosedXML.Excel;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace CCH.Tests;
 
@@ -16,6 +18,96 @@ public class PartExcelServiceTests
     private readonly Mock<IPartRepository> _mockPartRepo = new();
     private readonly Mock<ICommonRepository> _mockCommonRepo = new();
     private readonly Mock<IUserContext> _mockUserContext = new();
+
+    [Fact]
+    public void PreviewBulkUpload_ShouldIdentifyNewAndModifiedRows()
+    {
+        // Arrange
+        var customerId = 1;
+        _mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 10, Name = "Taiwan" } });
+        _mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<SupplierEntity> { new() { ID = 20, SupplierName = "Supplier A" } });
+        
+        // Mock existing part
+        _mockPartRepo.Setup(r => r.GetPartByNo(customerId, "P-Existing")).Returns(new PartEntity 
+        { 
+            ID = 100, 
+            CustomerID = customerId, 
+            PartNo = "P-Existing", 
+            PartDescription = "Old Desc",
+            CountryID = 10,
+            SupplierID = 20,
+            Division = "DIV",
+            Status = "S02"
+        });
+
+        using var workbook = new XLWorkbook();
+        var sheet = workbook.Worksheets.Add("Template");
+        sheet.Cell(1, 1).Value = "Part No"; sheet.Cell(1, 2).Value = "Country"; sheet.Cell(1, 3).Value = "Division";
+        sheet.Cell(1, 4).Value = "Supplier"; sheet.Cell(1, 5).Value = "Description"; sheet.Cell(1, 6).Value = "HTS Code";
+
+        // Row 2: Modified (Description changed)
+        sheet.Cell(2, 1).Value = "P-Existing"; sheet.Cell(2, 2).Value = "Taiwan"; sheet.Cell(2, 3).Value = "DIV";
+        sheet.Cell(2, 4).Value = "Supplier A"; sheet.Cell(2, 5).Value = "New Desc"; sheet.Cell(2, 6).Value = "1234.56.7890";
+
+        // Row 3: New
+        sheet.Cell(3, 1).Value = "P-New"; sheet.Cell(3, 2).Value = "Taiwan"; sheet.Cell(3, 3).Value = "DIV";
+        sheet.Cell(3, 4).Value = "Supplier A"; sheet.Cell(3, 5).Value = "New Part"; sheet.Cell(3, 6).Value = "1234.56.7890";
+
+        // Row 4: Error (Missing mandatory Part No)
+        sheet.Cell(4, 1).Value = "";
+        sheet.Cell(4, 2).Value = "Taiwan"; // Set something to make row used
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        var service = new PartExcelService(_mockPartRepo.Object, _mockCommonRepo.Object, _mockUserContext.Object);
+
+        // Act
+        var result = service.PreviewBulkUpload(customerId, stream);
+
+        // Assert
+        Assert.Equal(3, result.Summary.TotalRows);
+        Assert.Equal(1, result.Summary.ModifiedCount);
+        Assert.Equal(1, result.Summary.NewCount);
+        Assert.Equal(1, result.Summary.ErrorCount);
+
+        var modifiedRow = result.Rows.First(r => r.RowStatus == "Modified");
+        Assert.Equal("Old Desc", modifiedRow.OriginalData?.PartDesc);
+        Assert.Equal("New Desc", modifiedRow.NewData.PartDesc);
+
+        var errorRow = result.Rows.First(r => r.RowStatus == "Error");
+        Assert.Contains("Part No is required.", errorRow.Errors);
+    }
+
+    [Fact]
+    public void ConfirmBulkUpload_ShouldDeduplicateSuppliersAndUpsertParts()
+    {
+        // Arrange
+        _mockUserContext.Setup(u => u.UserName).Returns("test-user");
+        _mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<SupplierEntity>());
+        
+        var parts = new List<PartDto>
+        {
+            // Part with new supplier
+            new() { CustomerId = 1, PartNo = "P1", Supplier = "New Supplier", SupplierId = 0, CountryId = 10, Division = "D", PartDesc = "Desc", HtsCode = "1234.56.7890", Status = "S02" },
+            // Another part with same new supplier
+            new() { CustomerId = 1, PartNo = "P2", Supplier = "New Supplier", SupplierId = 0, CountryId = 10, Division = "D", PartDesc = "Desc", HtsCode = "", Status = "S01" }
+        };
+
+        var service = new PartExcelService(_mockPartRepo.Object, _mockCommonRepo.Object, _mockUserContext.Object);
+
+        // Act
+        var result = service.ConfirmBulkUpload(parts);
+
+        // Assert
+        _mockCommonRepo.Verify(r => r.CreateSupplier(It.IsAny<SupplierEntity>()), Times.Once); // Should be called only once for same name
+        _mockPartRepo.Verify(r => r.CreatePart(It.IsAny<PartEntity>()), Times.Exactly(2));
+        
+        Assert.Equal(2, result.Inserted);
+        Assert.Equal("S02", parts[0].Status); // Has HtsCode
+        Assert.Equal("S01", parts[1].Status); // Empty HtsCode
+    }
 
     [Fact]
     public void GetUploadTemplate_ShouldReturnValidExcelFile()

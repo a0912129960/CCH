@@ -27,6 +27,7 @@
     "resubmit": "重新提交",
     "back": "返回",
     "no_data": "暫無資料",
+    "refresh": "重新整理",
     "close_all": "關閉全部",
     "close_others": "關閉其他",
     "collapse_all": "全數收合"
@@ -118,6 +119,28 @@
       "updated": "更新",
       "unchanged": "無變動",
       "rejected": "拒絕"
+    },
+    "preview_details": "預覽詳情",
+    "summary": {
+      "total": "總計",
+      "new": "新增",
+      "modified": "已修改",
+      "error": "錯誤",
+      "no_change": "無變動",
+      "new_desc": "新零件，準備匯入",
+      "modified_desc": "偵測到欄位變更",
+      "no_change_desc": "與系統資料一致"
+    },
+    "confirm_button": "批量上傳",
+    "confirm_success": "批量上傳完成。",
+    "confirm_failed": "批量上傳失敗。",
+    "success_title": "上傳成功",
+    "success_message": "資料已成功處理。",
+    "re_upload": "上傳其他資料",
+    "comparison": {
+      "field": "欄位",
+      "original": "原始值",
+      "new": "新值"
     }
   },
   "part_create": {

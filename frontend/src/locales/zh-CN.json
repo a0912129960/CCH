@@ -28,6 +28,7 @@
     "resubmit": "重新提交",
     "back": "返回",
     "no_data": "暂无数据",
+    "refresh": "刷新",
     "close_all": "关闭全部",
     "close_others": "关闭其他",
     "collapse_all": "全数收合"
@@ -119,8 +120,27 @@
       "updated": "更新",
       "unchanged": "无变动",
       "rejected": "拒绝"
+    },
+    "preview_details": "预览详情",
+    "summary": {
+      "total": "总计",
+      "new": "新增",
+      "modified": "已修改",
+      "error": "错误",
+      "no_change": "无变动"
+    },
+    "confirm_button": "批量上传",
+    "confirm_success": "批量上传完成。",
+    "confirm_failed": "批量上传失败。",
+    "success_title": "上传成功",
+    "success_message": "数据已成功处理。",
+    "re_upload": "上传其他资料",
+    "comparison": {
+      "field": "欄位",
+      "original": "原始值",
+      "new": "新值"
     }
-  },
+    },
   "part_create": {
     "title": "建立新零件",
     "part_no_placeholder": "请输入零件编号",
