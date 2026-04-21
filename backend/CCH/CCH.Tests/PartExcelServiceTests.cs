@@ -86,13 +86,14 @@ public class PartExcelServiceTests
         // Arrange
         _mockUserContext.Setup(u => u.UserName).Returns("test-user");
         _mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<SupplierEntity>());
+        _mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 10, Name = "Taiwan" } });
         
         var parts = new List<PartDto>
         {
             // Part with new supplier
-            new() { CustomerId = 1, PartNo = "P1", Supplier = "New Supplier", SupplierId = 0, CountryId = 10, Division = "D", PartDesc = "Desc", HtsCode = "1234.56.7890", Status = "S02" },
+            new() { CustomerId = 1, PartNo = "P1", Country = "Taiwan", Supplier = "New Supplier", SupplierId = 0, CountryId = 10, Division = "D", PartDesc = "Desc", HtsCode = "1234.56.7890" },
             // Another part with same new supplier
-            new() { CustomerId = 1, PartNo = "P2", Supplier = "New Supplier", SupplierId = 0, CountryId = 10, Division = "D", PartDesc = "Desc", HtsCode = "", Status = "S01" }
+            new() { CustomerId = 1, PartNo = "P2", Country = "Taiwan", Supplier = "New Supplier", SupplierId = 0, CountryId = 10, Division = "D", PartDesc = "Desc", HtsCode = "" }
         };
 
         var service = new PartExcelService(_mockPartRepo.Object, _mockCommonRepo.Object, _mockUserContext.Object);
@@ -107,6 +108,45 @@ public class PartExcelServiceTests
         Assert.Equal(2, result.Inserted);
         Assert.Equal("S02", parts[0].Status); // Has HtsCode
         Assert.Equal("S01", parts[1].Status); // Empty HtsCode
+    }
+
+    [Fact]
+    public void ConfirmBulkUpload_ShouldSkipNoChangeAndReturnErrors()
+    {
+        // Arrange
+        _mockUserContext.Setup(u => u.UserName).Returns("test-user");
+        _mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 10, Name = "Taiwan" } });
+        _mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<SupplierEntity> { new() { ID = 20, SupplierName = "Supplier A" } });
+
+        // P-NoChange: No changes
+        _mockPartRepo.Setup(r => r.GetPartByNo(1, "P-NoChange")).Returns(new PartEntity
+        {
+            ID = 1, CustomerID = 1, PartNo = "P-NoChange", CountryID = 10, SupplierID = 20, Division = "D", PartDescription = "Desc", Status = "S01"
+        });
+
+        // P-Error: Missing Division
+        var parts = new List<PartDto>
+        {
+            new() { CustomerId = 1, PartNo = "P-NoChange", Country = "Taiwan", Supplier = "Supplier A", SupplierId = 20, Division = "D", PartDesc = "Desc", HtsCode = "", RowStatus = "NoChange" },
+            new() { CustomerId = 1, PartNo = "P-Error", Country = "Taiwan", Supplier = "Supplier A", SupplierId = 20, Division = "", PartDesc = "Desc", HtsCode = "1234.56.7890" },
+            new() { CustomerId = 1, PartNo = "P-New", Country = "Taiwan", Supplier = "Supplier A", SupplierId = 20, Division = "D", PartDesc = "New", HtsCode = "1234.56.7890" }
+        };
+
+        var service = new PartExcelService(_mockPartRepo.Object, _mockCommonRepo.Object, _mockUserContext.Object);
+
+        // Act
+        var result = service.ConfirmBulkUpload(parts);
+
+        // Assert
+        Assert.Equal(1, result.Inserted); // Only P-New
+        Assert.Equal(1, result.Failed);   // P-Error
+        Assert.Contains("Part P-Error: Division is required.", result.Errors);
+        
+        // P-NoChange should be skipped silently (result.Inserted=1, Updated=0, Failed=1)
+        Assert.Equal(0, result.Updated);
+        
+        _mockPartRepo.Verify(r => r.CreatePart(It.Is<PartEntity>(p => p.PartNo == "P-New")), Times.Once);
+        _mockPartRepo.Verify(r => r.UpdatePart(It.IsAny<PartEntity>()), Times.Never);
     }
 
     [Fact]

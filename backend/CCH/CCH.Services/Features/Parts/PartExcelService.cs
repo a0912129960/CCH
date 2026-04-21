@@ -197,8 +197,80 @@ public class PartExcelService : IPartExcelService
         var user = _userContext.UserName ?? "system";
         var now = DateTime.Now;
 
-        // 1. Handle Supplier Deduplication (處理供應商去重)
-        var newSuppliers = parts
+        // Use GroupBy/First to handle duplicate names in DB safely (使用 GroupBy 處理資料庫中的重複名稱)
+        var countries = _commonRepository.GetCountries()
+            .Where(c => !string.IsNullOrEmpty(c.Name))
+            .GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().ID, StringComparer.OrdinalIgnoreCase);
+
+        var suppliers = _commonRepository.GetSuppliers()
+            .Where(s => !string.IsNullOrEmpty(s.SupplierName))
+            .GroupBy(s => s.SupplierName!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().ID, StringComparer.OrdinalIgnoreCase);
+
+        var validParts = new List<PartDto>();
+
+        foreach (var dto in parts)
+        {
+            var rowErrors = new List<string>();
+
+            // 1. Mandatory Validation (必填驗證)
+            if (string.IsNullOrEmpty(dto.PartNo)) rowErrors.Add($"Part {dto.PartNo}: Part No is required.");
+            if (string.IsNullOrEmpty(dto.Division)) rowErrors.Add($"Part {dto.PartNo}: Division is required.");
+            if (string.IsNullOrEmpty(dto.Supplier)) rowErrors.Add($"Part {dto.PartNo}: Supplier is required.");
+            if (string.IsNullOrEmpty(dto.PartDesc)) rowErrors.Add($"Part {dto.PartNo}: Description is required.");
+
+            // Country Mapping & Validation
+            if (string.IsNullOrEmpty(dto.Country)) rowErrors.Add($"Part {dto.PartNo}: Country is required.");
+            else if (countries.TryGetValue(dto.Country, out var countryId)) dto.CountryId = countryId;
+            else rowErrors.Add($"Part {dto.PartNo}: Country '{dto.Country}' not found.");
+
+            if (rowErrors.Any())
+            {
+                response.Failed++;
+                response.Errors.AddRange(rowErrors);
+                continue;
+            }
+
+            // 2. Status Recalculation (重新計算狀態)
+            // Determine S01/S02 based on HtsCode
+            dto.Status = string.IsNullOrEmpty(dto.HtsCode) ? "S01" : "S02";
+
+            // Supplier Mapping (Initial)
+            if (suppliers.TryGetValue(dto.Supplier, out var supplierId))
+                dto.SupplierId = supplierId;
+            else
+                dto.SupplierId = 0;
+
+            var existing = _repository.GetPartByNo(dto.CustomerId ?? 0, dto.PartNo);
+            string currentRowStatus;
+            if (existing == null)
+            {
+                currentRowStatus = "New";
+            }
+            else
+            {
+                var originalDto = MapToDto(existing);
+                if (IsModified(originalDto, dto))
+                {
+                    currentRowStatus = "Modified";
+                }
+                else
+                {
+                    currentRowStatus = "NoChange";
+                }
+            }
+
+            // 3. Filtering (過濾)
+            if (currentRowStatus == "New" || currentRowStatus == "Modified")
+            {
+                validParts.Add(dto);
+            }
+            // If NoChange, we just ignore it safely as per requirement (如果是 NoChange，依需求安全地略過)
+        }
+
+        // 4. Handle Supplier Deduplication for valid parts (針對有效零件處理供應商去重)
+        var newSuppliers = validParts
             .Where(p => p.SupplierId == 0 && !string.IsNullOrEmpty(p.Supplier))
             .Select(p => p.Supplier)
             .Distinct()
@@ -206,14 +278,14 @@ public class PartExcelService : IPartExcelService
 
         foreach (var supplierName in newSuppliers)
         {
-            var existing = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == supplierName);
-            if (existing == null)
+            var existingS = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == supplierName);
+            if (existingS == null)
             {
                 var newSupplier = new SupplierEntity
                 {
                     Name = supplierName,
                     SupplierName = supplierName,
-                    CustomerID = parts.FirstOrDefault(p => p.Supplier == supplierName)?.CustomerId,
+                    CustomerID = validParts.FirstOrDefault(p => p.Supplier == supplierName)?.CustomerId,
                     Status = "Active",
                     CreatedBy = user,
                     CreatedDate = now
@@ -221,16 +293,16 @@ public class PartExcelService : IPartExcelService
                 _commonRepository.CreateSupplier(newSupplier);
                 
                 // Update IDs in the list
-                foreach (var p in parts.Where(x => x.Supplier == supplierName)) p.SupplierId = newSupplier.ID;
+                foreach (var p in validParts.Where(x => x.Supplier == supplierName)) p.SupplierId = newSupplier.ID;
             }
             else
             {
-                foreach (var p in parts.Where(x => x.Supplier == supplierName)) p.SupplierId = existing.ID;
+                foreach (var p in validParts.Where(x => x.Supplier == supplierName)) p.SupplierId = existingS.ID;
             }
         }
 
-        // 2. Upsert Parts (更新或新增零件)
-        foreach (var dto in parts)
+        // 5. Upsert Valid Parts (更新或新增有效零件)
+        foreach (var dto in validParts)
         {
             try
             {
@@ -283,6 +355,104 @@ public class PartExcelService : IPartExcelService
         }
 
         return response;
+    }
+
+    private (Dictionary<string, int> Countries, Dictionary<string, int> Suppliers) GetLookupContext()
+    {
+        var countries = _commonRepository.GetCountries()
+            .Where(c => !string.IsNullOrEmpty(c.Name))
+            .GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().ID, StringComparer.OrdinalIgnoreCase);
+
+        var suppliers = _commonRepository.GetSuppliers()
+            .Where(s => !string.IsNullOrEmpty(s.SupplierName))
+            .GroupBy(s => s.SupplierName!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().ID, StringComparer.OrdinalIgnoreCase);
+
+        return (countries, suppliers);
+    }
+
+    private string ValidateAndMapDto(PartDto dto, Dictionary<string, int> countries, Dictionary<string, int> suppliers, List<string> errors)
+    {
+        // 1. Validation & Basic Mapping (驗證與基本映射)
+        if (string.IsNullOrEmpty(dto.PartNo)) errors.Add("Part No is required.");
+        if (string.IsNullOrEmpty(dto.Division)) errors.Add("Division is required.");
+        if (string.IsNullOrEmpty(dto.Supplier)) errors.Add("Supplier is required.");
+        if (string.IsNullOrEmpty(dto.PartDesc)) errors.Add("Description is required.");
+
+        if (string.IsNullOrEmpty(dto.Country)) errors.Add("Country is required.");
+        else if (countries.TryGetValue(dto.Country, out var countryId)) dto.CountryId = countryId;
+        else errors.Add($"Country '{dto.Country}' not found.");
+
+        if (errors.Any()) return "Error";
+
+        // 2. Logic Mapping (邏輯映射)
+        dto.Status = string.IsNullOrEmpty(dto.HtsCode) ? "S01" : "S02";
+        dto.SupplierId = suppliers.TryGetValue(dto.Supplier, out var sId) ? sId : 0;
+
+        // 3. Row Status Determination (資料列狀態判定)
+        var existing = _repository.GetPartByNo(dto.CustomerId ?? 0, dto.PartNo);
+        if (existing == null) return "New";
+
+        var originalDto = MapToDto(existing);
+        return IsModified(originalDto, dto) ? "Modified" : "NoChange";
+    }
+
+    private void EnsureSuppliersExist(List<PartDto> validParts, string user, DateTime now)
+    {
+        var newSupplierNames = validParts
+            .Where(p => p.SupplierId == 0 && !string.IsNullOrEmpty(p.Supplier))
+            .Select(p => p.Supplier).Distinct().ToList();
+
+        foreach (var name in newSupplierNames)
+        {
+            var existing = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == name);
+            if (existing == null)
+            {
+                var entity = new SupplierEntity
+                {
+                    Name = name, SupplierName = name, Status = "Active",
+                    CustomerID = validParts.First(p => p.Supplier == name).CustomerId,
+                    CreatedBy = user, CreatedDate = now
+                };
+                _commonRepository.CreateSupplier(entity);
+                existing = entity;
+            }
+            foreach (var p in validParts.Where(x => x.Supplier == name)) p.SupplierId = existing.ID;
+        }
+    }
+
+    private void UpsertPartEntity(PartDto dto, string user, DateTime now, BulkUploadConfirmResponseDto resp)
+    {
+        var entity = _repository.GetPartByNo(dto.CustomerId ?? 0, dto.PartNo);
+        if (entity == null)
+        {
+            entity = new PartEntity { CustomerID = dto.CustomerId ?? 0, PartNo = dto.PartNo, CreatedBy = user, CreatedDate = now };
+            resp.Inserted++;
+        }
+        else resp.Updated++;
+
+        entity.CountryID = dto.CountryId ?? 0;
+        entity.Division = dto.Division;
+        entity.SupplierID = dto.SupplierId ?? 0;
+        entity.PartDescription = dto.PartDesc;
+        entity.HTSCode = dto.HtsCode;
+        entity.DutyRate = dto.Rate;
+        entity.AddHTSCode1 = dto.HtsCode1;
+        entity.AddDutyRate1 = dto.Rate1;
+        entity.AddHTSCode2 = dto.HtsCode2;
+        entity.AddDutyRate2 = dto.Rate2;
+        entity.AddHTSCode3 = dto.HtsCode3;
+        entity.AddDutyRate3 = dto.Rate3;
+        entity.AddHTSCode4 = dto.HtsCode4;
+        entity.AddDutyRate4 = dto.Rate4;
+        entity.Remark = dto.Remark;
+        entity.Status = dto.Status;
+        entity.UpdatedBy = user;
+        entity.UpdatedDate = now;
+
+        if (entity.ID == 0) _repository.CreatePart(entity);
+        else _repository.UpdatePart(entity);
     }
 
     private decimal GetDecimalValue(IXLCell cell)

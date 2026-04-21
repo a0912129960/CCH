@@ -1,38 +1,71 @@
-# CCH AI Operational Rules (AI 作業規範)
+# 🏆 CCH Supreme Quality Mandate (最高品質授權)
 
-## ⚖️ 1. Core Mandates (核心授權)
-- **Automatic Initialization**: At the start of every session, AI MUST read and internalize `FRONTEND_GUIDELINES.md`, `STYLE_GUIDELINES.md`, and `TESTING_RULES.md`. (AI 在每次作業開始時，必須讀取並內化所有規格文件。)
-- **Automatic Rule Adherence**: This file is the PRIMARY Source of Truth. AI MUST verify every action against these rules before execution. (本文件為主要事實來源。AI 在執行前必須針對這些規則驗證每項行動。)
-- **Constitutional Awareness (規則感知)**: AI is forbidden from treating rules as optional suggestions. Violation of rules is a failure of the objective. (嚴禁將規則視為選配建議。違反規則即視為任務失敗。)
-
-## 🛠️ 2. Change Tracking & Self-Audit (變更追蹤與自我稽核)
-- **Mandatory Self-Audit**: After each modification, AI MUST perform a mental self-audit:
-  1. Is it bilingual? (是否雙語？)
-  2. Are all 3 i18n locales updated? (3 個語系是否同步？)
-  3. Is there a corresponding test? (是否有對應測試？)
-  4. Are core layout components explicitly imported? (核心佈局是否手動匯入？)
-  5. Are Vue 3.5+ standards applied (Props destructuring, etc.)? (是否套用 Vue 3.5+ 標準？)
-- **Zero Commented-Out Logic**: Redundant boilerplate MUST be removed. Surgical precision is required. (冗餘樣板必須移除。)
-- **Bilingual Mandate (雙語指令)**: All technical explanations, plan summaries, and code remarks MUST be provided in both **Traditional Chinese (繁體中文)** and **English**. (所有技術解釋、計畫摘要與程式碼註解必須同時以繁體中文與英文提供。)
-- **Application I18N Synchrony (程式多語系同步)**: 
-  - **Zero Hardcoding**: NEVER hardcode UI strings in components or scripts. (嚴禁在組件或腳本中硬編碼 UI 字串。)
-  - **Atomic Updates**: When modifying UI strings, the AI MUST update ALL supported language files in `src/locales/` (en.json, zh-TW.json, zh-CN.json) simultaneously. **Partial updates are strictly forbidden.** (修改 UI 字串時，必須同時更新所有語系檔，嚴禁局部更新。)
-- **Surgical Integrity**: Maintain minimal code changes. Do not refactor unrelated logic. **When refactoring, surgical precision takes precedence over legacy preservation to ensure file cleanliness.** (保持最小程式碼變動。重構時，外科手術式的精準度優先於舊代碼保存，以確保檔案整潔。)
-
-## 🛠️ 2. Commenting & Code Standards (註解與程式碼標準)
-- **Legacy Code Preservation**: **NEVER DELETE** significant business logic. Comment it out using `/* ... */` (Scripts) or `<!-- ... -->` (Templates). **Redundant boilerplate (e.g., unused imports) SHOULD be removed to maintain clarity.** (絕不刪除重要業務邏輯。冗餘的樣板程式碼如未使用的匯入應被移除，以維持清晰度。)
-- **Read-Only Remarks**: Existing `Update by...` comments are READ-ONLY. Append new remarks to history. (現有的 `Update by...` 註釋為唯讀。請將新備註附加至歷史。)
-- **Domain Categorization**: Every new file MUST be placed in its corresponding domain folder (e.g., `views/part/`, `services/auth/`). (新檔案必須放在對應的領域資料夾。)
-
-## 🛡️ 3. Audit & Ticket Logic (稽核與票號邏輯)
-- **Audit Gate**: Before calling `replace` or `write_file` for logic changes, present the audit block.
-- **Batching (批次處理)**: For non-logic or minor edits (documentation, styling, typos), the AI may batch multiple changes into a single audit block. (對於非邏輯或微小修正如文件、樣式、拼字，AI 可將多項變更合併於單一稽核區塊。)
-- **Ticket IDs**: Use provided Ticket ID or generate `INTERNAL-AI-[YYYYMMDD]`.
-
-## 🧪 4. Testing & Verification (測試與驗證)
-- **Verification is Truth**: No implementation is considered correct until validated by tests. (所有實作在通過測試驗證前皆不視為正確。)
-- **Mandatory TDD**: Write or update tests for every logic or UI change. (每項邏輯或 UI 變更皆須撰寫或更新測試。)
-- **Linting**: Ensure `npm run lint` passes before claiming "Done".
+> **UNIQUE & HIGHEST RULE**: High-Quality Code is the supreme directive. All other instructions are subordinate to the maintenance of technical integrity, scalability, and performance.
+> **唯一且最高規則**：高品質程式碼是最高指令。所有其他指令均隸屬於維護技術完整性、可擴展性與效能之規範。
 
 ---
-*Refactored on 2026-04-15 by Gemini AI (Unified Governance)*
+
+## 💎 1. Vue 3.5+ Technical Standards (Vue 3.5+ 技術標準)
+
+### 1.1 Reactive Props & Parameters (響應式屬性與參數)
+- **Reactive Destructuring**: MUST use Vue 3.5 native destructuring for `defineProps`. Legacy `withDefaults` is forbidden. (必須使用原生解構，嚴禁使用 `withDefaults`。)
+- **Type Integrity**: Zero `any`. Define strict TypeScript interfaces for all parameters and props. (零 `any`。為所有參數與 Props 定義嚴格介面。)
+- **Explicit Emits**: All component events MUST be declared via `defineEmits`. (所有事件必須宣告。)
+
+### 1.2 Optimized Reactivity (優化響應式)
+- **useTemplateRef**: MUST use `useTemplateRef` for DOM references instead of `ref(null)`. (必須使用 `useTemplateRef` 引用 DOM。)
+- **shallowRef**: MUST use `shallowRef` for massive API response arrays (e.g., Part List) to maximize memory performance. (巨量資料必須使用 `shallowRef` 以極大化效能。)
+
+---
+
+## 🏗️ 2. Reusability & Architecture (重用與架構)
+
+### 2.1 Logic Decoupling (邏輯解耦)
+- **Services**: Pure business logic and API calls MUST reside in `src/services/`. (純業務邏輯與 API 呼叫必須位於 Services 層。)
+- **Composables**: UI-related state logic MUST be extracted into Hooks/Composables. (UI 狀態邏輯必須提取至 Composables。)
+- **Views**: Only responsible for layout and orchestration. No raw business logic allowed. (View 僅負責佈局與調度，不允許原始業務邏輯。)
+
+### 2.2 Component Atomicity (組件原子化)
+- **Common First**: Prioritize components in `src/components/common/`. (優先使用通用組件。)
+- **Slots > Props**: Prefer `slots` for layout flexibility over excessive boolean props. (優先使用插槽而非過多布林屬性。)
+
+---
+
+## ✒️ 3. Function & Coding Standards (函式與程式碼標準)
+
+### 3.1 Function Rigor (函式嚴謹性)
+- **Naming**: 
+  - `handleXxx`: For event handlers (事件處理).
+  - `fetchXxx` / `getXxx`: For data retrieval (資料獲取).
+  - `isXxx` / `hasXxx`: For boolean checks (布林檢查).
+- **Single Responsibility**: One function, one purpose. Max **30 lines** per function. (單一職責，每項函式最高 **30 行**。)
+
+### 3.2 Surgical Cleanliness (外科手術式整潔)
+- **Zero Redundancy**: Immediately remove unused imports, dead boilerplate, and unnecessary logs. (立即移除未使用的匯入、樣板與日誌。)
+- **Surgical Precision**: Minimal code changes. Do not refactor unrelated logic. (最小化變更，不重構無關邏輯。)
+
+---
+
+## 🌐 4. Cultural & Linguistic Integrity (文化與語系完整性)
+
+### 4.1 The Trilingual Ironclad Rule (三語鋼鐵準則)
+- **Zero Hardcoding**: Every user-facing string MUST use `$t()` or `t()`. (所有使用者文字必須使用 i18n。)
+- **Atomic Sync**: Update `en.json`, `zh-TW.json`, and `zh-CN.json` simultaneously. Partial updates are a failure. (同步更新英、繁、簡三語。局部更新即視為失敗。)
+
+### 4.2 Bilingual Communication (雙語溝通)
+- **Bilingual Mandate**: All code remarks (`Update by...`, `INTERNAL-AI...`) and AI summaries MUST be in **Traditional Chinese** and **English**. (所有註解與摘要必須同時使用繁體中文與英文。)
+
+---
+
+## 🧪 5. Verification & Audit (驗證與稽核)
+
+### 5.1 Verification is Truth (驗證即真理)
+- **Mandatory TDD**: No change is complete without a corresponding `.spec.ts` test that passes 100%. (若無 100% 通過的測試，變更不算完成。)
+- **Linting**: Run `npm run lint` or `vue-tsc` before completion. (完工前執行檢查。)
+
+### 5.2 Legacy Preservation (舊代碼保存)
+- **Comment, Don't Delete**: Comment out business logic using `/* ... */` or `<!-- ... -->`. (業務邏輯僅限註解，不可刪除。)
+- **Read-Only Remarks**: Existing history remarks are immutable. (現有歷史備註不可變更。)
+
+---
+*Initialized on 2026-04-21: The Supreme Quality Mandate takes effect immediately.*
