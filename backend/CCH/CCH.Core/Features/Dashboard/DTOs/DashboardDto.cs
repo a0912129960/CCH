@@ -19,6 +19,8 @@ public class PartStatusSummaryDto
 /// </summary>
 public class PendingReviewDto
 {
+    /// <summary>Part primary key — used by the frontend to navigate to the detail page.</summary>
+    public int Id { get; set; }
     public string Customer { get; set; } = string.Empty;
     public string PartNo { get; set; } = string.Empty;
     public string PartDesc { get; set; } = string.Empty;
@@ -26,5 +28,5 @@ public class PendingReviewDto
     public string Status { get; set; } = string.Empty;
     public string UpdatedBy { get; set; } = string.Empty;
     public DateTime UpdatedDate { get; set; }
-    public string SlaStatus { get; set; } = "green"; // green, yellow, orange, red
+    public string SlaStatus { get; set; } = "green"; // green, yellow, red
 }

@@ -30,7 +30,8 @@ const router = createRouter({
       path: '/employee',
       name: 'employee',
       component: EmployeeView,
-      meta: { requiresAuth: true, role: UserRole.DIMERCO, title: 'employee.title' }
+      // Both DIMERCO and DCB share the same Dashboard view
+      meta: { requiresAuth: true, roles: [UserRole.DIMERCO, UserRole.DCB], title: 'employee.title' }
     },
     {
       path: '/customer',
@@ -72,8 +73,13 @@ router.beforeEach((to, _from, next) => {
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     next({ name: 'login' });
-  } 
+  }
+  // Single-role restriction (e.g. /customer → CUSTOMER only)
   else if (to.meta.role && to.meta.role !== userRole) {
+    next({ name: 'home' });
+  }
+  // Multi-role restriction (e.g. /employee → DIMERCO or DCB)
+  else if (to.meta.roles && !(to.meta.roles as string[]).includes(userRole as string)) {
     next({ name: 'home' });
   }
   else if (to.name === 'login' && isAuthenticated) {

@@ -86,20 +86,55 @@ public class PartsController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new part in draft status.
-    /// (繁體中文) 建立處於草稿狀態的新零件。
+    /// Creates a new part in draft status (S01). Only PartNo and CountryId are required.
+    /// (繁體中文) 建立草稿狀態的新零件（S01）。只需 PartNo 與 CountryId。
     /// </summary>
     [HttpPost]
-    public ActionResult<ApiResponse<object>> CreatePart([FromBody] PartSaveRequest request) =>
-        Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(request, "S01")));
+    public ActionResult<ApiResponse<object>> CreatePart([FromBody] PartCreateRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+            return BadRequest(ApiResponse<object>.FailureResponse(string.Join(" | ", errors)));
+        }
+        return Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(request, "S01")));
+    }
 
     /// <summary>
-    /// Creates and submits a new part.
-    /// (繁體中文) 建立並提交新零件。
+    /// Creates and submits a new part for review (S02).
+    /// Requires PartNo, CountryId, Division, Supplier, PartDesc, and HtsCode.
+    /// (繁體中文) 建立並送審新零件（S02）。須填 PartNo、CountryId、Division、Supplier、PartDesc、HtsCode。
     /// </summary>
     [HttpPost("submit")]
-    public ActionResult<ApiResponse<object>> CreateAndSubmitPart([FromBody] PartSaveRequest request) =>
-        Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(request, "S02")));
+    public ActionResult<ApiResponse<object>> CreateAndSubmitPart([FromBody] PartSaveRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+            return BadRequest(ApiResponse<object>.FailureResponse(string.Join(" | ", errors)));
+        }
+        return Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(
+            new PartCreateRequest
+            {
+                CustomerId  = request.CustomerId,
+                PartNo      = request.PartNo,
+                CountryId   = request.CountryId,
+                Division    = request.Division,
+                Supplier    = request.Supplier,
+                PartDesc    = request.PartDesc,
+                HtsCode     = request.HtsCode,
+                Rate        = request.Rate,
+                HtsCode1    = request.HtsCode1, Rate1 = request.Rate1,
+                HtsCode2    = request.HtsCode2, Rate2 = request.Rate2,
+                HtsCode3    = request.HtsCode3, Rate3 = request.Rate3,
+                HtsCode4    = request.HtsCode4, Rate4 = request.Rate4,
+                Remark      = request.Remark
+            }, "S02")));
+    }
 
     // INTERNAL-AI-20260416: Added 404 handling when part is not found.
     // (INTERNAL-AI-20260416: 新增零件不存在時的 404 回應處理。)
