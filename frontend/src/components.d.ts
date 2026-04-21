@@ -13,6 +13,7 @@ declare module 'vue' {
     AppNumberInput: typeof import('./components/common/AppNumberInput.vue')['default']
     AppTabs: typeof import('./components/common/AppTabs.vue')['default']
     Breadcrumb: typeof import('./components/common/Breadcrumb.vue')['default']
+    BulkUploadPreviewTable: typeof import('./components/features/part/BulkUploadPreviewTable.vue')['default']
     Button: typeof import('./components/common/Button.vue')['default']
     Card: typeof import('./components/common/Card.vue')['default']
     Dot: typeof import('./components/common/Dot.vue')['default']

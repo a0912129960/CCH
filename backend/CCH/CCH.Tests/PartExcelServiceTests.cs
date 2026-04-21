@@ -127,7 +127,7 @@ public class PartExcelServiceTests
         // P-Error: Missing Division
         var parts = new List<PartDto>
         {
-            new() { CustomerId = 1, PartNo = "P-NoChange", Country = "Taiwan", Supplier = "Supplier A", SupplierId = 20, Division = "D", PartDesc = "Desc", HtsCode = "", RowStatus = "NoChange" },
+            new() { CustomerId = 1, PartNo = "P-NoChange", Country = "Taiwan", Supplier = "Supplier A", SupplierId = 20, Division = "D", PartDesc = "Desc", HtsCode = ""},
             new() { CustomerId = 1, PartNo = "P-Error", Country = "Taiwan", Supplier = "Supplier A", SupplierId = 20, Division = "", PartDesc = "Desc", HtsCode = "1234.56.7890" },
             new() { CustomerId = 1, PartNo = "P-New", Country = "Taiwan", Supplier = "Supplier A", SupplierId = 20, Division = "D", PartDesc = "New", HtsCode = "1234.56.7890" }
         };

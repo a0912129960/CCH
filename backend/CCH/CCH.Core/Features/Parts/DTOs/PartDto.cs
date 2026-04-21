@@ -204,5 +204,4 @@ public class PartDto
     public decimal? Rate4 { get; set; }
     public string Remark { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
-    public string RowStatus { get; set; } = string.Empty;
 }

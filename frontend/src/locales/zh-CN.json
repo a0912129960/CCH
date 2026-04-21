@@ -127,7 +127,7 @@
       "new": "新增",
       "modified": "已修改",
       "error": "错误",
-      "no_change": "无变动"
+      "nochange": "无变动"
     },
     "confirm_button": "批量上传",
     "confirm_success": "批量上传完成。",

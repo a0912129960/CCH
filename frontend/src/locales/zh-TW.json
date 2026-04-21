@@ -126,7 +126,7 @@
       "new": "新增",
       "modified": "已修改",
       "error": "錯誤",
-      "no_change": "無變動",
+      "nochange": "無變動",
       "new_desc": "新零件，準備匯入",
       "modified_desc": "偵測到欄位變更",
       "no_change_desc": "與系統資料一致"

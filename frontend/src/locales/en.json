@@ -128,7 +128,7 @@
       "new": "New",
       "modified": "Modified",
       "error": "Error",
-      "no_change": "No Change"
+      "nochange": "No Change"
     },
     "confirm_button": "Bulk Upload",
     "confirm_success": "Bulk upload completed.",
