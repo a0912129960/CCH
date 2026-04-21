@@ -90,7 +90,7 @@ public class PartLifecycleService : IPartLifecycleService
         _commonRepository.GetSuppliers().FirstOrDefault(s => s.Name == supplierName)?.ID ?? 1;
 
     /// <inheritdoc/>
-    public object CreatePart(PartSaveRequest request, string status)
+    public object CreatePart(PartCreateRequest request, string status)
     {
         var entity = new PartEntity
         {
@@ -98,10 +98,10 @@ public class PartLifecycleService : IPartLifecycleService
             PartNo = request.PartNo,
             CountryID = request.CountryId ?? 1,
             PartDescription = request.PartDesc,
-            Division = request.Division,
-            SupplierID = ResolveSupplierIdByName(request.Supplier),
+            Division = request.Division ?? string.Empty,
+            SupplierID = !string.IsNullOrEmpty(request.Supplier) ? ResolveSupplierIdByName(request.Supplier) : 1,
             HTSCode = request.HtsCode,
-            DutyRate = request.Rate,
+            DutyRate = request.Rate ?? 0m,
             AddHTSCode1 = request.HtsCode1,
             AddDutyRate1 = request.Rate1,
             AddHTSCode2 = request.HtsCode2,
@@ -110,7 +110,7 @@ public class PartLifecycleService : IPartLifecycleService
             AddDutyRate3 = request.Rate3,
             AddHTSCode4 = request.HtsCode4,
             AddDutyRate4 = request.Rate4,
-            Remark = request.Remark,
+            Remark = request.Remark ?? string.Empty,
             Status = status,
             CreatedBy = CurrentUser,
             UpdatedBy = CurrentUser

@@ -57,7 +57,8 @@
     "part_no": "Part No",
     "hts_code": "HTS Code",
     "supplier": "Supplier",
-    "last_updated": "Last Updated"
+    "last_updated": "Last Updated",
+    "updated_date": "Updated Date"
   },
   "customer": {
     "title": "Customer Dashboard",
@@ -66,7 +67,10 @@
     "sla_countdown": "SLA Countdown (Pending Items)",
     "sla_remaining": "{min} mins remaining",
     "part_no": "Part No",
-    "hts_code": "HTS Code"
+    "hts_code": "HTS Code",
+    "pending_review": "Pending Review Parts",
+    "no_pending": "No parts pending review",
+    "review": "Review"
   },
   "part_list": {
     "title": "Parts List",
@@ -219,13 +223,13 @@
     "updated_date": "Updated Date"
   },
   "status": {
-    "s01": "Unknow",
+    "s01": "Unknown",
     "s02": "Pending Dimerco Review",
     "s03": "Pending Customer Review",
     "s04": "Reviewed",
     "s05": "Flagged",
     "inactive": "Inactive",
-    "unknown": "Unknow",
+    "unknown": "Unknown",
     "pending_customer": "Pending Customer Review",
     "pending_review": "Pending Dimerco Review",
     "returned": "Pending Customer Review",

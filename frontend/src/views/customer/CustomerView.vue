@@ -1,44 +1,75 @@
 <script setup lang="ts">
 import { authService } from '@src/services/auth/auth';
-import { dashboardService, type StatusCount, type SLAItem } from '@src/services/dashboard/dashboard';
+import { dashboardService, type StatusCount, type PendingReviewItem } from '@src/services/dashboard/dashboard';
+import { partService, statusToI18nKey, statusToColor } from '@src/services/part/part';
 import Card from '@src/components/common/Card.vue';
 import Dot from '@src/components/common/Dot.vue';
 
 /**
  * Customer Dashboard View (客戶儀表板頁面)
- * Style adjusted to match MyDimerco brand language.
- * BR-28: Status Summary | BR-29: SLA Countdown
- * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
+ * Layout mirrors EmployeeView exactly.
+ * BR-28: Status Summary | BR-30: Pending Review Parts — S01 + S03 only (real API, no hardcoded data)
  */
 
 const router = useRouter();
-const { username, customerId } = authService.state;
+const username = computed(() => authService.state.username);
 
+const customers = ref<{ id: string; name: string }[]>([]);
+const selectedCustomerId = ref('all');
 const statusSummary = ref<StatusCount[]>([]);
-const slaItems = ref<SLAItem[]>([]);
+const pendingParts = ref<PendingReviewItem[]>([]);
 const loading = ref(true);
 
-onMounted(async () => {
+const fetchData = async () => {
+  loading.value = true;
   try {
-    const [summary, sla] = await Promise.all([
-      dashboardService.getStatusSummary(customerId),
-      dashboardService.getSLAItems(customerId)
+    const [summary, pending] = await Promise.all([
+      dashboardService.getStatusSummary(selectedCustomerId.value),
+      dashboardService.getPendingReviewParts(selectedCustomerId.value, 'CUSTOMER')
     ]);
     statusSummary.value = summary;
-    slaItems.value = sla;
+    pendingParts.value = pending;
   } finally {
     loading.value = false;
   }
+};
+
+onMounted(async () => {
+  customers.value = await partService.getCustomers();
+  await fetchData();
+});
+
+watch(selectedCustomerId, async () => {
+  await fetchData();
 });
 
 const goToPartList = (status?: string) => {
-  const query: any = status ? { status } : {};
-  if (customerId) query.customerId = customerId;
+  const query: any = {};
+  if (status) query.status = status;
+  if (selectedCustomerId.value !== 'all') query.customerId = selectedCustomerId.value;
   router.push({ name: 'parts', query });
 };
 
-const goToPartDetail = (id: string) => {
+const goToPartDetail = (id: number | string) => {
   router.push({ name: 'part-detail', params: { id } });
+};
+
+// Matches PartListView SLA color logic exactly (與 PartListView SLA 燈號邏輯一致)
+const SLA_COLOR_MAP: Record<string, string> = {
+  green:  '#67C23A',
+  normal: '#67C23A',
+  yellow: '#FADB14',
+  orange: '#FF9900',
+  red:    '#F56C6C'
+};
+
+const getSLAColor = (slaStatus?: string): string => {
+  if (!slaStatus) return 'transparent';
+  return SLA_COLOR_MAP[slaStatus.toLowerCase()] ?? 'transparent';
+};
+
+const formatDate = (dateStr: string) => {
+  return dateStr.substring(0, 16);
 };
 </script>
 
@@ -49,7 +80,8 @@ const goToPartDetail = (id: string) => {
         <div class="title-group">
           <h1>{{ $t('customer.title') }}</h1>
         </div>
-        <div class="user-action">
+
+        <div class="header-right">
           <div class="user-info">
             <span class="welcome-text">{{ $t('common.welcome') }},</span>
             <span class="username">{{ username }}</span>
@@ -60,23 +92,33 @@ const goToPartDetail = (id: string) => {
       <div v-if="loading" class="loading-overlay">
         <div class="spinner"></div>
       </div>
-      
+
       <div v-else class="dashboard-content">
-        <!-- BR-28: Status Summary (狀態摘要) -->
+        <!-- Customer Selector (客戶選擇器) -->
+        <div class="customer-selector-container">
+          <div class="customer-selector">
+            <label>{{ $t('employee.customer_select') }}</label>
+            <select v-model="selectedCustomerId" class="app-select">
+              <option value="all">{{ $t('employee.all_customers') }}</option>
+              <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Status Summary (狀態摘要) -->
         <section class="summary-section">
           <div class="section-header">
             <div class="decorator"></div>
             <h3>{{ $t('customer.status_summary') }}</h3>
           </div>
           <div class="status-grid">
-            <Card 
-              v-for="item in statusSummary" 
-              :key="item.status" 
+            <Card
+              v-for="item in statusSummary"
+              :key="item.status"
               class="status-card"
               @click="goToPartList(item.status)"
             >
               <div class="status-header">
-                <Dot :color="item.color" size="10px" />
                 <span class="status-label">{{ $t(item.labelKey) }}</span>
               </div>
               <div class="status-value">{{ item.count }}</div>
@@ -84,28 +126,57 @@ const goToPartDetail = (id: string) => {
           </div>
         </section>
 
-        <!-- BR-29: SLA Countdown (SLA 倒數) -->
-        <section class="sla-section">
+        <!-- Pending Review Table — S01 + S03 (待審核零件列表) -->
+        <section class="pending-section">
           <div class="section-header">
             <div class="decorator secondary"></div>
-            <h3>{{ $t('customer.sla_countdown') }}</h3>
+            <h3>{{ $t('customer.pending_review') }}</h3>
           </div>
-          <div class="sla-list">
-            <Card v-for="item in slaItems" :key="item.id" class="sla-card" @click="goToPartDetail(item.id)">
-              <div class="sla-main">
-                <div class="part-badge">
-                  <span class="part-label">{{ $t('customer.part_no') }}</span>
-                  <span class="part-no">{{ item.partNo }}</span>
-                </div>
-                <span class="status-pill" :style="{ backgroundColor: item.remainingMinutes < 60 ? 'var(--warning-color)' : 'var(--primary-color)' }">
-                  {{ $t('status.' + item.status.toLowerCase()) }}
-                </span>
-              </div>
-              <div class="sla-countdown" :class="{ 'urgent': item.remainingMinutes < 60 }">
-                <span class="timer-icon">🕒</span>
-                <span class="timer-text">{{ $t('customer.sla_remaining', { min: item.remainingMinutes }) }}</span>
-              </div>
-            </Card>
+
+          <div class="table-container card-shadow">
+            <table class="app-table">
+              <thead>
+                <tr>
+                  <th>{{ $t('common.customer') }}</th>
+                  <th>{{ $t('employee.part_no') }}</th>
+                  <th>{{ $t('part_list.description') }}</th>
+                  <th>{{ $t('employee.hts_code') }}</th>
+                  <th>{{ $t('common.status') }}</th>
+                  <th>{{ $t('part_list.updated_by') }}</th>
+                  <th>{{ $t('employee.updated_date') }}</th>
+                  <th>{{ $t('part_list.sla') }}</th>
+                  <th>{{ $t('common.actions') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="part in pendingParts" :key="part.id">
+                  <td>{{ part.customer }}</td>
+                  <td class="bold">{{ part.partNo }}</td>
+                  <td>{{ part.partDesc || '—' }}</td>
+                  <td>{{ part.htsCode || '—' }}</td>
+                  <td>
+                    <span class="status-badge" :style="{ backgroundColor: statusToColor(part.status) }">
+                      {{ $t(`status.${statusToI18nKey(part.status)}`) }}
+                    </span>
+                  </td>
+                  <td>{{ part.updatedBy || '—' }}</td>
+                  <td>{{ formatDate(part.updatedDate) }}</td>
+                  <td>
+                    <div v-if="part.slaStatus && getSLAColor(part.slaStatus) !== 'transparent'">
+                      <Dot :dotColor="getSLAColor(part.slaStatus)" :title="$t(`sla.${part.slaStatus}`)" />
+                    </div>
+                  </td>
+                  <td>
+                    <button class="btn-action" @click="goToPartDetail(part.id)">
+                      {{ $t('customer.review') }}
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="pendingParts.length === 0">
+                  <td colspan="9" class="no-data">{{ $t('customer.no_pending') }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
       </div>
@@ -137,10 +208,54 @@ const goToPartDetail = (id: string) => {
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+}
+
 h1 {
   font-size: 2rem;
   color: var(--sidebar-color);
   margin: 0;
+}
+
+.customer-selector-container {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.customer-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.customer-selector label {
+  font-size: 0.9rem;
+  color: #8898aa;
+  font-weight: 500;
+}
+
+.app-select {
+  padding: 0.6rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  color: var(--sidebar-color);
+  font-size: 0.9rem;
+  min-width: 200px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.app-select:focus {
+  border-color: var(--primary-color);
 }
 
 .user-info {
@@ -182,13 +297,13 @@ h3 {
 /* Status Summary Grid */
 .status-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.2rem;
+  margin-bottom: 3rem;
 }
 
 .status-card {
-  padding: 1.5rem;
+  padding: 1.2rem;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   background: white;
@@ -205,88 +320,99 @@ h3 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
 }
 
 .status-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #8898aa;
 }
 
 .status-value {
-  font-size: 2.2rem;
+  font-size: 1.8rem;
   font-weight: bold;
   color: var(--sidebar-color);
 }
 
-/* SLA List Styles */
-.sla-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.sla-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.2rem 2rem;
-  border-radius: 12px;
+/* Table Styles */
+.table-container {
   background: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-  cursor: pointer;
-  transition: all 0.2s;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 2rem;
 }
 
-.sla-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transform: translateX(4px);
+.card-shadow {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-.sla-main {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
+.app-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
 }
 
-.part-badge {
-  display: flex;
-  flex-direction: column;
+.app-table th {
+  background-color: #f8f9fe;
+  padding: 1rem 1.5rem;
+  font-size: 0.85rem;
+  color: #8898aa;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.part-label {
-  font-size: 0.75rem;
-  color: #adb5bd;
-}
-
-.part-no {
-  font-size: 1.1rem;
-  color: var(--sidebar-color);
-  font-weight: bold;
-}
-
-.status-pill {
-  color: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.sla-countdown {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+.app-table td {
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
   color: #525f7f;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.sla-countdown.urgent {
-  color: var(--warning-color);
+.app-table tr:last-child td {
+  border-bottom: none;
 }
 
-.timer-text {
-  font-size: 1.1rem;
-  font-weight: bold;
+.app-table tr:hover td {
+  background-color: #f8f9fe;
+}
+
+.bold {
+  font-weight: 600;
+  color: var(--sidebar-color);
+}
+
+.no-data {
+  text-align: center;
+  padding: 3rem !important;
+  color: #8898aa;
+  font-style: italic;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+.btn-action {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-action:hover {
+  background-color: var(--primary-dark, #003366);
 }
 
 /* Utils */

@@ -24,17 +24,31 @@ public class DashboardController : ControllerBase
 
     /// <summary>
     /// Retrieves a summary of part counts categorized by status.
-    /// (繁體中文) 取得按狀態分類的零件數量摘要。
+    /// Returns data as a single-element array: [{ S01, S02, S03, S04, S05 }].
+    /// Pass customerId to filter by customer; omit (or pass "all") for all customers.
+    /// (繁體中文) 取得按狀態分類的零件數量摘要。data 以單元素陣列回傳。
     /// </summary>
     [HttpGet("part-status-summary")]
-    public ActionResult<ApiResponse<PartStatusSummaryDto>> GetStatusSummary([FromQuery] string? customerId) =>
-        Ok(ApiResponse<PartStatusSummaryDto>.SuccessResponse(_dashboardService.GetStatusSummary(customerId)));
+    public ActionResult<ApiResponse<IEnumerable<PartStatusSummaryDto>>> GetStatusSummary([FromQuery] string? customerId)
+    {
+        var effectiveId = string.IsNullOrWhiteSpace(customerId) || customerId == "all" ? null : customerId;
+        var summary = _dashboardService.GetStatusSummary(effectiveId);
+        return Ok(ApiResponse<IEnumerable<PartStatusSummaryDto>>.SuccessResponse(new[] { summary }));
+    }
 
     /// <summary>
-    /// Retrieves a list of parts that are pending review.
-    /// (繁體中文) 取得待審核的零件清單。
+    /// Retrieves a list of parts pending review, filtered by role.
+    /// role = "CUSTOMER" → S01 + S03; omit / any other value → S02.
+    /// Pass customerId to filter by customer; omit (or pass "all") for all customers.
+    /// (繁體中文) 依角色取得待審核零件清單：客戶 → S01+S03；員工 → S02。
     /// </summary>
     [HttpGet("pending-review")]
-    public ActionResult<ApiResponse<IEnumerable<PendingReviewDto>>> GetPendingReviews([FromQuery] string? customerId) =>
-        Ok(ApiResponse<IEnumerable<PendingReviewDto>>.SuccessResponse(_dashboardService.GetPendingReviews(customerId)));
+    public ActionResult<ApiResponse<IEnumerable<PendingReviewDto>>> GetPendingReviews(
+        [FromQuery] string? customerId,
+        [FromQuery] string? role)
+    {
+        var effectiveId = string.IsNullOrWhiteSpace(customerId) || customerId == "all" ? null : customerId;
+        return Ok(ApiResponse<IEnumerable<PendingReviewDto>>.SuccessResponse(
+            _dashboardService.GetPendingReviews(effectiveId, role)));
+    }
 }

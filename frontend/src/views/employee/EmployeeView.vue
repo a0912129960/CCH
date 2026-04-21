@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { authService } from '@src/services/auth/auth';
-import { dashboardService, type StatusCount } from '@src/services/dashboard/dashboard';
-import { partService, type Part } from '@src/services/part/part';
+import { dashboardService, type StatusCount, type PendingReviewItem } from '@src/services/dashboard/dashboard';
+import { partService, statusToI18nKey, statusToColor } from '@src/services/part/part';
 import Card from '@src/components/common/Card.vue';
 import Dot from '@src/components/common/Dot.vue';
 
@@ -17,7 +17,7 @@ const username = computed(() => authService.state.username);
 const customers = ref<{ id: string; name: string }[]>([]);
 const selectedCustomerId = ref('all');
 const statusSummary = ref<StatusCount[]>([]);
-const pendingParts = ref<Part[]>([]);
+const pendingParts = ref<PendingReviewItem[]>([]);
 const loading = ref(true);
 
 const fetchData = async () => {
@@ -50,8 +50,22 @@ const goToPartList = (status?: string) => {
   router.push({ name: 'parts', query });
 };
 
-const goToPartDetail = (id: string) => {
+const goToPartDetail = (id: number | string) => {
   router.push({ name: 'part-detail', params: { id } });
+};
+
+// Matches PartListView SLA color logic exactly (與 PartListView SLA 燈號邏輯一致)
+const SLA_COLOR_MAP: Record<string, string> = {
+  green:  '#67C23A',
+  normal: '#67C23A',
+  yellow: '#FADB14',
+  orange: '#FF9900',
+  red:    '#F56C6C'
+};
+
+const getSLAColor = (slaStatus?: string): string => {
+  if (!slaStatus) return 'transparent';
+  return SLA_COLOR_MAP[slaStatus.toLowerCase()] ?? 'transparent';
 };
 
 const formatDate = (dateStr: string) => {
@@ -105,7 +119,6 @@ const formatDate = (dateStr: string) => {
               @click="goToPartList(item.status)"
             >
               <div class="status-header">
-                <Dot :color="item.color" size="10px" />
                 <span class="status-label">{{ $t(item.labelKey) }}</span>
               </div>
               <div class="status-value">{{ item.count }}</div>
@@ -124,21 +137,35 @@ const formatDate = (dateStr: string) => {
             <table class="app-table">
               <thead>
                 <tr>
+                  <th>{{ $t('common.customer') }}</th>
                   <th>{{ $t('employee.part_no') }}</th>
-                  <th v-if="selectedCustomerId === 'all'">{{ $t('common.customer') || 'Customer' }}</th>
+                  <th>{{ $t('part_list.description') }}</th>
                   <th>{{ $t('employee.hts_code') }}</th>
-                  <th>{{ $t('employee.supplier') }}</th>
-                  <th>{{ $t('employee.last_updated') }}</th>
+                  <th>{{ $t('common.status') }}</th>
+                  <th>{{ $t('part_list.updated_by') }}</th>
+                  <th>{{ $t('employee.updated_date') }}</th>
+                  <th>{{ $t('part_list.sla') }}</th>
                   <th>{{ $t('common.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="part in pendingParts" :key="part.id">
+                  <td>{{ part.customer }}</td>
                   <td class="bold">{{ part.partNo }}</td>
-                  <td v-if="selectedCustomerId === 'all'">{{ part.customerName }}</td>
+                  <td>{{ part.partDesc || '—' }}</td>
                   <td>{{ part.htsCode }}</td>
-                  <td>{{ part.supplier }}</td>
-                  <td>{{ formatDate(part.lastUpdated) }}</td>
+                  <td>
+                    <span class="status-badge" :style="{ backgroundColor: statusToColor(part.status) }">
+                      {{ $t(`status.${statusToI18nKey(part.status)}`) }}
+                    </span>
+                  </td>
+                  <td>{{ part.updatedBy || '—' }}</td>
+                  <td>{{ formatDate(part.updatedDate) }}</td>
+                  <td>
+                    <div v-if="part.slaStatus && getSLAColor(part.slaStatus) !== 'transparent'">
+                      <Dot :dotColor="getSLAColor(part.slaStatus)" :title="$t(`sla.${part.slaStatus}`)" />
+                    </div>
+                  </td>
                   <td>
                     <button class="btn-action" @click="goToPartDetail(part.id)">
                       {{ $t('employee.review') }}
@@ -146,7 +173,7 @@ const formatDate = (dateStr: string) => {
                   </td>
                 </tr>
                 <tr v-if="pendingParts.length === 0">
-                  <td colspan="6" class="no-data">{{ $t('employee.no_pending') }}</td>
+                  <td colspan="9" class="no-data">{{ $t('employee.no_pending') }}</td>
                 </tr>
               </tbody>
             </table>
@@ -361,6 +388,16 @@ h3 {
   padding: 3rem !important;
   color: #8898aa;
   font-style: italic;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
 }
 
 .btn-action {
