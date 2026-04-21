@@ -187,6 +187,17 @@ public class PartLifecycleService : IPartLifecycleService
         return new { partId, status = "Inactive" };
     }
 
+    // INTERNAL-AI-20260421: S04 → S03: save additional duty fields then set status to Pending Customer Review.
+    // (INTERNAL-AI-20260421: S04 → S03：儲存附加關稅欄位後將狀態設為 Pending Customer Review。)
+    /// <inheritdoc/>
+    public object SendToCustomerReview(int partId, PartSaveRequest request)
+    {
+        UpdatePart(partId, request);
+        _repository.UpdateStatus(partId, "S03");
+        RecordHistory(partId, "Sent to Customer Review");
+        return new { partId, status = "S03" };
+    }
+
     /// <inheritdoc/>
     public object BatchAccept(IEnumerable<int> partIds)
     {
