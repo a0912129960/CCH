@@ -1,5 +1,7 @@
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Features.Parts;
@@ -33,7 +35,7 @@ public class PartServiceTests : IDisposable
         SeedData();
 
         var mockCommonRepo = new Mock<ICommonRepository>();
-        mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<CustomerEntity> { new() { ID = 101, Name = "Customer A" } });
+        // mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<CustomerEntity> { new() { ID = 101, Name = "Customer A" } });
         mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Taiwan" } });
         mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<SupplierEntity> { new() { ID = 1, Name = "TechSupply Corp" } });
         mockCommonRepo.Setup(r => r.GetStatuses()).Returns(new List<StatusEntity> { new() { Code = "S01", Description = "Active" } });

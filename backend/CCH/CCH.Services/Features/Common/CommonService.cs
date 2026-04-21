@@ -17,9 +17,8 @@ public class CommonService : ICommonService
         _repository = repository;
     }
 
-    public IEnumerable<KeyValuePairDto> GetCustomers() => 
-        _repository.GetCustomers().Select(c => new KeyValuePairDto { Key = c.ID.ToString(), Value = c.Name });
-
+    public IEnumerable<KeyValuePairDto> GetCustomers() =>
+        _repository.GetCustomers().Select(c => new KeyValuePairDto { Key = c.HQID.ToString(), Value = c.CustomerName ?? "Unknown" });
     public IEnumerable<KeyValuePairDto> GetCountries() => 
         _repository.GetCountries().Select(c => new KeyValuePairDto { Key = c.Code, Value = c.Name });
 

@@ -1,4 +1,6 @@
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using System.Text.Json;
 
 namespace CCH.Services.Repositories;
@@ -31,12 +33,7 @@ public static class DataSeeder
         new() { ID = 17, CustomerID = 101, PartNo = "PART-017", CountryID = 3, PartDescription = "Fuel Injector Nozzle", Division = "Mechanical", SupplierID = 1, HTSCode = "8409.91.4000", DutyRate = 0.0m, Status = "S01", UpdatedBy = "Admin", UpdatedDate = DateTime.Now.AddHours(-1) }
     };
 
-    private static readonly List<CustomerEntity> DefaultCustomers = new() {
-        new() { ID = 101, Name = "Customer A" },
-        new() { ID = 102, Name = "Customer B" },
-        new() { ID = 103, Name = "Customer C" }
-    };
-
+    /* INTERNAL-AI-20260421: DefaultCustomers and SeedCustomers removed as data migrated to ReSm SQL Database. */
     /* INTERNAL-AI-20260421: DefaultCountries and SeedCountries removed as data migrated to ReSm SQL Database. */
     /* INTERNAL-AI-20260421: DefaultStatuses and SeedStatuses removed as data migrated to Code Constants (PartStatusConstants). */
 
@@ -53,7 +50,6 @@ public static class DataSeeder
     };
 
     public static void SeedParts(string path) => EnsureInitialized(path, DefaultParts);
-    public static void SeedCustomers(string path) => EnsureInitialized(path, DefaultCustomers);
     public static void SeedSuppliers(string path) => EnsureInitialized(path, DefaultSuppliers);
 
     public static void SeedPartSnapshots(string path)

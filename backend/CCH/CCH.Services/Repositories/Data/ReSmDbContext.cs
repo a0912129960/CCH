@@ -1,4 +1,6 @@
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using Microsoft.EntityFrameworkCore;
 
 namespace CCH.Services.Repositories.Data;
@@ -23,6 +25,11 @@ public class ReSmDbContext : DbContext
     /// Gets or sets SMCountries. (繁體中文) 國家主檔。
     /// </summary>
     public virtual DbSet<SmCountry> SmCountry { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMCustomers. (繁體中文) 客戶主檔。
+    /// </summary>
+    public virtual DbSet<SmCustomer> SmCustomer { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)

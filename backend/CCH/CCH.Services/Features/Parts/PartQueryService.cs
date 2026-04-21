@@ -1,4 +1,6 @@
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Features.Parts.Interfaces;
 using CCH.Core.Interfaces;
@@ -97,7 +99,7 @@ public class PartQueryService : IPartQueryService
 
     private PartListItemDto MapToListItemDto(PartEntity entity, string? role = null)
     {
-        var customerName = _commonRepository.GetCustomers().FirstOrDefault(c => c.ID == entity.CustomerID)?.Name ?? "Unknown";
+        var customerName = _commonRepository.GetCustomers().FirstOrDefault(c => c.HQID == entity.CustomerID)?.CustomerName ?? "Unknown";
         var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
         var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.Name ?? "Unknown";
 

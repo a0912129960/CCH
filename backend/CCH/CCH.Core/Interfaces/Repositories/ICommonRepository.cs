@@ -1,4 +1,6 @@
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 
 namespace CCH.Core.Interfaces.Repositories;
 
@@ -8,7 +10,7 @@ namespace CCH.Core.Interfaces.Repositories;
 /// </summary>
 public interface ICommonRepository
 {
-    IEnumerable<CustomerEntity> GetCustomers();
+    IEnumerable<SmCustomer> GetCustomers();
     IEnumerable<CountryEntity> GetCountries();
     IEnumerable<StatusEntity> GetStatuses();
     IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null);

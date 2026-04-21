@@ -1,4 +1,6 @@
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Features.Parts.Interfaces;
 using CCH.Core.Interfaces;
@@ -37,7 +39,7 @@ public class PartExcelService : IPartExcelService
         var entities = _repository.SearchParts(customerId, status, partNo, supplierId);
         var ctx = GetLookupContext();
         var sMap = _commonRepository.GetStatuses().ToDictionary(s => s.Code, s => s.Description);
-        var cMap = _commonRepository.GetCustomers().ToDictionary(c => c.ID, c => c.Name);
+        var cMap = _commonRepository.GetCustomers().ToDictionary(c => c.HQID, c => c.CustomerName ?? "Unknown");
         
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Parts");

@@ -1,8 +1,10 @@
+using System.Text.Json;
 using CCH.Core.Constants;
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories.Data;
-using System.Text.Json;
 
 namespace CCH.Services.Repositories;
 
@@ -14,10 +16,8 @@ namespace CCH.Services.Repositories;
 public class CommonRepository : ICommonRepository
 {
     private readonly ReSmDbContext _resmContext;
-    private readonly string _customersPath;
     private readonly string _suppliersPath;
 
-    private List<CustomerEntity> _customers = new();
     private List<SupplierEntity> _suppliers = new();
 
     private static readonly object _fileLock = new();
@@ -33,11 +33,9 @@ public class CommonRepository : ICommonRepository
         var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
         var dataDir = Path.Combine(projectRootDir, "Data");
 
-        _customersPath = Path.Combine(dataDir, "customers.json");
         _suppliersPath = Path.Combine(dataDir, "suppliers.json");
 
-        // Seed remaining JSON data (國家與狀態已移除)
-        DataSeeder.SeedCustomers(_customersPath);
+        // Seed remaining JSON data (國家、客戶與狀態已移除)
         DataSeeder.SeedSuppliers(_suppliersPath);
 
         LoadJsonData();
@@ -49,8 +47,6 @@ public class CommonRepository : ICommonRepository
         {
             try
             {
-                if (File.Exists(_customersPath))
-                    _customers = JsonSerializer.Deserialize<List<CustomerEntity>>(File.ReadAllText(_customersPath)) ?? new();
                 if (File.Exists(_suppliersPath))
                     _suppliers = JsonSerializer.Deserialize<List<SupplierEntity>>(File.ReadAllText(_suppliersPath)) ?? new();
             }
@@ -59,7 +55,8 @@ public class CommonRepository : ICommonRepository
     }
 
     /// <inheritdoc/>
-    public IEnumerable<CustomerEntity> GetCustomers() => _customers;
+    public IEnumerable<SmCustomer> GetCustomers() => 
+        _resmContext.SmCustomer.Where(x => x.Status == "Active").AsEnumerable().ToList();
 
     /// <inheritdoc/>
     public IEnumerable<CountryEntity> GetCountries() => 
