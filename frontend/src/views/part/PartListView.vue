@@ -139,14 +139,14 @@ const toggleRow = (id: number) => {
 };
 
 const isAllExpanded = computed(() => (
-  parts.value.length > 0 && parts.value.every(p => expandedRows.value.has(p.id))
+  (parts.value?.length || 0) > 0 && parts.value.every(p => expandedRows.value.has(p.id))
 ));
 
 const toggleAll = () => {
   if (isAllExpanded.value) {
     expandedRows.value.clear();
   } else {
-    parts.value.forEach(p => expandedRows.value.add(p.id));
+    parts.value?.forEach(p => expandedRows.value.add(p.id));
   }
 };
 
@@ -211,6 +211,12 @@ onMounted(async () => {
     ]);
     customers.value = customersData;
     statusOptions.value = statusesData;
+
+    /* Update by Gemini AI on 2026-04-21: Default to first customer if no customer selected. (若未選擇客戶，則預設為第一個客戶。) */
+    if (customers.value.length > 0 && !customerFilter.value) {
+      customerFilter.value = customers.value[0].key;
+    }
+
     await reloadSuppliers();
     
     if (!isEmployee.value && userCustomerId.value) {
@@ -263,11 +269,11 @@ watch([currentPage, pageSize], fetchParts);
                   id="customer-select"
                   v-model="customerFilter" 
                   class="form-select-el customer-select" 
-                  clearable 
                   filterable 
                   :placeholder="$t('employee.customer_select')"
                 >
-                  <el-option :label="$t('employee.all_customers')" value="" />
+                  <!-- Update by Gemini AI on 2026-04-21: Removed 'All Customers' option and defaulted to first customer as per request. (移除「所有客戶」選項並按要求預設為第一個客戶。) -->
+                  <!-- <el-option :label="$t('employee.all_customers')" value="" /> -->
                   <el-option v-for="c in customers" :key="c.key" :label="c.value" :value="c.key" />
                 </el-select>
               </div>

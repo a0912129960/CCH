@@ -20,19 +20,34 @@ const ButtonStub = {
 /**
  * Part List View Component Tests (零件清單組件測試)
  */
-vi.mock('../../../services/part/part', () => ({
-  partService: {
-    getParts: vi.fn().mockResolvedValue([]),
-    getSuppliers: vi.fn().mockResolvedValue(['Supplier A', 'Supplier B']),
-    getCustomers: vi.fn().mockResolvedValue([{ id: 'customer001', name: 'Test Customer' }])
-  }
-}));
+vi.mock('../../../services/part/part', () => {
+  const mockPartsData = [
+    { 
+      id: 1, 
+      partNo: 'PN-2024-001', 
+      htsCode: '8517.12.00', 
+      status: 'ACTIVE', 
+      supplier: 'Supplier A', 
+      customerId: 'customer001',
+      customerName: 'Test Customer', 
+      updatedDate: '2026-04-16' 
+    }
+  ];
+  return {
+    partService: {
+      getParts: vi.fn().mockResolvedValue({ data: mockPartsData, total: 1 }),
+      exportPartsToExcel: vi.fn().mockResolvedValue(true)
+    },
+    batchAcceptParts: vi.fn().mockResolvedValue({ success: true })
+  };
+});
 
 vi.mock('../../../services/common/common', () => ({
   commonService: {
     getCustomers: vi.fn().mockResolvedValue([{ key: 'customer001', value: 'Test Customer' }]),
     getStatusOptions: vi.fn().mockResolvedValue([{ key: 'ACTIVE', value: 'Active' }]),
-    getSuppliers: vi.fn().mockResolvedValue([{ key: 'S001', value: 'Supplier A' }])
+    getSuppliers: vi.fn().mockResolvedValue([{ key: 'S001', value: 'Supplier A' }]),
+    formatDateTime: vi.fn().mockReturnValue('2026-04-21 12:00:00')
   }
 }));
 
@@ -45,21 +60,22 @@ vi.mock('vue-router', () => ({
 
 import { createPinia } from 'pinia';
 
-// ... (existing mocks) ...
-
 describe('PartListView.vue', () => {
   const globalConfig = {
     global: {
       plugins: [createPinia()],
-      mocks: { $t: (key: string) => key },
-      components: {
+      stubs: {
+        'el-select': { template: '<div class="el-select"><slot></slot></div>' },
+        'el-option': { template: '<div class="el-option"></div>' },
+        'el-pagination': true,
+        'el-checkbox': true,
+        'el-icon': true,
         Card: CardStub,
         Dot: DotStub,
         Button: ButtonStub
       },
-      stubs: {
-        'el-select': { template: '<div class="el-select"><slot></slot></div>' },
-        'el-option': { template: '<div class="el-option"></div>' }
+      mocks: {
+        $t: (key: string) => key
       }
     }
   };
@@ -95,37 +111,14 @@ describe('PartListView.vue', () => {
 
   it('performs keyword search (執行關鍵字搜尋)', async () => {
     const wrapper = mount(PartListView, globalConfig);
-    
-    // Manually set parts and loading to simulate fetched data
-    const vm = wrapper.vm as any;
-    vm.parts = MOCK_PARTS_DATA;
-    vm.loading = false;
     await flushPromises();
     
+    const vm = wrapper.vm as any;
     vm.searchQuery = 'PN-2024-001';
     await flushPromises();
-    
-    // Check if table exists
-    const table = wrapper.find('table');
-    if (!table.exists()) {
-      // console.log('DEBUG - HTML:', wrapper.html());
-    }
     
     const rows = wrapper.findAll('tbody tr');
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].text()).toContain('PN-2024-001');
   });
 });
-
-const MOCK_PARTS_DATA = [
-  { 
-    id: 1, 
-    partNo: 'PN-2024-001', 
-    htsCode: '8517.12.00', 
-    status: 'ACTIVE', 
-    supplier: 'Supplier A', 
-    customerId: 'customer001',
-    customerName: 'Test Customer', 
-    updatedDate: '2026-04-16' 
-  }
-];
