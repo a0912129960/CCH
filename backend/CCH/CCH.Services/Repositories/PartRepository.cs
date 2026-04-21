@@ -1,23 +1,21 @@
 using CCH.Core.Entities;
 using CCH.Core.Interfaces.Repositories;
+using CCH.Services.Repositories.Data;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace CCH.Services.Repositories;
 
 /// <summary>
-/// Implementation of Part repository using JSON file persistence.
-/// (繁體中文) 使用 JSON 檔案持久化的零件倉儲實作。
+/// Implementation of Part repository using SQL Database (CCHParts) for Parts 
+/// and JSON files for History/Snapshots.
+/// (繁體中文) 零件倉儲實作：零件使用 SQL 資料庫 (CCHParts)，歷程與快照維持使用 JSON 檔案。
 /// </summary>
 public class PartRepository : IPartRepository
 {
-    private readonly string _partsPath;
-    // INTERNAL-AI-20260420: Added history file path for real timeline storage.
-    // (INTERNAL-AI-20260420: 新增歷程檔案路徑以支援真實時間軸儲存。)
+    private readonly CspDbContext _context;
     private readonly string _historyPath;
-    // INTERNAL-AI-20260420: Added snapshot file path for field-level change history.
-    // (INTERNAL-AI-20260420: 新增快照檔案路徑以支援欄位級別的變更歷程。)
     private readonly string _snapshotPath;
-    private List<PartEntity> _parts = new();
     private List<PartHistoryEntity> _history = new();
     private List<PartSnapshotEntity> _snapshots = new();
     private static readonly object _fileLock = new();
@@ -26,210 +24,133 @@ public class PartRepository : IPartRepository
     /// Initializes a new instance of PartRepository.
     /// (繁體中文) 初始化 PartRepository 的新執行個體。
     /// </summary>
-    /// <param name="overridePath">Optional path to override default storage. (選用的覆寫儲存路徑)</param>
-    public PartRepository(string? overridePath = null)
+    public PartRepository(CspDbContext context)
     {
-        if (!string.IsNullOrEmpty(overridePath))
-        {
-            _partsPath = overridePath;
-            _historyPath = overridePath.Replace("parts.json", "part_history.json");
-            _snapshotPath = overridePath.Replace("parts.json", "part_snapshots.json");
-        }
-        else
-        {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
-            var dataDir = Path.Combine(projectRootDir, "Data");
-            _partsPath = Path.Combine(dataDir, "parts.json");
-            _historyPath = Path.Combine(dataDir, "part_history.json");
-            _snapshotPath = Path.Combine(dataDir, "part_snapshots.json");
-        }
+        _context = context;
+        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
+        var dataDir = Path.Combine(projectRootDir, "Data");
+        _historyPath = Path.Combine(dataDir, "part_history.json");
+        _snapshotPath = Path.Combine(dataDir, "part_snapshots.json");
 
-        // Initialize only what this repository needs (僅初始化此倉儲需要的資料)
-        DataSeeder.SeedParts(_partsPath);
-        DataSeeder.SeedPartHistory(_historyPath);
-        DataSeeder.SeedPartSnapshots(_snapshotPath);
-        LoadData();
+        LoadJsonData();
     }
 
-
-    private void LoadData()
+    private void LoadJsonData()
     {
         lock (_fileLock)
         {
-            try
-            {
-                if (File.Exists(_partsPath))
-                {
-                    var json = File.ReadAllText(_partsPath);
-                    _parts = JsonSerializer.Deserialize<List<PartEntity>>(json) ?? new();
-                }
-                // INTERNAL-AI-20260420: Load history alongside parts. (一併載入歷程資料。)
-                if (File.Exists(_historyPath))
-                {
-                    var hJson = File.ReadAllText(_historyPath);
-                    _history = JsonSerializer.Deserialize<List<PartHistoryEntity>>(hJson) ?? new();
-                }
-                // INTERNAL-AI-20260420: Load field-level snapshots. (一併載入欄位快照資料。)
-                if (File.Exists(_snapshotPath))
-                {
-                    var sJson = File.ReadAllText(_snapshotPath);
-                    _snapshots = JsonSerializer.Deserialize<List<PartSnapshotEntity>>(sJson) ?? new();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading parts data: {ex.Message}");
-                _parts = new();
-                _history = new();
-            }
-        }
-    }
-
-    private void SaveData()
-    {
-        lock (_fileLock)
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                File.WriteAllText(_partsPath, JsonSerializer.Serialize(_parts, options));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving parts data: {ex.Message}");
-            }
-        }
-    }
-
-    // INTERNAL-AI-20260420: Persist history to its own JSON file. (歷程資料持久化至獨立 JSON 檔案。)
-    private void SaveHistory()
-    {
-        lock (_fileLock)
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                File.WriteAllText(_historyPath, JsonSerializer.Serialize(_history, options));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving history data: {ex.Message}");
-            }
-        }
-    }
-
-    // INTERNAL-AI-20260420: Persist snapshots to their own JSON file. (快照資料持久化至獨立 JSON 檔案。)
-    private void SaveSnapshots()
-    {
-        lock (_fileLock)
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                File.WriteAllText(_snapshotPath, JsonSerializer.Serialize(_snapshots, options));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving snapshot data: {ex.Message}");
-            }
+            if (File.Exists(_historyPath))
+                _history = JsonSerializer.Deserialize<List<PartHistoryEntity>>(File.ReadAllText(_historyPath)) ?? new();
+            if (File.Exists(_snapshotPath))
+                _snapshots = JsonSerializer.Deserialize<List<PartSnapshotEntity>>(File.ReadAllText(_snapshotPath)) ?? new();
         }
     }
 
     /// <inheritdoc/>
     public IEnumerable<PartEntity> SearchParts(int? customerId, string? status, string? partNo, int? supplierId)
     {
-        var query = _parts.AsQueryable();
+        var query = _context.CchParts.AsQueryable();
 
-        if (customerId > 0)
-            query = query.Where(p => p.CustomerID == customerId);
-
-        if (!string.IsNullOrEmpty(status))
-            query = query.Where(p => p.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
-
+        if (customerId > 0) query = query.Where(p => p.CustomerID == customerId);
+        if (!string.IsNullOrEmpty(status)) query = query.Where(p => p.Status == status);
         if (!string.IsNullOrEmpty(partNo))
         {
-            var normalizedSearch = partNo.Replace(".", "");
-            query = query.Where(p => p.PartNo.Contains(partNo, StringComparison.OrdinalIgnoreCase) || 
-                                     p.HTSCode.Replace(".", "").Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase));
+            var norm = partNo.Replace(".", "");
+            query = query.Where(p => p.PartNo!.Contains(partNo) || p.HTSCode!.Replace(".", "").Contains(norm));
         }
+        if (supplierId > 0) query = query.Where(p => p.SupplierID == supplierId);
 
-        if (supplierId > 0)
-            query = query.Where(p => p.SupplierID == supplierId);
-
-        return query.ToList();
+        return query.AsEnumerable().Select(MapToDomain).ToList();
     }
 
     /// <inheritdoc/>
-    public PartEntity? GetPartByNo(int customerId, string partNo) =>
-        _parts.FirstOrDefault(p => p.CustomerID == customerId && p.PartNo.Equals(partNo, StringComparison.OrdinalIgnoreCase));
-
-    /// <inheritdoc/>
-    public PartEntity? GetPartById(int partId) => _parts.FirstOrDefault(p => p.ID == partId);
-
-    /// <inheritdoc/>
-    public int CreatePart(PartEntity entity)
+    public PartEntity? GetPartByNo(int customerId, string partNo)
     {
-        lock (_fileLock)
-        {
-            entity.ID = _parts.Any() ? _parts.Max(p => p.ID) + 1 : 1;
-            entity.CreatedDate = DateTime.Now;
-            entity.UpdatedDate = DateTime.Now;
-            _parts.Add(entity);
-            SaveData();
-            return entity.ID;
-        }
+        var entity = _context.CchParts.FirstOrDefault(p => p.CustomerID == customerId && p.PartNo == partNo);
+        return entity == null ? null : MapToDomain(entity);
     }
 
     /// <inheritdoc/>
-    public void UpdatePart(PartEntity entity)
+    public PartEntity? GetPartById(int partId)
     {
-        lock (_fileLock)
+        var entity = _context.CchParts.FirstOrDefault(p => p.ID == partId);
+        return entity == null ? null : MapToDomain(entity);
+    }
+
+    /// <inheritdoc/>
+    public int CreatePart(PartEntity domain)
+    {
+        var dbEntity = new CchParts();
+        UpdateDbEntityFromDomain(domain, dbEntity);
+        dbEntity.CreatedDate = DateTime.Now;
+        dbEntity.UpdatedDate = DateTime.Now;
+        
+        _context.CchParts.Add(dbEntity);
+        _context.SaveChanges();
+        return dbEntity.ID;
+    }
+
+    /// <inheritdoc/>
+    public void UpdatePart(PartEntity domain)
+    {
+        var existing = _context.CchParts.FirstOrDefault(p => p.ID == domain.ID);
+        if (existing != null)
         {
-            var existing = _parts.FirstOrDefault(p => p.ID == entity.ID);
-            if (existing != null)
-            {
-                // Update basic properties (更新基本屬性)
-                existing.PartNo = entity.PartNo;
-                existing.PartDescription = entity.PartDescription;
-                existing.Division = entity.Division;
-                existing.SupplierID = entity.SupplierID;
-                existing.HTSCode = entity.HTSCode;
-                existing.DutyRate = entity.DutyRate;
-                existing.AddHTSCode1 = entity.AddHTSCode1;
-                existing.AddDutyRate1 = entity.AddDutyRate1;
-                existing.AddHTSCode2 = entity.AddHTSCode2;
-                existing.AddDutyRate2 = entity.AddDutyRate2;
-                existing.AddHTSCode3 = entity.AddHTSCode3;
-                existing.AddDutyRate3 = entity.AddDutyRate3;
-                existing.AddHTSCode4 = entity.AddHTSCode4;
-                existing.AddDutyRate4 = entity.AddDutyRate4;
-                existing.Remark = entity.Remark;
-                existing.UpdatedBy = entity.UpdatedBy;
-                existing.UpdatedDate = DateTime.Now;
-                
-                SaveData();
-            }
+            UpdateDbEntityFromDomain(domain, existing);
+            existing.UpdatedDate = DateTime.Now;
+            _context.SaveChanges();
         }
     }
 
     /// <inheritdoc/>
     public void UpdateStatus(int partId, string status)
     {
-        lock (_fileLock)
+        var existing = _context.CchParts.FirstOrDefault(p => p.ID == partId);
+        if (existing != null)
         {
-            var existing = _parts.FirstOrDefault(p => p.ID == partId);
-            if (existing != null)
-            {
-                existing.Status = status;
-                existing.UpdatedDate = DateTime.Now;
-                SaveData();
-            }
+            existing.Status = status;
+            existing.UpdatedDate = DateTime.Now;
+            _context.SaveChanges();
         }
     }
 
-    // INTERNAL-AI-20260420: History methods for real timeline support.
-    // (INTERNAL-AI-20260420: 支援真實時間軸的歷程方法。)
+    /// <summary>
+    /// Maps a Database Entity to a Domain Entity. (SSoT)
+    /// (繁體中文) 將資料庫實體映射至領域實體 (單一事實來源)。
+    /// </summary>
+    private PartEntity MapToDomain(CchParts e) => new()
+    {
+        ID = e.ID, CustomerID = e.CustomerID ?? 0, PartNo = e.PartNo ?? "",
+        CountryID = e.CountryID ?? 0, PartDescription = e.PartDescription ?? "",
+        Division = e.Division ?? "", SupplierID = e.SupplierID ?? 0,
+        HTSCode = e.HTSCode ?? "", DutyRate = e.DutyRate ?? 0,
+        AddHTSCode1 = e.AddHTSCode1, AddDutyRate1 = e.AddDutyRate1,
+        AddHTSCode2 = e.AddHTSCode2, AddDutyRate2 = e.AddDutyRate2,
+        AddHTSCode3 = e.AddHTSCode3, AddDutyRate3 = e.AddDutyRate3,
+        AddHTSCode4 = e.AddHTSCode4, AddDutyRate4 = e.AddDutyRate4,
+        Remark = e.Remark ?? "", Status = e.Status ?? "",
+        CreatedBy = e.CreatedBy ?? "", UpdatedBy = e.UpdatedBy ?? "",
+        CreatedDate = e.CreatedDate ?? DateTime.MinValue,
+        UpdatedDate = e.UpdatedDate ?? DateTime.MinValue
+    };
+
+    /// <summary>
+    /// Updates a Database Entity from a Domain Entity. (SSoT)
+    /// (繁體中文) 從領域實體更新資料庫實體 (單一事實來源)。
+    /// </summary>
+    private void UpdateDbEntityFromDomain(PartEntity d, CchParts e)
+    {
+        e.CustomerID = d.CustomerID; e.PartNo = d.PartNo; e.CountryID = d.CountryID;
+        e.PartDescription = d.PartDescription; e.Division = d.Division;
+        e.SupplierID = d.SupplierID; e.HTSCode = d.HTSCode; e.DutyRate = d.DutyRate;
+        e.AddHTSCode1 = d.AddHTSCode1; e.AddDutyRate1 = d.AddDutyRate1;
+        e.AddHTSCode2 = d.AddHTSCode2; e.AddDutyRate2 = d.AddDutyRate2;
+        e.AddHTSCode3 = d.AddHTSCode3; e.AddDutyRate3 = d.AddDutyRate3;
+        e.AddHTSCode4 = d.AddHTSCode4; e.AddDutyRate4 = d.AddDutyRate4;
+        e.Remark = d.Remark; e.Status = d.Status; e.UpdatedBy = d.UpdatedBy;
+        e.CreatedBy = string.IsNullOrEmpty(e.CreatedBy) ? d.CreatedBy : e.CreatedBy;
+    }
 
     /// <inheritdoc/>
     public void AddHistory(PartHistoryEntity entity)
@@ -238,15 +159,13 @@ public class PartRepository : IPartRepository
         {
             entity.ID = _history.Any() ? _history.Max(h => h.ID) + 1 : 1;
             _history.Add(entity);
-            SaveHistory();
+            File.WriteAllText(_historyPath, JsonSerializer.Serialize(_history, new JsonSerializerOptions { WriteIndented = true }));
         }
     }
 
     /// <inheritdoc/>
     public IEnumerable<PartHistoryEntity> GetHistoryByPartId(int partId) =>
         _history.Where(h => h.PartID == partId).OrderBy(h => h.UpdatedDate).ToList();
-
-    // INTERNAL-AI-20260420: Snapshot CRUD for field-level history. (欄位級別歷程的快照 CRUD。)
 
     /// <inheritdoc/>
     public void AddSnapshot(PartSnapshotEntity entity)
@@ -255,7 +174,7 @@ public class PartRepository : IPartRepository
         {
             entity.ID = _snapshots.Any() ? _snapshots.Max(s => s.ID) + 1 : 1;
             _snapshots.Add(entity);
-            SaveSnapshots();
+            File.WriteAllText(_snapshotPath, JsonSerializer.Serialize(_snapshots, new JsonSerializerOptions { WriteIndented = true }));
         }
     }
 

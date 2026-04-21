@@ -73,7 +73,7 @@ public class CchAuditLogMiddleware
                 CreatedDate = DateTime.Now
             };
 
-            dbContext.Logs.Add(log);
+            dbContext.CchLog.Add(log);
             await dbContext.SaveChangesAsync();
 
             // 5. Copy captured response back to original stream (將擷取的回應複製回原始串流)

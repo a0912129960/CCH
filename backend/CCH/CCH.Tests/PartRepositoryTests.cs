@@ -1,43 +1,49 @@
 using CCH.Core.Entities;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories;
-using Moq;
+using CCH.Services.Repositories.Data;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CCH.Tests;
 
 /// <summary>
-/// Tests for PartRepository implementation with JSON file persistence.
-/// (繁體中文) 具備 JSON 檔案持久化的 PartRepository 實作測試。
+/// Tests for PartRepository implementation with Database persistence.
+/// (繁體中文) 具備資料庫持久化的 PartRepository 實作測試。
 /// </summary>
 public class PartRepositoryTests : IDisposable
 {
-    private readonly string _testBaseDir;
-    private readonly string _testPartsPath;
+    private readonly CspDbContext _context;
     private readonly PartRepository _repository;
 
     public PartRepositoryTests()
     {
-        _testBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"Test_Repo_{Guid.NewGuid()}");
-        Directory.CreateDirectory(_testBaseDir);
-        _testPartsPath = Path.Combine(_testBaseDir, "parts.json");
+        var options = new DbContextOptionsBuilder<CspDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        
+        _context = new CspDbContext(options);
+        SeedData();
+        _repository = new PartRepository(_context);
+    }
 
-        // Repository now only handles file I/O and depends on DataSeeder for initialization
-        _repository = new PartRepository(_testPartsPath);
+    private void SeedData()
+    {
+        _context.CchParts.Add(new CchParts { ID = 1, CustomerID = 101, PartNo = "PART-001", Status = "S01", HTSCode = "111.22.33" });
+        _context.CchParts.Add(new CchParts { ID = 3, CustomerID = 101, PartNo = "PART-003", Status = "S01", HTSCode = "9032.89.6085" });
+        _context.SaveChanges();
     }
 
     public void Dispose()
     {
-        if (Directory.Exists(_testBaseDir))
-        {
-            Directory.Delete(_testBaseDir, true);
-        }
+        _context.Database.EnsureDeleted();
+        _context.Dispose();
     }
 
     [Fact]
     public void SearchParts_FilterByCustomer_ReturnsEntityWithCorrectId()
     {
-        // Act - Search for Customer ID 101 (Initial seed data includes this)
+        // Act
         var result = _repository.SearchParts(101, null, null, null);
 
         // Assert
@@ -46,7 +52,7 @@ public class PartRepositoryTests : IDisposable
     }
 
     [Fact]
-    public void CreatePart_IncrementsIdAndPersistsToFile()
+    public void CreatePart_IncrementsIdAndPersistsToDb()
     {
         // Arrange
         var entity = new PartEntity 
@@ -61,10 +67,8 @@ public class PartRepositoryTests : IDisposable
         // Act
         var newId = _repository.CreatePart(entity);
         
-        // Assert - Verify in a fresh instance to ensure file persistence
-        var secondRepo = new PartRepository(_testPartsPath);
-        var part = secondRepo.GetPartById(newId);
-        
+        // Assert
+        var part = _repository.GetPartById(newId);
         Assert.NotNull(part);
         Assert.Equal(newId, part.ID);
         Assert.Equal("NEW-PART-001", part.PartNo);

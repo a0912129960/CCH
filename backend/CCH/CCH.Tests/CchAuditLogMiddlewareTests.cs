@@ -20,7 +20,7 @@ public class CchAuditLogMiddlewareTests
         // Arrange
         var mockLogs = new Mock<DbSet<CchLog>>();
         var mockDbContext = new Mock<CspDbContext>(new DbContextOptions<CspDbContext>());
-        mockDbContext.Setup(m => m.Logs).Returns(mockLogs.Object);
+        mockDbContext.Setup(m => m.CchLog).Returns(mockLogs.Object);
 
         var mockUserContext = new Mock<IUserContext>();
         mockUserContext.Setup(u => u.UserId).Returns("test-user");
@@ -68,7 +68,7 @@ public class CchAuditLogMiddlewareTests
         // Arrange
         var mockLogs = new Mock<DbSet<CchLog>>();
         var mockDbContext = new Mock<CspDbContext>(new DbContextOptions<CspDbContext>());
-        mockDbContext.Setup(m => m.Logs).Returns(mockLogs.Object);
+        mockDbContext.Setup(m => m.CchLog).Returns(mockLogs.Object);
 
         var mockUserContext = new Mock<IUserContext>();
 
