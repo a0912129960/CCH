@@ -31,6 +31,31 @@ public class ReSmDbContext : DbContext
     /// </summary>
     public virtual DbSet<SmCustomer> SmCustomer { get; set; }
 
+    /// <summary>
+    /// Gets or sets SMCustomerContacts. (繁體中文) 客戶聯絡人。
+    /// </summary>
+    public virtual DbSet<SmCustomerContact> SmCustomerContact { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMUsers. (繁體中文) 使用者主檔。
+    /// </summary>
+    public virtual DbSet<SmUser> SmUser { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMStations. (繁體中文) 站點主檔。
+    /// </summary>
+    public virtual DbSet<SmStation> SmStation { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMBusinessEntities. (繁體中文) 業務實體。
+    /// </summary>
+    public virtual DbSet<SmBusinessEntity> SmBusinessEntity { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMGroupRoleSettings. (繁體中文) 群組角色設定。
+    /// </summary>
+    public virtual DbSet<SmgroupRoleSetting> SmgroupRoleSetting { get; set; }
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

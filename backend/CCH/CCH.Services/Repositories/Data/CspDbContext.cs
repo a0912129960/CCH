@@ -46,5 +46,20 @@ public class CspDbContext : DbContext
     /// </summary>
     public virtual DbSet<CpProject> CpProject { get; set; }
 
+    /// <summary>
+    /// Gets or sets project contactors. (繁體中文) 專案聯絡人。
+    /// </summary>
+    public virtual DbSet<CpprojectContactor> CpprojectContactor { get; set; }
+
+    /// <summary>
+    /// Gets or sets project contactor passwords. (繁體中文) 專案聯絡人密碼。
+    /// </summary>
+    public virtual DbSet<CpprojectContactorPassword> CpprojectContactorPassword { get; set; }
+
+    /// <summary>
+    /// Gets or sets project contactor rights. (繁體中文) 專案聯絡人權限。
+    /// </summary>
+    public virtual DbSet<CpprojectContactorRight> CpprojectContactorRight { get; set; }
+
 
 }
