@@ -18,6 +18,7 @@ export const useTabStore = defineStore('tabs', () => {
   
   const openTabs = ref<TabItem[]>([]);
   const activeTabPath = ref('');
+  const refreshKeys = ref<Record<string, number>>({});
 
   // Add a new tab (新增標籤)
   function addTab(tab: TabItem) {
@@ -27,8 +28,18 @@ export const useTabStore = defineStore('tabs', () => {
     const exists = openTabs.value.find(t => t.path === tab.path);
     if (!exists) {
       openTabs.value.push(tab);
+      refreshKeys.value[tab.path] = 0;
     }
     activeTabPath.value = tab.path;
+  }
+
+  // Refresh a specific tab (重新整理特定標籤)
+  function refreshTab(path: string) {
+    if (refreshKeys.value[path] !== undefined) {
+      refreshKeys.value[path]++;
+    } else {
+      refreshKeys.value[path] = 1;
+    }
   }
 
   // Remove a tab (關閉標籤)
@@ -38,6 +49,7 @@ export const useTabStore = defineStore('tabs', () => {
 
     const isRemovingActive = activeTabPath.value === targetPath;
     openTabs.value.splice(index, 1);
+    delete refreshKeys.value[targetPath];
 
     // If no tabs left, redirect to home (如果沒有標籤剩餘，導向首頁)
     if (openTabs.value.length === 0) {
@@ -81,5 +93,5 @@ export const useTabStore = defineStore('tabs', () => {
     }
   }
 
-  return { openTabs, activeTabPath, addTab, removeTab, closeAll, closeOthers, updateTabTitle };
+  return { openTabs, activeTabPath, refreshKeys, addTab, removeTab, refreshTab, closeAll, closeOthers, updateTabTitle };
 });

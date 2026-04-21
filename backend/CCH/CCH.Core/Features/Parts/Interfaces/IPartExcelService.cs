@@ -9,6 +9,18 @@ namespace CCH.Core.Features.Parts.Interfaces;
 public interface IPartExcelService
 {
     byte[] ExportParts(int? customerId, string? status, string? partNo, int? supplierId);
-    List<BulkUploadResponseDto> BulkUpload(Stream fileStream);
+
+    /// <summary>
+    /// Previews the bulk upload from an Excel stream.
+    /// (繁體中文) 從 Excel 串流預覽批次上傳。
+    /// </summary>
+    BulkUploadPreviewDto PreviewBulkUpload(int customerId, Stream fileStream);
+
+    /// <summary>
+    /// Confirms and persists the uploaded parts.
+    /// (繁體中文) 確認並持久化上傳的零件。
+    /// </summary>
+    BulkUploadConfirmResponseDto ConfirmBulkUpload(List<PartDto> parts);
+
     byte[] GetUploadTemplate();
 }

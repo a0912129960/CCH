@@ -45,10 +45,9 @@ public class CchParts
     public string? Division { get; set; }
 
     /// <summary>
-    /// Supplier Name
+    /// Supplier ID
     /// </summary>
-    [MaxLength(100)]
-    public string? Supplier { get; set; }
+    public int? SupplierID { get; set; }
 
     /// <summary>
     /// HTS Code
