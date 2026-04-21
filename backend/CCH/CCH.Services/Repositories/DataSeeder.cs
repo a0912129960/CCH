@@ -38,14 +38,7 @@ public static class DataSeeder
     };
 
     /* INTERNAL-AI-20260421: DefaultCountries and SeedCountries removed as data migrated to ReSm SQL Database. */
-
-    private static readonly List<StatusEntity> DefaultStatuses = new() {
-        new() { Code = "S01", Description = "Unknow" },
-        new() { Code = "S02", Description = "Pending Dimerco Review" },
-        new() { Code = "S03", Description = "Pending Customer Review" },
-        new() { Code = "S04", Description = "Reviewed" },
-        new() { Code = "S05", Description = "Flagged" }
-    };
+    /* INTERNAL-AI-20260421: DefaultStatuses and SeedStatuses removed as data migrated to Code Constants (PartStatusConstants). */
 
     private static readonly List<SupplierEntity> DefaultSuppliers = new() {
         new() { ID = 1, CustomerID = 101, Name = "TechSupply Corp" },
@@ -61,7 +54,6 @@ public static class DataSeeder
 
     public static void SeedParts(string path) => EnsureInitialized(path, DefaultParts);
     public static void SeedCustomers(string path) => EnsureInitialized(path, DefaultCustomers);
-    public static void SeedStatuses(string path) => EnsureInitialized(path, DefaultStatuses);
     public static void SeedSuppliers(string path) => EnsureInitialized(path, DefaultSuppliers);
 
     public static void SeedPartSnapshots(string path)
@@ -71,7 +63,7 @@ public static class DataSeeder
         var snapshots = DefaultParts.Select((p, idx) => new PartSnapshotEntity
         {
             ID = idx + 1, PartID = p.ID, PartNo = p.PartNo,
-            Country = "Unknown", // Country names now resolved from DB at runtime
+            Country = "Unknown", // Country names resolved from DB at runtime
             Division = p.Division, Supplier = supplierMap.GetValueOrDefault(p.SupplierID, "Unknown"),
             PartDesc = p.PartDescription, HtsCode = p.HTSCode, Rate = p.DutyRate,
             Remark = p.Remark, UpdatedBy = p.UpdatedBy, UpdatedDate = p.UpdatedDate

@@ -1,3 +1,4 @@
+using CCH.Core.Constants;
 using CCH.Core.Entities;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories.Data;
@@ -6,19 +7,17 @@ using System.Text.Json;
 namespace CCH.Services.Repositories;
 
 /// <summary>
-/// Implementation of Common repository using SQL Database for Countries (ReSm) 
-/// and JSON files for other common entities.
-/// (繁體中文) 共用倉儲實作：國家資料使用 SQL 資料庫 (ReSm)，其餘實體維持使用 JSON 檔案。
+/// Implementation of Common repository using SQL Database for Countries (ReSm),
+/// Code Constants for Statuses, and JSON files for other common entities.
+/// (繁體中文) 共用倉儲實作：國家資料使用 SQL 資料庫 (ReSm)，狀態使用程式碼常數，其餘實體維持使用 JSON 檔案。
 /// </summary>
 public class CommonRepository : ICommonRepository
 {
     private readonly ReSmDbContext _resmContext;
     private readonly string _customersPath;
-    private readonly string _statusesPath;
     private readonly string _suppliersPath;
 
     private List<CustomerEntity> _customers = new();
-    private List<StatusEntity> _statuses = new();
     private List<SupplierEntity> _suppliers = new();
 
     private static readonly object _fileLock = new();
@@ -35,12 +34,10 @@ public class CommonRepository : ICommonRepository
         var dataDir = Path.Combine(projectRootDir, "Data");
 
         _customersPath = Path.Combine(dataDir, "customers.json");
-        _statusesPath = Path.Combine(dataDir, "statuses.json");
         _suppliersPath = Path.Combine(dataDir, "suppliers.json");
 
-        // Seed remaining JSON data (國家部分已移除，改由 DB 提供)
+        // Seed remaining JSON data (國家與狀態已移除)
         DataSeeder.SeedCustomers(_customersPath);
-        DataSeeder.SeedStatuses(_statusesPath);
         DataSeeder.SeedSuppliers(_suppliersPath);
 
         LoadJsonData();
@@ -52,9 +49,10 @@ public class CommonRepository : ICommonRepository
         {
             try
             {
-                _customers = JsonSerializer.Deserialize<List<CustomerEntity>>(File.ReadAllText(_customersPath)) ?? new();
-                _statuses = JsonSerializer.Deserialize<List<StatusEntity>>(File.ReadAllText(_statusesPath)) ?? new();
-                _suppliers = JsonSerializer.Deserialize<List<SupplierEntity>>(File.ReadAllText(_suppliersPath)) ?? new();
+                if (File.Exists(_customersPath))
+                    _customers = JsonSerializer.Deserialize<List<CustomerEntity>>(File.ReadAllText(_customersPath)) ?? new();
+                if (File.Exists(_suppliersPath))
+                    _suppliers = JsonSerializer.Deserialize<List<SupplierEntity>>(File.ReadAllText(_suppliersPath)) ?? new();
             }
             catch (Exception ex) { Console.WriteLine($"Error loading common JSON data: {ex.Message}"); }
         }
@@ -65,10 +63,10 @@ public class CommonRepository : ICommonRepository
 
     /// <inheritdoc/>
     public IEnumerable<CountryEntity> GetCountries() => 
-        _resmContext.SmCountry.Where(x=>x.Status == "Active").AsEnumerable().Select(MapToCountryDomain).ToList();
+        _resmContext.SmCountry.Where(x => x.Status == "Active").AsEnumerable().Select(MapToCountryDomain).ToList();
 
     /// <inheritdoc/>
-    public IEnumerable<StatusEntity> GetStatuses() => _statuses;
+    public IEnumerable<StatusEntity> GetStatuses() => PartStatusConstants.AllStatuses;
 
     /// <inheritdoc/>
     public IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null) => 
