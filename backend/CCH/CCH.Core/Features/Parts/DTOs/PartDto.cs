@@ -52,6 +52,9 @@ public class PartDetailResponseDto
     // INTERNAL-AI-20260416: Added Status so the frontend can show the status badge.
     // (INTERNAL-AI-20260416: 新增 Status 供前端顯示狀態標籤使用。)
     public string Status { get; set; } = string.Empty;
+    // INTERNAL-AI-20260420: Added SlaStatus so the frontend can apply SLA-based badge color.
+    // (INTERNAL-AI-20260420: 新增 SlaStatus 供前端以 SLA 狀態套用標籤顏色。)
+    public string SlaStatus { get; set; } = "green";
     public PartDetailDto Before { get; set; } = new();
     public PartDetailDto Modified { get; set; } = new();
 }
@@ -60,9 +63,12 @@ public class PartDetailResponseDto
 /// Request body for returning a part to the customer.
 /// (繁體中文) 退回零件給客戶的請求主體。
 /// </summary>
+// INTERNAL-AI-20260420: Renamed Reason → ReturnReason to match API spec body field { returnReason }.
+// (INTERNAL-AI-20260420: 依 API 規格將欄位名稱由 Reason 改為 ReturnReason。)
+/* public string Reason { get; set; } = string.Empty; */
 public class ReturnReasonDto
 {
-    public string Reason { get; set; } = string.Empty;
+    public string ReturnReason { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -112,9 +118,11 @@ public class PartSaveRequest
     [Required(ErrorMessage = "Division is required. / 部門為必填。")]
     public string Division { get; set; } = string.Empty;
 
-    // Supplier is required (供應商為必填)
-    [Required(ErrorMessage = "SupplierId is required. / 供應商為必填。")]
-    public int? SupplierId { get; set; }
+    // INTERNAL-AI-20260420: Changed from SupplierId (int FK) to Supplier (free-text string) per spec.
+    // (INTERNAL-AI-20260420: 依規格將供應商由整數 FK 改為自由輸入字串。)
+    /* [Required(ErrorMessage = "SupplierId is required. / 供應商為必填。")]
+    public int? SupplierId { get; set; } */
+    public string Supplier { get; set; } = string.Empty;
 
     // Part Description is required (零件描述為必填)
     [Required(ErrorMessage = "PartDesc is required. / 零件描述為必填。")]

@@ -1,5 +1,6 @@
 using CCH.Core.Entities;
 using System.Text.Json;
+// INTERNAL-AI-20260420: PartHistoryEntity used for SeedPartHistory. (PartHistoryEntity 用於種子歷程。)
 
 namespace CCH.Services.Repositories;
 
@@ -69,6 +70,86 @@ public static class DataSeeder
     public static void SeedCountries(string path) => EnsureInitialized(path, DefaultCountries);
     public static void SeedStatuses(string path) => EnsureInitialized(path, DefaultStatuses);
     public static void SeedSuppliers(string path) => EnsureInitialized(path, DefaultSuppliers);
+
+    // INTERNAL-AI-20260420: Generate one initial data snapshot per seeded part for the /history endpoint.
+    // (INTERNAL-AI-20260420: 為每筆種子零件產生一筆初始資料快照，供 /history API 使用。)
+    public static void SeedPartSnapshots(string path)
+    {
+        if (File.Exists(path)) return;
+
+        // Resolve lookup maps from seeded reference data (從參考資料解析查找對應)
+        var countryMap = DefaultCountries.ToDictionary(c => c.ID, c => c.Name);
+        var supplierMap = DefaultSuppliers.ToDictionary(s => s.ID, s => s.Name);
+
+        var snapshots = DefaultParts.Select((p, idx) => new PartSnapshotEntity
+        {
+            ID = idx + 1,
+            PartID = p.ID,
+            PartNo = p.PartNo,
+            Country = countryMap.GetValueOrDefault(p.CountryID, "Unknown"),
+            Division = p.Division,
+            Supplier = supplierMap.GetValueOrDefault(p.SupplierID, "Unknown"),
+            PartDesc = p.PartDescription,
+            HtsCode = p.HTSCode,
+            Rate = p.DutyRate,
+            HtsCode1 = p.AddHTSCode1,
+            Rate1 = p.AddDutyRate1,
+            HtsCode2 = p.AddHTSCode2,
+            Rate2 = p.AddDutyRate2,
+            HtsCode3 = p.AddHTSCode3,
+            Rate3 = p.AddDutyRate3,
+            HtsCode4 = p.AddHTSCode4,
+            Rate4 = p.AddDutyRate4,
+            Remark = p.Remark,
+            UpdatedBy = p.UpdatedBy,
+            UpdatedDate = p.UpdatedDate
+        }).ToList();
+
+        EnsureInitialized(path, snapshots);
+    }
+
+    // INTERNAL-AI-20260420: Generate realistic history entries for each seeded part based on its status.
+    // (INTERNAL-AI-20260420: 依各零件的狀態為每筆種子零件產生合理的歷程記錄。)
+    public static void SeedPartHistory(string path)
+    {
+        if (File.Exists(path)) return;
+
+        var history = new List<PartHistoryEntity>();
+        int id = 1;
+
+        foreach (var part in DefaultParts)
+        {
+            // All parts start as Created (所有零件起點皆為建立)
+            var baseDate = part.UpdatedDate;
+
+            history.Add(new() { ID = id++, PartID = part.ID, Action = "Created", UpdatedBy = "System", UpdatedDate = baseDate.AddDays(-7), Remark = "" });
+
+            if (part.Status == "S01") continue; // S01 → only Created entry (S01 僅有建立記錄)
+
+            history.Add(new() { ID = id++, PartID = part.ID, Action = "Submitted to Dimerco", UpdatedBy = "Customer", UpdatedDate = baseDate.AddDays(-5), Remark = "" });
+
+            if (part.Status == "S02") continue; // S02 → waiting for review (S02 等待審核中)
+
+            if (part.Status == "S03")
+            {
+                history.Add(new() { ID = id++, PartID = part.ID, Action = "Returned to Customer", UpdatedBy = "DCB", UpdatedDate = part.UpdatedDate, Remark = "Please provide additional documentation." });
+                continue;
+            }
+
+            if (part.Status == "S04")
+            {
+                history.Add(new() { ID = id++, PartID = part.ID, Action = "Accepted", UpdatedBy = "DCB", UpdatedDate = part.UpdatedDate, Remark = "" });
+                continue;
+            }
+
+            if (part.Status == "Inactive")
+            {
+                history.Add(new() { ID = id++, PartID = part.ID, Action = "Inactivated", UpdatedBy = "Customer", UpdatedDate = part.UpdatedDate, Remark = "" });
+            }
+        }
+
+        EnsureInitialized(path, history);
+    }
 
     private static readonly object _fileLock = new();
 
