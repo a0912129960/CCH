@@ -1,6 +1,7 @@
 using CCH.Core.Entities;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories.Data;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace CCH.Services.Repositories;
@@ -19,10 +20,6 @@ public class PartRepository : IPartRepository
     private List<PartSnapshotEntity> _snapshots = new();
     private static readonly object _fileLock = new();
 
-    /// <summary>
-    /// Initializes a new instance of PartRepository.
-    /// (繁體中文) 初始化 PartRepository 的新執行個體。
-    /// </summary>
     public PartRepository(CspDbContext context)
     {
         _context = context;
@@ -31,7 +28,6 @@ public class PartRepository : IPartRepository
         var dataDir = Path.Combine(projectRootDir, "Data");
         _historyPath = Path.Combine(dataDir, "part_history.json");
         _snapshotPath = Path.Combine(dataDir, "part_snapshots.json");
-
         LoadJsonData();
     }
 
@@ -50,7 +46,6 @@ public class PartRepository : IPartRepository
     public IEnumerable<PartEntity> SearchParts(int? customerId, string? status, string? partNo, int? supplierId)
     {
         var query = _context.CchParts.AsQueryable();
-
         if (customerId > 0) query = query.Where(p => p.CustomerID == customerId);
         if (!string.IsNullOrEmpty(status)) query = query.Where(p => p.Status == status);
         if (!string.IsNullOrEmpty(partNo))
@@ -59,7 +54,6 @@ public class PartRepository : IPartRepository
             query = query.Where(p => p.PartNo!.Contains(partNo) || p.HTSCode!.Replace(".", "").Contains(norm));
         }
         if (supplierId > 0) query = query.Where(p => p.SupplierID == supplierId);
-
         return query.AsEnumerable().Select(MapToDomain).ToList();
     }
 
@@ -84,7 +78,6 @@ public class PartRepository : IPartRepository
         UpdateDbEntityFromDomain(domain, dbEntity);
         dbEntity.CreatedDate = DateTime.Now;
         dbEntity.UpdatedDate = DateTime.Now;
-        
         _context.CchParts.Add(dbEntity);
         _context.SaveChanges();
         return dbEntity.ID;
@@ -114,10 +107,20 @@ public class PartRepository : IPartRepository
         }
     }
 
-    /// <summary>
-    /// Maps a Database Entity to a Domain Entity. (SSoT)
-    /// (繁體中文) 將資料庫實體映射至領域實體 (單一事實來源)。
-    /// </summary>
+    /// <inheritdoc/>
+    public void BatchUpdateStatus(IEnumerable<int> partIds, string status, string updatedBy)
+    {
+        var entities = _context.CchParts.Where(p => partIds.Contains(p.ID)).ToList();
+        var now = DateTime.Now;
+        foreach (var entity in entities)
+        {
+            entity.Status = status;
+            entity.UpdatedBy = updatedBy;
+            entity.UpdatedDate = now;
+        }
+        _context.SaveChanges();
+    }
+
     private PartEntity MapToDomain(CchParts e) => new()
     {
         ID = e.ID, CustomerID = e.CustomerID ?? 0, PartNo = e.PartNo ?? "",
@@ -134,10 +137,6 @@ public class PartRepository : IPartRepository
         UpdatedDate = e.UpdatedDate ?? DateTime.MinValue
     };
 
-    /// <summary>
-    /// Updates a Database Entity from a Domain Entity. (SSoT)
-    /// (繁體中文) 從領域實體更新資料庫實體 (單一事實來源)。
-    /// </summary>
     private void UpdateDbEntityFromDomain(PartEntity d, CchParts e)
     {
         e.CustomerID = d.CustomerID; e.PartNo = d.PartNo; e.CountryID = d.CountryID;
@@ -158,6 +157,21 @@ public class PartRepository : IPartRepository
         {
             entity.ID = _history.Any() ? _history.Max(h => h.ID) + 1 : 1;
             _history.Add(entity);
+            File.WriteAllText(_historyPath, JsonSerializer.Serialize(_history, new JsonSerializerOptions { WriteIndented = true }));
+        }
+    }
+
+    /// <inheritdoc/>
+    public void AddHistoryBatch(IEnumerable<PartHistoryEntity> entities)
+    {
+        lock (_fileLock)
+        {
+            var nextId = _history.Any() ? _history.Max(h => h.ID) + 1 : 1;
+            foreach (var entity in entities)
+            {
+                entity.ID = nextId++;
+                _history.Add(entity);
+            }
             File.WriteAllText(_historyPath, JsonSerializer.Serialize(_history, new JsonSerializerOptions { WriteIndented = true }));
         }
     }

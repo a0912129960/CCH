@@ -56,6 +56,12 @@ public interface IPartRepository
     /// <param name="status">New status code. (新狀態代碼)</param>
     void UpdateStatus(int partId, string status);
 
+    /// <summary>
+    /// Updates status for multiple parts in a single operation.
+    /// (繁體中文) 在單次操作中更新多個零件的狀態。
+    /// </summary>
+    void BatchUpdateStatus(IEnumerable<int> partIds, string status, string updatedBy);
+
     // INTERNAL-AI-20260420: Milestone history methods — action event log for the timeline.
     // (INTERNAL-AI-20260420: 里程碑歷程方法 — 動作事件日誌，用於時間軸顯示。)
 
@@ -64,6 +70,12 @@ public interface IPartRepository
     /// (繁體中文) 為零件新增一筆里程碑事件（狀態變更）。
     /// </summary>
     void AddHistory(PartHistoryEntity entity);
+
+    /// <summary>
+    /// Adds multiple history entries in a single operation.
+    /// (繁體中文) 在單次操作中新增多筆歷程記錄。
+    /// </summary>
+    void AddHistoryBatch(IEnumerable<PartHistoryEntity> entities);
 
     /// <summary>
     /// Returns all milestone events for a part, stored in insertion order (caller sorts as needed).
