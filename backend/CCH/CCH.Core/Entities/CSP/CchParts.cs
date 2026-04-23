@@ -17,9 +17,11 @@ public class CchParts
     public int ID { get; set; }
 
     /// <summary>
-    /// Customer ID
+    /// Project ID (Logical mapping to CPProject.Id, physical column remains CustomerID)
+    /// (繁體中文) 專案 ID (邏輯上對應 CPProject.Id，實體欄位仍為 CustomerID)
     /// </summary>
-    public int? CustomerID { get; set; }
+    [Column("CustomerID")]
+    public int? ProjectID { get; set; }
 
     /// <summary>
     /// Part Number

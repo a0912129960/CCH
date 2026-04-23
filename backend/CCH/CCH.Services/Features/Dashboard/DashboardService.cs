@@ -20,9 +20,9 @@ public class DashboardService : IDashboardService
     }
 
     /// <inheritdoc/>
-    public PartStatusSummaryDto GetStatusSummary(string? customerId)
+    public PartStatusSummaryDto GetStatusSummary(string? projectId)
     {
-        var parsedId = TryParseCustomerId(customerId);
+        var parsedId = TryParseProjectId(projectId);
         var all = _partRepository.SearchParts(parsedId, null, null, null).ToList();
 
         return new PartStatusSummaryDto
@@ -36,18 +36,18 @@ public class DashboardService : IDashboardService
     }
 
     /// <inheritdoc/>
-    public IEnumerable<PendingReviewDto> GetPendingReviews(string? customerId, string? role = null)
+    public IEnumerable<PendingReviewDto> GetPendingReviews(string? projectId, string? role = null)
     {
-        var parsedId = TryParseCustomerId(customerId);
+        var parsedId = TryParseProjectId(projectId);
 
         // Determine which statuses to query based on the caller's role.
         var statuses = string.Equals(role, "CUSTOMER", StringComparison.OrdinalIgnoreCase)
             ? new[] { "S01", "S03" }
             : new[] { "S02" };
 
-        // Build customer lookup map using SmCustomer properties (HQID, CustomerName)
-        var customerMap = _commonRepository.GetCustomers()
-            .ToDictionary(c => c.HQID, c => c.CustomerName ?? string.Empty);
+        // Build project lookup map using CpProject properties (Id, ProjectName)
+        var projectMap = _commonRepository.GetProjects()
+            .ToDictionary(p => p.Id, p => p.ProjectName ?? string.Empty);
 
         // Query each status separately and merge
         var parts = statuses
@@ -57,7 +57,7 @@ public class DashboardService : IDashboardService
         return parts.Select(p => new PendingReviewDto
         {
             Id          = p.ID,
-            Customer    = customerMap.GetValueOrDefault(p.CustomerID ?? 0, string.Empty),
+            Project     = projectMap.GetValueOrDefault(p.ProjectID ?? 0, string.Empty),
             PartNo      = p.PartNo ?? string.Empty,
             PartDesc    = p.PartDescription ?? string.Empty,
             HtsCode     = p.HTSCode ?? string.Empty,
@@ -107,9 +107,9 @@ public class DashboardService : IDashboardService
     }
 
     /// <summary>
-    /// Parses a string customerId to int?. Returns null for null / "all" / non-numeric values.
-    /// (將字串 customerId 解析為 int?；null / "all" / 非數字一律回傳 null。)
+    /// Parses a string projectId to int?. Returns null for null / "all" / non-numeric values.
+    /// (將字串 projectId 解析為 int?；null / "all" / 非數字一律回傳 null。)
     /// </summary>
-    private static int? TryParseCustomerId(string? customerId) =>
-        int.TryParse(customerId, out var id) ? id : null;
+    private static int? TryParseProjectId(string? projectId) =>
+        int.TryParse(projectId, out var id) ? id : null;
 }

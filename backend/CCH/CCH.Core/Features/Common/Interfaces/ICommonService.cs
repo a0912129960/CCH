@@ -8,10 +8,10 @@ namespace CCH.Core.Features.Common.Interfaces;
 /// </summary>
 public interface ICommonService
 {
-    IEnumerable<KeyValuePairDto> GetCustomers();
+    IEnumerable<KeyValuePairDto> GetProjects();
     IEnumerable<KeyValuePairDto> GetCountries();
     IEnumerable<KeyValuePairDto> GetStatus();
-    IEnumerable<KeyValuePairDto> GetSuppliers(string? customerId);
+    IEnumerable<KeyValuePairDto> GetSuppliers(string? projectId);
 
     /// <summary>
     /// Gets the full name of a user by ID.

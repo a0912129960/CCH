@@ -22,13 +22,17 @@ vi.mock('../../../services/dashboard/dashboard', () => ({
 
 vi.mock('../../../services/common/common', () => ({
   commonService: {
-    getCustomers: vi.fn().mockResolvedValue([{ key: 'customer001', value: 'Test Customer' }])
+    getProjects: vi.fn().mockResolvedValue([{ key: 'project001', value: 'Test Project' }])
   }
 }));
 
 // Mock I18n handled by setup.ts
 const $t = (key: string) => key;
 
+/**
+ * Employee Dashboard View Tests (員工儀表板測試)
+ * Update on 2026-04-23: Refactored from Customer to Project focus.
+ */
 describe('EmployeeView.vue', () => {
   const globalConfig = {
     global: {
@@ -63,28 +67,28 @@ describe('EmployeeView.vue', () => {
     expect(summarySpy).toHaveBeenCalledWith('all');
   });
 
-  it('filters by customer when selection changes', async () => {
+  it('filters by project when selection changes (切換專案選擇時進行過濾)', async () => {
     const summarySpy = vi.spyOn(dashboardService, 'getStatusSummary');
     const wrapper = mount(EmployeeView, globalConfig);
     await flushPromises();
     
-    // Simulate customer selection change
+    // Simulate project selection change
     const select = wrapper.find('select');
-    await select.setValue('customer001');
+    await select.setValue('project001');
     await flushPromises();
     
-    expect(summarySpy).toHaveBeenCalledWith('customer001');
+    expect(summarySpy).toHaveBeenCalledWith('project001');
   });
 
   it('displays pending review parts in a table', async () => {
     vi.spyOn(dashboardService, 'getPendingReviewParts').mockResolvedValue([
-      { id: 1, customer: 'Test Corp', partNo: 'PN-TEST-001', partDesc: 'Desc', htsCode: '1234.56.78', status: 'S02', updatedBy: 'user', updatedDate: '2026-04-10T10:00:00', slaStatus: 'green' } as any
+      { id: 1, project: 'Test Project Corp', partNo: 'PN-TEST-001', partDesc: 'Desc', htsCode: '1234.56.78', status: 'S02', updatedBy: 'user', updatedDate: '2026-04-10T10:00:00', slaStatus: 'green' } as any
     ]);
 
     const wrapper = mount(EmployeeView, globalConfig);
     await flushPromises();
 
     expect(wrapper.find('tbody tr td:nth-child(2)').text()).toBe('PN-TEST-001');
-    expect(wrapper.find('tbody tr td:first-child').text()).toBe('Test Corp');
+    expect(wrapper.find('tbody tr td:first-child').text()).toBe('Test Project Corp');
   });
 });

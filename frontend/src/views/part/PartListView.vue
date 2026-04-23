@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { authService, UserRole } from '@src/services/auth/auth';
 import { partService, batchAcceptParts, type PartListItem } from '@src/services/part/part';
-import { commonService, type CustomerOption, type StatusOption, type SupplierOption } from '@src/services/common/common';
+import { commonService, type ProjectOption, type StatusOption, type SupplierOption } from '@src/services/common/common';
 
 // Internal components
 import Card from '@src/components/common/Card.vue';
@@ -21,10 +21,10 @@ const router = useRouter();
 const { t } = useI18n();
 
 const role = computed(() => authService.state.role);
-const authCustomerId = computed(() => authService.state.customerId);
+const authProjectId = computed(() => authService.state.projectId);
 const isEmployee = computed(() => role.value && role.value !== UserRole.CUSTOMER);
 const isDcb = computed(() => role.value === UserRole.DCB);
-const userCustomerId = computed(() => authCustomerId.value);
+const userProjectId = computed(() => authProjectId.value);
 
 /**
  * Update by Gemini AI on 2026-04-18: Fixed reactive role detection to ensure feature visibility (Batch Accept) and verified export function. (修復響應式角色偵測以確保功能顯示，並驗證匯出功能。)
@@ -33,7 +33,7 @@ const userCustomerId = computed(() => authCustomerId.value);
 // State Management
 const parts = ref<PartListItem[]>([]);
 const suppliers = ref<SupplierOption[]>([]);
-const customers = ref<CustomerOption[]>([]);
+const projects = ref<ProjectOption[]>([]);
 const statusOptions = ref<StatusOption[]>([]);
 const loading = ref(true);
 
@@ -44,7 +44,7 @@ const totalCount = ref(0);
 const searchQuery = ref('');
 const statusFilter = ref<string>((route.query.status as string) || '');
 const supplierFilter = ref('');
-const customerFilter = ref<string>((route.query.customerId as string) || (isEmployee.value ? '' : userCustomerId.value || ''));
+const projectFilter = ref<string>((route.query.projectId as string) || (isEmployee.value ? '' : userProjectId.value || ''));
 
 const expandedRows = ref<Set<number>>(new Set());
 
@@ -154,7 +154,7 @@ const exportToExcel = async () => {
   try {
     ElMessage.success('Exporting to Excel... (正在匯出至 Excel...)');
     await partService.exportPartsToExcel({
-      customerId: customerFilter.value || undefined,
+      projectId: projectFilter.value || undefined,
       status: statusFilter.value || undefined,
       partNo: searchQuery.value || undefined,
       supplier: supplierFilter.value || undefined
@@ -175,8 +175,8 @@ const getSLAColor = (slaStatus?: string) => {
  * Data Fetching Logic
  */
 const reloadSuppliers = async () => {
-  const cId = customerFilter.value || 'all';
-  suppliers.value = await commonService.getSuppliers(cId);
+  const pId = projectFilter.value || 'all';
+  suppliers.value = await commonService.getSuppliers(pId);
   if (supplierFilter.value && !suppliers.value.some(s => s.key === supplierFilter.value)) {
     supplierFilter.value = '';
   }
@@ -186,7 +186,7 @@ const fetchParts = async () => {
   loading.value = true;
   try {
     const result = await partService.getParts({
-      customerId: customerFilter.value || undefined,
+      projectId: projectFilter.value || undefined,
       status: statusFilter.value || undefined,
       partNo: searchQuery.value || undefined,
       supplier: supplierFilter.value || undefined,
@@ -205,22 +205,22 @@ const fetchParts = async () => {
 // Lifecycle & Watchers
 onMounted(async () => {
   try {
-    const [customersData, statusesData] = await Promise.all([
-      commonService.getCustomers(),
+    const [projectsData, statusesData] = await Promise.all([
+      commonService.getProjects(),
       commonService.getStatusOptions()
     ]);
-    customers.value = customersData;
+    projects.value = projectsData;
     statusOptions.value = statusesData;
 
-    /* Update by Gemini AI on 2026-04-21: Default to first customer if no customer selected. (若未選擇客戶，則預設為第一個客戶。) */
-    if (customers.value.length > 0 && !customerFilter.value) {
-      customerFilter.value = customers.value[0].key;
+    /* Update by Gemini AI on 2026-04-21: Default to first project if no project selected. (若未選擇專案，則預設為第一個專案。) */
+    if (projects.value.length > 0 && !projectFilter.value) {
+      projectFilter.value = projects.value[0].key;
     }
 
     await reloadSuppliers();
     
-    if (!isEmployee.value && userCustomerId.value) {
-      customerFilter.value = userCustomerId.value;
+    if (!isEmployee.value && userProjectId.value) {
+      projectFilter.value = userProjectId.value;
     }
     await fetchParts();
   } catch {
@@ -230,7 +230,7 @@ onMounted(async () => {
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-watch(customerFilter, async () => {
+watch(projectFilter, async () => {
   currentPage.value = 1;
   await reloadSuppliers();
   await fetchParts();
@@ -264,17 +264,15 @@ watch([currentPage, pageSize], fetchParts);
           <div class="filter-item search">
             <div class="search-input-group">
               <div class="group-item">
-                <label for="customer-select">{{ $t('employee.customer_select') }}</label>
+                <label for="project-select">{{ $t('employee.project_select') }}</label>
                 <el-select 
-                  id="customer-select"
-                  v-model="customerFilter" 
-                  class="form-select-el customer-select" 
+                  id="project-select"
+                  v-model="projectFilter" 
+                  class="form-select-el project-select" 
                   filterable 
-                  :placeholder="$t('employee.customer_select')"
+                  :placeholder="$t('employee.project_select')"
                 >
-                  <!-- Update by Gemini AI on 2026-04-21: Removed 'All Customers' option and defaulted to first customer as per request. (移除「所有客戶」選項並按要求預設為第一個客戶。) -->
-                  <!-- <el-option :label="$t('employee.all_customers')" value="" /> -->
-                  <el-option v-for="c in customers" :key="c.key" :label="c.value" :value="c.key" />
+                  <el-option v-for="p in projects" :key="p.key" :label="p.value" :value="p.key" />
                 </el-select>
               </div>
               <div class="group-item">
@@ -372,7 +370,7 @@ watch([currentPage, pageSize], fetchParts);
                   @change="toggleAllSelection"
                 />
               </th>
-              <th scope="col" class="col-customer">{{ $t('common.customer') }}</th>
+              <th scope="col" class="col-customer">{{ $t('common.project') }}</th>
               <th scope="col" class="col-partno">{{ $t('customer.part_no') }}</th>
               <th scope="col" class="col-desc">{{ $t('part_list.description') }}</th>
               <th scope="col" class="col-country">{{ $t('part_detail.country') }}</th>
@@ -408,7 +406,7 @@ watch([currentPage, pageSize], fetchParts);
                     @change="toggleSelection(part.id)"
                   />
                 </td>
-                <td class="col-customer" :title="part.customer">{{ part.customer || '-' }}</td>
+                <td class="col-customer" :title="part.project">{{ part.project || '-' }}</td>
                 <td class="col-partno" :title="part.partNo">{{ part.partNo }}</td>
                 <td class="col-desc" :title="part.partDesc">{{ part.partDesc || '-' }}</td>
                 <td class="col-country" :title="part.country">{{ part.country || '-' }}</td>
@@ -726,3 +724,4 @@ code {
 
 .ml-4 { margin-left: 1rem; }
 </style>
+

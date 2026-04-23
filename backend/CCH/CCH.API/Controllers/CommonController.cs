@@ -23,12 +23,12 @@ public class CommonController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves a list of all customers.
-    /// (繁體中文) 取得所有客戶清單。
+    /// Retrieves a list of all projects.
+    /// (繁體中文) 取得所有專案清單。
     /// </summary>
-    [HttpGet("customers")]
-    public ActionResult<ApiResponse<IEnumerable<KeyValuePairDto>>> GetCustomers() =>
-        Ok(ApiResponse<IEnumerable<KeyValuePairDto>>.SuccessResponse(_commonService.GetCustomers()));
+    [HttpGet("projects")]
+    public ActionResult<ApiResponse<IEnumerable<KeyValuePairDto>>> GetProjects() =>
+        Ok(ApiResponse<IEnumerable<KeyValuePairDto>>.SuccessResponse(_commonService.GetProjects()));
 
     /// <summary>
     /// Retrieves a list of all countries.
@@ -39,12 +39,12 @@ public class CommonController : ControllerBase
         Ok(ApiResponse<IEnumerable<KeyValuePairDto>>.SuccessResponse(_commonService.GetCountries()));
 
     /// <summary>
-    /// Retrieves a list of suppliers, optionally filtered by customer.
-    /// (繁體中文) 取得供應商清單（可選擇依客戶過濾）。
+    /// Retrieves a list of suppliers, optionally filtered by project.
+    /// (繁體中文) 取得供應商清單（可選擇依專案過濾）。
     /// </summary>
     [HttpGet("suppliers")]
-    public ActionResult<ApiResponse<IEnumerable<KeyValuePairDto>>> GetSuppliers([FromQuery] string? customerId) =>
-        Ok(ApiResponse<IEnumerable<KeyValuePairDto>>.SuccessResponse(_commonService.GetSuppliers(customerId)));
+    public ActionResult<ApiResponse<IEnumerable<KeyValuePairDto>>> GetSuppliers([FromQuery] string? projectId) =>
+        Ok(ApiResponse<IEnumerable<KeyValuePairDto>>.SuccessResponse(_commonService.GetSuppliers(projectId)));
 
     /// <summary>
     /// Retrieves a list of all part statuses.

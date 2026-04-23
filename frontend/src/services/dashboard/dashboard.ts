@@ -41,7 +41,7 @@ export interface PartStatusSummaryApiResponse {
  */
 export interface PendingReviewItem {
   id: number;
-  customer: string;
+  project: string;
   partNo: string;
   partDesc: string;
   htsCode: string;
@@ -73,12 +73,10 @@ const getStatusColor = (status: PartStatus): string => {
     [PartStatus.UNKNOWN]: '#909399',
     [PartStatus.PENDING_CUSTOMER]: '#E6A23C',
     [PartStatus.PENDING_REVIEW]: '#409EFF',
-    [PartStatus.RETURNED]: '#F56C6C',
     [PartStatus.ACTIVE]: '#67C23A',
-    [PartStatus.FLAGGED]: '#E6A23C',
-    [PartStatus.SUPERSEDED]: '#909399'
+    [PartStatus.FLAGGED]: '#E6A23C'
   };
-  return colors[status];
+  return colors[status] || '#909399';
 };
 
 /**
@@ -109,12 +107,12 @@ export const dashboardService = {
    * Response: { success, message, data: [{ s01, s02, s03, s04, s05 }] }
    * Falls back to MOCK_PARTS counts if the API call fails.
    * (從真實 API 取得各狀態零件數量摘要；API 失敗時 fallback 至 mock 資料。)
-   * @param {string} [customerId] - Customer filter; "all" or omit for all customers.
+   * @param {string} [projectId] - Customer filter; "all" or omit for all customers.
    */
-  async getStatusSummary(customerId?: string): Promise<StatusCount[]> {
+  async getStatusSummary(projectId?: string): Promise<StatusCount[]> {
     try {
       const params: Record<string, string> = {};
-      if (customerId && customerId !== 'all') params.customerId = customerId;
+      if (projectId && projectId !== 'all') params.projectId = projectId;
 
       const response = await api.get<PartStatusSummaryApiResponse>(
         '/dashboard/part-status-summary',
@@ -146,8 +144,8 @@ export const dashboardService = {
       [PartStatus.ACTIVE]: 0,
       [PartStatus.FLAGGED]: 0
     };
-    const filteredParts = customerId && customerId !== 'all'
-      ? MOCK_PARTS.filter(p => p.customerId === customerId)
+    const filteredParts = projectId && projectId !== 'all'
+      ? MOCK_PARTS.filter(p => p.projectId === projectId)
       : MOCK_PARTS;
     filteredParts.forEach(part => {
       if (part.status in counts) counts[part.status]++;
@@ -163,14 +161,14 @@ export const dashboardService = {
   /**
    * Get SLA countdown items (獲取 SLA 倒數項目)
    * Derived from parts that require attention.
-   * @param {string} [customerId] - Filter by customer (按客戶篩選)
+   * @param {string} [projectId] - Filter by customer (按客戶篩選)
    */
-  async getSLAItems(customerId?: string): Promise<SLAItem[]> {
+  async getSLAItems(projectId?: string): Promise<SLAItem[]> {
     const now = new Date();
     
     // Filter parts by customer if provided (如果有提供則按客戶篩選)
-    const baseParts = customerId && customerId !== 'all' 
-      ? MOCK_PARTS.filter(p => p.customerId === customerId)
+    const baseParts = projectId && projectId !== 'all' 
+      ? MOCK_PARTS.filter(p => p.projectId === projectId)
       : MOCK_PARTS;
 
     // Filter parts that are PENDING_CUSTOMER or RETURNED (篩選待處理項目)
@@ -196,13 +194,13 @@ export const dashboardService = {
    * Falls back to empty array on error.
    * role = "CUSTOMER" → backend returns S01 + S03; omit / other → S02.
    * (從真實 API 取得待審核零件清單；API 失敗時回傳空陣列。)
-   * @param {string} [customerId] - Customer filter; "all" or omit for all customers.
+   * @param {string} [projectId] - Customer filter; "all" or omit for all customers.
    * @param {string} [role]       - Caller role; "CUSTOMER" for customer portal.
    */
-  async getPendingReviewParts(customerId?: string, role?: string): Promise<PendingReviewItem[]> {
+  async getPendingReviewParts(projectId?: string, role?: string): Promise<PendingReviewItem[]> {
     try {
       const params: Record<string, string> = {};
-      if (customerId && customerId !== 'all') params.customerId = customerId;
+      if (projectId && projectId !== 'all') params.projectId = projectId;
       if (role) params.role = role;
 
       const response = await api.get<PendingReviewApiResponse>(

@@ -31,7 +31,7 @@ public class PartLifecycleService : IPartLifecycleService
     {
         var entity = new CchParts
         {
-            CustomerID = request.CustomerId ?? 101,
+            ProjectID = request.ProjectId ?? 101,
             PartNo = request.PartNo,
             CountryID = request.CountryId ?? 1,
             PartDescription = request.PartDesc,

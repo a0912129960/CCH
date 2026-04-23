@@ -27,7 +27,7 @@ public class PartRepositoryTests
     public void CreatePart_ShouldAddPartToDb()
     {
         // Arrange
-        var part = new CchParts { PartNo = "NEW-1", CustomerID = 1, Status = "S01" };
+        var part = new CchParts { PartNo = "NEW-1", ProjectID = 1, Status = "S01" };
 
         // Act
         var id = _repository.CreatePart(part);
@@ -41,7 +41,7 @@ public class PartRepositoryTests
     public void UpdatePart_ShouldModifyExistingPart()
     {
         // Arrange
-        var part = new CchParts { PartNo = "EXIST-1", CustomerID = 1, Status = "S01" };
+        var part = new CchParts { PartNo = "EXIST-1", ProjectID = 1, Status = "S01" };
         _context.CchParts.Add(part);
         _context.SaveChanges();
 

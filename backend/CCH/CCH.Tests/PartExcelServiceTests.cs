@@ -29,13 +29,13 @@ public class PartExcelServiceTests
     public void ExportParts_ShouldReturnByteArray()
     {
         // Arrange
-        _mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<SmCustomer> { new() { HQID = 1, CustomerName = "Test Cust" } });
+        _mockCommonRepo.Setup(r => r.GetProjects()).Returns(new List<CpProject> { new() { Id = 1, ProjectName = "Test Project" } });
         _mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Test Country" } });
         _mockCommonRepo.Setup(r => r.GetSuppliers(null)).Returns(new List<CchSuppliers> { new() { ID = 1, SupplierName = "Test Supp" } });
         _mockCommonRepo.Setup(r => r.GetStatuses()).Returns(new List<StatusEntity> { new() { Code = "S01", Description = "Draft" } });
 
         _mockRepo.Setup(r => r.SearchParts(It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>()))
-                 .Returns(new List<CchParts> { new() { ID = 1, PartNo = "P1", CustomerID = 1, CountryID = 1, SupplierID = 1, Status = "S01" } });
+                 .Returns(new List<CchParts> { new() { ID = 1, PartNo = "P1", ProjectID = 1, CountryID = 1, SupplierID = 1, Status = "S01" } });
 
         // Act
         var result = _service.ExportParts(null, null, null, null);
@@ -51,8 +51,8 @@ public class PartExcelServiceTests
         // Arrange
         var parts = new List<PartDto>
         {
-            new() { CustomerId = 1, PartNo = "NEW-1", PartDesc = "New", CountryId = 1, SupplierId = 1, Rate = 0.1m },
-            new() { CustomerId = 1, PartNo = "EXIST-1", PartDesc = "Updated", CountryId = 1, SupplierId = 1, Rate = 0.2m }
+            new() { ProjectId = 1, PartNo = "NEW-1", PartDesc = "New", CountryId = 1, SupplierId = 1, Rate = 0.1m },
+            new() { ProjectId = 1, PartNo = "EXIST-1", PartDesc = "Updated", CountryId = 1, SupplierId = 1, Rate = 0.2m }
         };
 
         _mockRepo.Setup(r => r.GetPartByNo(1, "NEW-1")).Returns((CchParts?)null);

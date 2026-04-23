@@ -18,6 +18,8 @@
     "all": "全部",
     "last_updated": "最後更新",
     "supplier": "供應商",
+    "customer": "客戶",
+    "project": "集團/專案",
     "menu": {
       "dashboard": "儀表板",
       "parts": "零件清單"
@@ -40,15 +42,15 @@
     "password_placeholder": "請輸入密碼",
     "error_invalid": "帳號或密碼錯誤。",
     "error_network": "網路不穩定，請稍後再嘗試。",
-    "hint_customer": "客戶 (Customer): customer001 / 888888",
+    "hint_customer": "Customer: toXXXXXXXXXXXXXXXXXXm / Bit@202605",
     "hint_dcb": "DCB: dcb001 / 888888",
     "hint_dimerco": "中菲行 (Dimerco): dimerco001 / 888888"
   },
   "employee": {
     "title": "儀表板",
     "role_name": "Dimerco 員工",
-    "customer_select": "選擇客戶",
-    "all_customers": "所有客戶",
+    "project_select": "選擇集團/專案",
+    "all_projects": "所有集團/專案",
     "status_summary": "零件狀態摘要",
     "pending_audit": "待審核零件",
     "no_pending": "目前無待審核零件",

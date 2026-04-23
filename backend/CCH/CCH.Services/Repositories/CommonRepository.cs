@@ -4,6 +4,8 @@ using CCH.Core.Entities.CSP;
 using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories.Data;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace CCH.Services.Repositories;
 
@@ -28,20 +30,54 @@ public class CommonRepository : ICommonRepository
     }
 
     /// <inheritdoc/>
-    public IEnumerable<SmCustomer> GetCustomers()
+    public IEnumerable<CpProject> GetProjects(string? userId = null, string? role = null)
     {
-        // 1. Get all CustomerIDs from CchParts where Status is not null/whitespace.
-        // (繁體中文) 從 CchParts 取得所有 Status 非 null/空白的 CustomerID。
-        var usedCustomerIds = _cspContext.CchParts
-            .Where(p => !string.IsNullOrWhiteSpace(p.Status))
-            .Select(p => p.CustomerID)
-            .Distinct()
-            .ToList();
+        // Update by AI (2026-04-23): Re-implemented using Raw SQL commands as requested for better consistency with MyDimerco logic
+        // (繁體中文) 由 AI 更新 (2026-04-23)：依要求改用 Raw SQL 指令重新實作，以確保與 MyDimerco 邏輯的一致性
 
-        // 2. Join with active SmCustomers from ReSm database.
-        // (繁體中文) 與 ReSm 資料庫中 Active 的 SmCustomer 關聯。
-        return _resmContext.SmCustomer
-            .Where(c => c.Status == "Active" && usedCustomerIds.Contains(c.HQID))
+        var parameters = new List<SqlParameter>();
+        // Fix: Use SELECT * because EF FromSqlRaw requires all columns defined in the entity to be present in the result set
+        // (繁體中文) 修正：使用 SELECT *，因為 EF FromSqlRaw 要求結果集必須包含實體中定義的所有欄位
+        var sql = "SELECT * FROM CPProject WHERE Status = 'Active'";
+
+        if (!string.IsNullOrEmpty(role))
+        {
+            if (role == "customer" && int.TryParse(userId, out int hqid))
+            {
+                // External User SQL filtering (外部使用者 SQL 過濾)
+                sql += " AND ID IN (SELECT ProjectID FROM CPProjectContactor WHERE ContactorHQID = @hqid)";
+                parameters.Add(new SqlParameter("@hqid", hqid));
+            }
+            else if (role == "dimerco" || role == "dcb")
+            {
+                // Internal User: Fetch SmUser to get HQID and Admin status using SQL
+                // (內部使用者：使用 SQL 取得 SmUser 以獲取 HQID 與管理者狀態)
+                var user = _resmContext.SmUser
+                    .FromSqlRaw("SELECT * FROM SMUser WHERE UserID = @uId", new SqlParameter("@uId", userId ?? ""))
+                    .AsNoTracking()
+                    .FirstOrDefault();
+
+                if (user == null) return Enumerable.Empty<CpProject>();
+
+                if (user.Admin != "Y")
+                {
+                    // Granular filtering SQL using numeric HQID (使用數值 HQID 進行細粒度過濾 SQL)
+                    sql += @" AND ID IN (
+                                SELECT ProjectID 
+                                FROM CPProjectUser 
+                                WHERE OwnerType='Group' 
+                                  AND OwnerID IN (SELECT GroupID FROM rcgroupmemberv2 WHERE UserID = @hqid))";
+                    parameters.Add(new SqlParameter("@hqid", user.HQID));
+                }
+            }
+        }
+
+        sql += " ORDER BY ProjectName ASC";
+
+        // Execute raw SQL on CspDbContext
+        return _cspContext.CpProject
+            .FromSqlRaw(sql, parameters.ToArray())
+            .AsNoTracking()
             .ToList();
     }
 
@@ -53,10 +89,10 @@ public class CommonRepository : ICommonRepository
     public IEnumerable<StatusEntity> GetStatuses() => PartStatusConstants.AllStatuses;
 
     /// <inheritdoc/>
-    public IEnumerable<CchSuppliers> GetSuppliers(int? customerId = null) => 
-        customerId == null 
+    public IEnumerable<CchSuppliers> GetSuppliers(int? projectId = null) => 
+        projectId == null 
             ? _cspContext.CchSuppliers.ToList() 
-            : _cspContext.CchSuppliers.Where(s => s.CustomerID == customerId.Value).ToList();
+            : _cspContext.CchSuppliers.Where(s => s.ProjectID == projectId.Value).ToList();
 
     /// <inheritdoc/>
     public int CreateSupplier(CchSuppliers entity)
@@ -71,18 +107,26 @@ public class CommonRepository : ICommonRepository
     {
         if (string.IsNullOrEmpty(userId)) return string.Empty;
 
-        // 1. Try SmUser by UserID (Internal)
-        var smUser = _resmContext.SmUser.FirstOrDefault(u => u.UserID == userId);
-        if (smUser != null) return smUser.FullName;
+        // 1. Try SmUser by UserID (Internal) - Use Select to avoid loading all columns (使用 Select 避免載入所有欄位)
+        var smUserName = _resmContext.SmUser
+            .Where(u => u.UserID == userId)
+            .Select(u => u.FullName)
+            .FirstOrDefault();
+        
+        if (smUserName != null) return smUserName;
 
         // 2. Try SmCustomerContact by HQID (External)
         if (int.TryParse(userId, out int hqid))
         {
-            var contact = _resmContext.SmCustomerContact.FirstOrDefault(c => c.Hqid == hqid);
-            if (contact != null) return contact.FullName ?? "Unknown";
+            var contactName = _resmContext.SmCustomerContact
+                .Where(c => c.Hqid == hqid)
+                .Select(c => c.FullName)
+                .FirstOrDefault();
+            
+            if (contactName != null) return contactName;
         }
 
-        return userId; // Fallback to original value for legacy data (Admin, etc.)
+        return userId; // Fallback
     }
 
     /// <inheritdoc/>
@@ -93,12 +137,14 @@ public class CommonRepository : ICommonRepository
 
         var result = new Dictionary<string, string>();
 
-        // Fetch all matching internal users
+        // Fetch only ID and FullName for matching internal users (僅抓取必要欄位)
         var smUsers = _resmContext.SmUser
             .Where(u => distinctIds.Contains(u.UserID))
-            .ToDictionary(u => u.UserID, u => u.FullName);
+            .Select(u => new { u.UserID, u.FullName })
+            .ToList()
+            .ToDictionary(u => u.UserID, u => u.FullName ?? "Unknown");
 
-        // Fetch all matching external customers (HQIDs)
+        // Fetch only HQID and FullName for matching external customers (僅抓取必要欄位)
         var hqids = distinctIds
             .Select(id => int.TryParse(id, out int hqid) ? (int?)hqid : null)
             .Where(h => h.HasValue)
@@ -107,6 +153,8 @@ public class CommonRepository : ICommonRepository
 
         var contacts = _resmContext.SmCustomerContact
             .Where(c => hqids.Contains(c.Hqid))
+            .Select(c => new { c.Hqid, c.FullName })
+            .ToList()
             .ToDictionary(c => c.Hqid.ToString(), c => c.FullName ?? "Unknown");
 
         foreach (var id in distinctIds)

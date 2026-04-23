@@ -5,11 +5,17 @@ import Button from '@src/components/common/Button.vue';
 import { partService } from '@src/services/part/part';
 
 // Mock services (模擬服務)
+/**
+ * BulkUploadView Unit Tests (批量上傳頁面單元測試)
+ * Update on 2026-04-23: Refactored from Customer to Project focus.
+ */
 vi.mock('@src/services/part/part', () => ({
   partService: {
-    getCustomers: vi.fn().mockResolvedValue([]),
+    getProjects: vi.fn().mockResolvedValue([]),
     downloadTemplate: vi.fn().mockResolvedValue(undefined),
-    uploadParts: vi.fn()
+    uploadParts: vi.fn(),
+    previewBulkUpload: vi.fn(),
+    confirmBulkUpload: vi.fn()
   },
   ImportResultStatus: {
     NEW: 'NEW',
@@ -23,12 +29,12 @@ vi.mock('@src/services/auth/auth', () => ({
   authService: {
     state: {
       role: 'CUSTOMER',
-      customerId: 'C001'
+      projectId: 'P001'
     }
   },
   UserRole: {
     CUSTOMER: 'CUSTOMER',
-    EMPLOYEE: 'EMPLOYEE'
+    DIMERCO: 'DIMERCO'
   }
 }));
 
@@ -59,7 +65,8 @@ describe('BulkUploadView (批量上傳頁面)', () => {
           'el-progress': true,
           'el-tag': true,
           'el-table': true,
-          'el-table-column': true
+          'el-table-column': true,
+          BulkUploadPreviewTable: true
         },
         mocks: {
           $t: (msg: string) => msg

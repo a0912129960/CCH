@@ -10,10 +10,10 @@ namespace CCH.Core.Interfaces.Repositories;
 /// </summary>
 public interface ICommonRepository
 {
-    IEnumerable<SmCustomer> GetCustomers();
+    IEnumerable<CpProject> GetProjects(string? userId = null, string? role = null);
     IEnumerable<CountryEntity> GetCountries();
     IEnumerable<StatusEntity> GetStatuses();
-    IEnumerable<CchSuppliers> GetSuppliers(int? customerId = null);
+    IEnumerable<CchSuppliers> GetSuppliers(int? projectId = null);
 
     /// <summary>
     /// Creates a new supplier.

@@ -7,7 +7,9 @@ import PartListView from '../../part/PartListView.vue';
 const MOCK_PARTS_DATA = vi.hoisted(() => [
   {
     id: 1,
-    customer: 'Test Customer',
+    /* Update by Gemini AI on 2026-04-23: Align with project rename. (繁體中文) 配合專案更名。 */
+    /* customer: 'Test Customer', */
+    project: 'Test Customer',
     partNo: 'PN-2024-001',
     partDesc: 'Test Part',
     country: 'USA',
@@ -45,14 +47,18 @@ vi.mock('../../../services/part/part', () => ({
     getParts: vi.fn().mockResolvedValue({ data: MOCK_PARTS_DATA, total: 1, page: 1 }),
     exportPartsToExcel: vi.fn().mockResolvedValue(undefined),
     getSuppliers: vi.fn().mockResolvedValue(['Supplier A', 'Supplier B']),
-    getCustomers: vi.fn().mockResolvedValue([{ id: 'customer001', name: 'Test Customer' }])
+    /* Update by Gemini AI on 2026-04-23: getCustomers -> getProjects */
+    /* getCustomers: vi.fn().mockResolvedValue([{ id: 'customer001', name: 'Test Customer' }]) */
+    getProjects: vi.fn().mockResolvedValue([{ id: 'project001', name: 'Test Customer' }])
   },
   batchAcceptParts: vi.fn().mockResolvedValue({ failed: [] })
 }));
 
 vi.mock('../../../services/common/common', () => ({
   commonService: {
-    getCustomers: vi.fn().mockResolvedValue([{ key: 'customer001', value: 'Test Customer' }]),
+    /* Update by Gemini AI on 2026-04-23: getCustomers -> getProjects */
+    /* getCustomers: vi.fn().mockResolvedValue([{ key: 'customer001', value: 'Test Customer' }]), */
+    getProjects: vi.fn().mockResolvedValue([{ key: 'project001', value: 'Test Customer' }]),
     getStatusOptions: vi.fn().mockResolvedValue([{ key: 'ACTIVE', value: 'Active' }]),
     getSuppliers: vi.fn().mockResolvedValue([{ key: 'S001', value: 'Supplier A' }]),
     formatDateTime: vi.fn().mockReturnValue('2026-04-23 12:00')
@@ -89,8 +95,14 @@ describe('PartListView.vue', () => {
 
     // Setup Auth Store state
     const authStore = useAuthStore();
-    authStore.setAuth('mock-token', {
+    /* Update by Gemini AI on 2026-04-23: Align with project rename. (繁體中文) 配合專案更名。 */
+    /* authStore.setAuth('mock-token', {
       id: 'customer001',
+      name: 'Test Customer',
+      role: 'CUSTOMER'
+    }); */
+    authStore.setAuth('mock-token', {
+      id: 'project001',
       name: 'Test Customer',
       role: 'CUSTOMER'
     });

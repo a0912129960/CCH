@@ -9,13 +9,14 @@ import Dot from '@src/components/common/Dot.vue';
  * Customer Dashboard View (客戶儀表板頁面)
  * Layout mirrors EmployeeView exactly.
  * BR-28: Status Summary | BR-30: Pending Review Parts — S01 + S03 only (real API, no hardcoded data)
+ * Update on 2026-04-23: Refactored from Customer to Project focus for data attribution.
  */
 
 const router = useRouter();
 const username = computed(() => authService.state.username);
 
-const customers = ref<{ id: string; name: string }[]>([]);
-const selectedCustomerId = ref('all');
+const projects = ref<{ id: string; name: string }[]>([]);
+const selectedProjectId = ref('all');
 const statusSummary = ref<StatusCount[]>([]);
 const pendingParts = ref<PendingReviewItem[]>([]);
 const loading = ref(true);
@@ -24,8 +25,8 @@ const fetchData = async () => {
   loading.value = true;
   try {
     const [summary, pending] = await Promise.all([
-      dashboardService.getStatusSummary(selectedCustomerId.value),
-      dashboardService.getPendingReviewParts(selectedCustomerId.value, 'CUSTOMER')
+      dashboardService.getStatusSummary(selectedProjectId.value),
+      dashboardService.getPendingReviewParts(selectedProjectId.value, 'CUSTOMER')
     ]);
     statusSummary.value = summary;
     pendingParts.value = pending;
@@ -35,18 +36,18 @@ const fetchData = async () => {
 };
 
 onMounted(async () => {
-  customers.value = await partService.getCustomers();
+  projects.value = await partService.getProjects();
   await fetchData();
 });
 
-watch(selectedCustomerId, async () => {
+watch(selectedProjectId, async () => {
   await fetchData();
 });
 
 const goToPartList = (status?: string) => {
   const query: any = {};
   if (status) query.status = status;
-  if (selectedCustomerId.value !== 'all') query.customerId = selectedCustomerId.value;
+  if (selectedProjectId.value !== 'all') query.projectId = selectedProjectId.value;
   router.push({ name: 'parts', query });
 };
 
@@ -96,13 +97,13 @@ const formatDate = (dateStr: string) => {
       </div>
 
       <div v-else class="dashboard-content">
-        <!-- Customer Selector (客戶選擇器) -->
+        <!-- Project Selector (專案選擇器) -->
         <div class="customer-selector-container">
           <div class="customer-selector">
-            <label>{{ $t('employee.customer_select') }}</label>
-            <select v-model="selectedCustomerId" class="app-select">
-              <option value="all">{{ $t('employee.all_customers') }}</option>
-              <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+            <label>{{ $t('employee.project_select') }}</label>
+            <select v-model="selectedProjectId" class="app-select">
+              <option value="all">{{ $t('employee.all_projects') }}</option>
+              <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
           </div>
         </div>
@@ -139,7 +140,7 @@ const formatDate = (dateStr: string) => {
             <table class="app-table">
               <thead>
                 <tr>
-                  <th>{{ $t('common.customer') }}</th>
+                  <th>{{ $t('common.project') }}</th>
                   <th>{{ $t('employee.part_no') }}</th>
                   <th>{{ $t('part_list.description') }}</th>
                   <th>{{ $t('employee.hts_code') }}</th>
@@ -152,7 +153,7 @@ const formatDate = (dateStr: string) => {
               </thead>
               <tbody>
                 <tr v-for="part in pendingParts" :key="part.id">
-                  <td>{{ part.customer }}</td>
+                  <td>{{ part.project }}</td>
                   <td class="bold">{{ part.partNo }}</td>
                   <td>{{ part.partDesc || '—' }}</td>
                   <td>{{ part.htsCode || '—' }}</td>

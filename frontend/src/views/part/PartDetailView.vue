@@ -546,6 +546,12 @@ const handleReturn = async () => {
                 </tr>
               </thead>
               <tbody>
+                <!-- Project: read-only (專案：唯讀) -->
+                <tr>
+                  <td class="field-label">{{ $t('common.project') }}</td>
+                  <td class="before-val"></td>
+                  <td class="value-blue">{{ modified.project || '—' }}</td>
+                </tr>
                 <!-- Part No: read-only (零件編號：唯讀) -->
                 <tr>
                   <td class="field-label">{{ $t('customer.part_no') }}</td>

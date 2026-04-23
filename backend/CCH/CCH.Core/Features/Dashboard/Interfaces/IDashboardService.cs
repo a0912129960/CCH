@@ -8,12 +8,12 @@ namespace CCH.Core.Features.Dashboard.Interfaces;
 /// </summary>
 public interface IDashboardService
 {
-    PartStatusSummaryDto GetStatusSummary(string? customerId);
+    PartStatusSummaryDto GetStatusSummary(string? projectId);
 
     /// <summary>
     /// Returns pending review parts filtered by role.
     /// role = "CUSTOMER" → S01 + S03; otherwise → S02.
     /// (依角色回傳待審核零件：客戶 → S01+S03；員工 → S02。)
     /// </summary>
-    IEnumerable<PendingReviewDto> GetPendingReviews(string? customerId, string? role = null);
+    IEnumerable<PendingReviewDto> GetPendingReviews(string? projectId, string? role = null);
 }
