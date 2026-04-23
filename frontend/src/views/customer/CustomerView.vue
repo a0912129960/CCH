@@ -56,11 +56,13 @@ const goToPartDetail = (id: number | string) => {
 
 // Matches PartListView SLA color logic exactly (與 PartListView SLA 燈號邏輯一致)
 const SLA_COLOR_MAP: Record<string, string> = {
-  green:  '#67C23A',
-  normal: '#67C23A',
-  yellow: '#FADB14',
-  orange: '#FF9900',
-  red:    '#F56C6C'
+  green:   '#67C23A',
+  normal:  '#67C23A',
+  yellow:  '#FADB14',
+  orange:  '#FF9900',
+  warning: '#FF9900',
+  red:     '#F56C6C',
+  urgent:  '#F56C6C'
 };
 
 const getSLAColor = (slaStatus?: string): string => {
@@ -338,7 +340,7 @@ h3 {
 .table-container {
   background: white;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
   margin-bottom: 2rem;
 }
 
