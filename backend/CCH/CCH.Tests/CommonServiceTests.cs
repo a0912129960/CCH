@@ -34,15 +34,15 @@ public class CommonServiceTests
         var mockRepo = new Mock<ICommonRepository>();
         mockRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity>
         {
-            new() { Code = "US", Name = "United States" },
-            new() { Code = "TW", Name = "Taiwan" }
+            new() { ID = 1, Code = "US", Name = "United States" },
+            new() { ID = 2, Code = "TW", Name = "Taiwan" }
         });
         var service = new CommonService(mockRepo.Object);
 
         var result = service.GetCountries().ToList();
 
         Assert.Equal(2, result.Count);
-        Assert.Equal("US", result[0].Key);
+        Assert.Equal("1", result[0].Key);
         Assert.Equal("United States", result[0].Value);
     }
 

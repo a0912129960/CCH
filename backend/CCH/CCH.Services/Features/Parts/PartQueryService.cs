@@ -33,15 +33,19 @@ public class PartQueryService : IPartQueryService
         var role = _userContext.Role?.ToLower();
         
         // Fetch all matching entities from repository (從倉儲取得所有相符實體)
-        var entities = _repository.SearchParts(customerId, status, partNo, supplierId);
+        var entities = _repository.SearchParts(customerId, status, partNo, supplierId).ToList();
 
-        var total = entities.Count();
+        var total = entities.Count;
         
+        // Batch resolve UserNames (批次解析使用者名稱)
+        var userIds = entities.Select(e => e.UpdatedBy).Where(id => !string.IsNullOrEmpty(id)).Distinct()!;
+        var userNames = _commonRepository.GetUserNames(userIds!);
+
         // Pagination and Mapping (分頁與映射)
         var data = entities
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(e => MapToListItemDto(e, role))
+            .Select(e => MapToListItemDto(e, role, userNames))
             .ToList();
 
         return new PartListResponseDto
@@ -59,6 +63,7 @@ public class PartQueryService : IPartQueryService
         if (entity == null) return null;
 
         var listItem = MapToListItemDto(entity);
+        listItem.UpdatedBy = _commonRepository.GetUserName(entity.UpdatedBy ?? "");
 
         // INTERNAL-AI-20260421: Before = second-most-recent snapshot (state before last save).
         // (INTERNAL-AI-20260421: Before 改為倒數第二筆快照（上次存檔前的狀態）。)
@@ -90,7 +95,7 @@ public class PartQueryService : IPartQueryService
                 HtsCode4  = beforeSnapshot.HtsCode4,
                 Rate4     = beforeSnapshot.Rate4,
                 Remark    = beforeSnapshot.Remark ?? "",
-                UpdatedBy   = beforeSnapshot.CreatedBy ?? "",
+                UpdatedBy   = _commonRepository.GetUserName(beforeSnapshot.CreatedBy ?? ""),
                 UpdatedDate = beforeSnapshot.CreatedDate ?? DateTime.MinValue
             } : new PartDetailDto(),
             Modified = new PartDetailDto
@@ -118,11 +123,16 @@ public class PartQueryService : IPartQueryService
         };
     }
 
-    private PartListItemDto MapToListItemDto(CchParts entity, string? role = null)
+    private PartListItemDto MapToListItemDto(CchParts entity, string? role = null, Dictionary<string, string>? userNames = null)
     {
         var customerName = _commonRepository.GetCustomers().FirstOrDefault(c => c.HQID == entity.CustomerID)?.CustomerName ?? "Unknown";
         var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
         var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.SupplierName ?? "Unknown";
+
+        // Resolve UpdatedBy name (解析 UpdatedBy 名稱)
+        string updatedByName = entity.UpdatedBy ?? "";
+        if (userNames != null && userNames.TryGetValue(updatedByName, out var name)) updatedByName = name;
+        else if (!string.IsNullOrEmpty(updatedByName)) updatedByName = _commonRepository.GetUserName(updatedByName);
 
         // SLA Calculation Logic (SLA 計算邏輯)
         // Customer role → S01 (draft) + S03 (returned): apply customer thresholds
@@ -157,7 +167,7 @@ public class PartQueryService : IPartQueryService
             HtsCode = entity.HTSCode ?? "",
             Rate = entity.DutyRate ?? 0,
             Status = entity.Status ?? "",
-            UpdatedBy = entity.UpdatedBy ?? "",
+            UpdatedBy = updatedByName,
             UpdatedDate = entity.UpdatedDate ?? DateTime.MinValue,
             SlaStatus = slaStatus,
             HtsCode1 = entity.AddHTSCode1,
@@ -178,7 +188,7 @@ public class PartQueryService : IPartQueryService
             .Select(h => new MilestoneDto
             {
                 Action = h.Action,
-                UpdatedBy = h.CreatedBy,
+                UpdatedBy = _commonRepository.GetUserName(h.CreatedBy ?? ""),
                 UpdatedDate = h.CreatedDate ?? DateTime.MinValue,
                 Remark = h.Remark
             })
@@ -206,7 +216,7 @@ public class PartQueryService : IPartQueryService
                 HtsCode4 = s.HtsCode4,
                 Rate4 = s.Rate4,
                 Remark = s.Remark ?? "",
-                UpdatedBy = s.CreatedBy ?? "",
+                UpdatedBy = _commonRepository.GetUserName(s.CreatedBy ?? ""),
                 UpdatedDate = s.CreatedDate ?? DateTime.MinValue
             })
             .ToList();

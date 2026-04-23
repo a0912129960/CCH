@@ -32,4 +32,10 @@ public class CommonService : ICommonService
 
     public IEnumerable<KeyValuePairDto> GetStatus() => 
         _repository.GetStatuses().Select(s => new KeyValuePairDto { Key = s.Code, Value = s.Description });
+
+    /// <inheritdoc/>
+    public string GetUserName(string userId) => _repository.GetUserName(userId);
+
+    /// <inheritdoc/>
+    public Dictionary<string, string> GetUserNames(IEnumerable<string> userIds) => _repository.GetUserNames(userIds);
 }

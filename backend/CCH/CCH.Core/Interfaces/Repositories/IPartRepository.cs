@@ -56,7 +56,8 @@ public interface IPartRepository
     /// </summary>
     /// <param name="partId">Part ID. (零件 ID)</param>
     /// <param name="status">New status code. (新狀態代碼)</param>
-    void UpdateStatus(int partId, string status);
+    /// <param name="updatedBy">The user ID who performed the update. (執行更新的使用者 ID)</param>
+    void UpdateStatus(int partId, string status, string updatedBy);
 
     /// <summary>
     /// Updates status for multiple parts in a single operation.
