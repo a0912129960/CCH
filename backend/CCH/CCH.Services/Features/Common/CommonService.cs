@@ -17,17 +17,17 @@ public class CommonService : ICommonService
         _repository = repository;
     }
 
-    public IEnumerable<KeyValuePairDto> GetCustomers() =>
-        _repository.GetCustomers().Select(c => new KeyValuePairDto { Key = c.HQID.ToString(), Value = c.CustomerName ?? "Unknown" });
+    public IEnumerable<KeyValuePairDto> GetProjects() =>
+        _repository.GetProjects().Select(p => new KeyValuePairDto { Key = p.Id.ToString(), Value = p.ProjectName ?? "Unknown" });
     public IEnumerable<KeyValuePairDto> GetCountries() => 
         _repository.GetCountries().Select(c => new KeyValuePairDto { Key = c.ID.ToString(), Value = c.Name });
 
-    public IEnumerable<KeyValuePairDto> GetSuppliers(string? customerId)
+    public IEnumerable<KeyValuePairDto> GetSuppliers(string? projectId)
     {
-        int? cId = null;
-        if (int.TryParse(customerId, out int parsedId)) cId = parsedId;
+        int? pId = null;
+        if (int.TryParse(projectId, out int parsedId)) pId = parsedId;
 
-        return _repository.GetSuppliers(cId).Select(s => new KeyValuePairDto { Key = s.ID.ToString(), Value = s.SupplierName ?? "Unknown" });
+        return _repository.GetSuppliers(pId).Select(s => new KeyValuePairDto { Key = s.ID.ToString(), Value = s.SupplierName ?? "Unknown" });
     }
 
     public IEnumerable<KeyValuePairDto> GetStatus() => 

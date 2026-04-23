@@ -28,20 +28,18 @@ public class CommonRepository : ICommonRepository
     }
 
     /// <inheritdoc/>
-    public IEnumerable<SmCustomer> GetCustomers()
+    public IEnumerable<CpProject> GetProjects()
     {
-        // 1. Get all CustomerIDs from CchParts where Status is not null/whitespace.
-        // (繁體中文) 從 CchParts 取得所有 Status 非 null/空白的 CustomerID。
-        var usedCustomerIds = _cspContext.CchParts
-            .Where(p => !string.IsNullOrWhiteSpace(p.Status))
-            .Select(p => p.CustomerID)
-            .Distinct()
-            .ToList();
-
-        // 2. Join with active SmCustomers from ReSm database.
-        // (繁體中文) 與 ReSm 資料庫中 Active 的 SmCustomer 關聯。
-        return _resmContext.SmCustomer
-            .Where(c => c.Status == "Active" && usedCustomerIds.Contains(c.HQID))
+        // Fetch projects using Select projection to ensure stability even if some columns have unexpected NULLs.
+        // (繁體中文) 使用 Select 投影取得專案，確保即使部分欄位有非預期的 NULL，系統仍能穩定運作。
+        return _cspContext.CpProject
+            .Where(p => p.Status == "Active")
+            .Select(p => new CpProject
+            {
+                Id = p.Id,
+                ProjectName = p.ProjectName ?? "Unknown",
+                Status = p.Status
+            })
             .ToList();
     }
 
@@ -53,10 +51,10 @@ public class CommonRepository : ICommonRepository
     public IEnumerable<StatusEntity> GetStatuses() => PartStatusConstants.AllStatuses;
 
     /// <inheritdoc/>
-    public IEnumerable<CchSuppliers> GetSuppliers(int? customerId = null) => 
-        customerId == null 
+    public IEnumerable<CchSuppliers> GetSuppliers(int? projectId = null) => 
+        projectId == null 
             ? _cspContext.CchSuppliers.ToList() 
-            : _cspContext.CchSuppliers.Where(s => s.CustomerID == customerId.Value).ToList();
+            : _cspContext.CchSuppliers.Where(s => s.ProjectID == projectId.Value).ToList();
 
     /// <inheritdoc/>
     public int CreateSupplier(CchSuppliers entity)

@@ -11,21 +11,21 @@ namespace CCH.Tests;
 public class CommonServiceTests
 {
     [Fact]
-    public void GetCustomers_ReturnsMappedDtos()
+    public void GetProjects_ReturnsMappedDtos()
     {
         var mockRepo = new Mock<ICommonRepository>();
-        mockRepo.Setup(r => r.GetCustomers()).Returns(new List<SmCustomer>
+        mockRepo.Setup(r => r.GetProjects()).Returns(new List<CpProject>
         {
-            new() { HQID = 1, CustomerName = "Customer A" },
-            new() { HQID = 2, CustomerName = "Customer B" }
+            new() { Id = 1, ProjectName = "Project A", Status = "Active" },
+            new() { Id = 2, ProjectName = "Project B", Status = "Active" }
         });
         var service = new CommonService(mockRepo.Object);
 
-        var result = service.GetCustomers().ToList();
+        var result = service.GetProjects().ToList();
 
         Assert.Equal(2, result.Count);
         Assert.Equal("1", result[0].Key);
-        Assert.Equal("Customer A", result[0].Value);
+        Assert.Equal("Project A", result[0].Value);
     }
 
     [Fact]
@@ -52,8 +52,8 @@ public class CommonServiceTests
         var mockRepo = new Mock<ICommonRepository>();
         var mockSuppliers = new List<CchSuppliers>
         {
-            new() { ID = 1, SupplierName = "Supplier A", CustomerID = 101 },
-            new() { ID = 2, SupplierName = "Supplier B", CustomerID = 101 }
+            new() { ID = 1, SupplierName = "Supplier A", ProjectID = 101 },
+            new() { ID = 2, SupplierName = "Supplier B", ProjectID = 101 }
         };
         mockRepo.Setup(r => r.GetSuppliers(101)).Returns(mockSuppliers);
         var service = new CommonService(mockRepo.Object);

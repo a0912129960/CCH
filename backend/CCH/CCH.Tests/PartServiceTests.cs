@@ -41,7 +41,7 @@ public class PartServiceTests : IDisposable
         SeedData();
 
         var mockCommonRepo = new Mock<ICommonRepository>();
-        mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<SmCustomer> { new() { HQID = 101, CustomerName = "Customer A" } });
+        mockCommonRepo.Setup(r => r.GetProjects()).Returns(new List<CpProject> { new() { Id = 101, ProjectName = "Project A" } });
         mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Taiwan" } });
         mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<CchSuppliers> { new() { ID = 1, SupplierName = "TechSupply Corp" } });
         mockCommonRepo.Setup(r => r.GetStatuses()).Returns(new List<StatusEntity> { new() { Code = "S01", Description = "Active" } });
@@ -64,7 +64,7 @@ public class PartServiceTests : IDisposable
         {
             _context.CchParts.Add(new CchParts 
             { 
-                ID = i, CustomerID = 101, PartNo = $"PART-{i:000}", Status = "S01", 
+                ID = i, ProjectID = 101, PartNo = $"PART-{i:000}", Status = "S01", 
                 CountryID = 1, SupplierID = 1, PartDescription = "Test Part",
                 UpdatedDate = DateTime.Now
             });
@@ -87,7 +87,7 @@ public class PartServiceTests : IDisposable
         // Assert
         Assert.NotNull(result);
         Assert.Equal(17, result.Total); // Matches SeedData count
-        Assert.Equal("Customer A", result.Data.First().Customer); 
+        Assert.Equal("Project A", result.Data.First().Project); 
         Assert.NotNull(result.Data.First().SlaStatus); 
     }
 

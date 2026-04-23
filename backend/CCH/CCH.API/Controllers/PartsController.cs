@@ -31,17 +31,17 @@ public class PartsController : ControllerBase
     /// (繁體中文) 根據多種條件搜尋零件。
     /// </summary>
     [HttpGet]
-    public ActionResult<ApiResponse<PartListResponseDto>> SearchParts([FromQuery] int? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] int? supplier, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
-        Ok(ApiResponse<PartListResponseDto>.SuccessResponse(_queryService.SearchParts(customerId, status, partNo, supplier, page, pageSize)));
+    public ActionResult<ApiResponse<PartListResponseDto>> SearchParts([FromQuery] int? projectId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] int? supplier, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) =>
+        Ok(ApiResponse<PartListResponseDto>.SuccessResponse(_queryService.SearchParts(projectId, status, partNo, supplier, page, pageSize)));
 
     /// <summary>
     /// Exports parts to an Excel file.
     /// (繁體中文) 將零件匯出至 Excel 檔案。
     /// </summary>
     [HttpGet("export")]
-    public IActionResult ExportParts([FromQuery] int? customerId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] int? supplier)
+    public IActionResult ExportParts([FromQuery] int? projectId, [FromQuery] string? status, [FromQuery] string? partNo, [FromQuery] int? supplier)
     {
-        var file = _excelService.ExportParts(customerId, status, partNo, supplier);
+        var file = _excelService.ExportParts(projectId, status, partNo, supplier);
         return File(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "parts_export.xlsx");
     }
 
@@ -58,10 +58,10 @@ public class PartsController : ControllerBase
     /// (繁體中文) 從 Excel 檔案預覽批次上傳零件。
     /// </summary>
     [HttpPost("bulk-upload/preview")]
-    public ActionResult<ApiResponse<BulkUploadPreviewDto>> PreviewBulkUpload([FromForm] int customerId, IFormFile file)
+    public ActionResult<ApiResponse<BulkUploadPreviewDto>> PreviewBulkUpload([FromForm] int projectId, IFormFile file)
     {
         using var stream = file.OpenReadStream();
-        return Ok(ApiResponse<BulkUploadPreviewDto>.SuccessResponse(_excelService.PreviewBulkUpload(customerId, stream)));
+        return Ok(ApiResponse<BulkUploadPreviewDto>.SuccessResponse(_excelService.PreviewBulkUpload(projectId, stream)));
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ public class PartsController : ControllerBase
         return Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(
             new PartCreateRequest
             {
-                CustomerId  = request.CustomerId,
+                ProjectId  = request.ProjectId,
                 PartNo      = request.PartNo,
                 CountryId   = request.CountryId,
                 Division    = request.Division,

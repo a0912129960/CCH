@@ -28,7 +28,7 @@ public class PartExcelService : IPartExcelService
     private string CurrentUser => (_userContext.UserId ?? "system")[..Math.Min((_userContext.UserId ?? "system").Length, 10)];
 
     /// <inheritdoc/>
-    public byte[] ExportParts(int? customerId, string? status, string? partNo, int? supplierId)
+    public byte[] ExportParts(int? projectId, string? status, string? partNo, int? supplierId)
     {
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add("Parts");
@@ -36,8 +36,8 @@ public class PartExcelService : IPartExcelService
         string[] headers = { "Customer", "Part No", "Description", "Country", "Supplier", "HTS Code", "Rate", "Status" };
         for (int i = 0; i < headers.Length; i++) worksheet.Cell(1, i + 1).Value = headers[i];
 
-        var parts = _repository.SearchParts(customerId, status, partNo, supplierId).ToList();
-        var customers = _commonRepository.GetCustomers().ToDictionary(c => c.HQID, c => c.CustomerName ?? "Unknown");
+        var parts = _repository.SearchParts(projectId, status, partNo, supplierId).ToList();
+        var projects = _commonRepository.GetProjects().ToDictionary(p => p.Id, p => p.ProjectName ?? "Unknown");
         var countries = _commonRepository.GetCountries().ToDictionary(c => c.ID, c => c.Name);
         var suppliers = _commonRepository.GetSuppliers().ToDictionary(s => s.ID, s => s.SupplierName ?? "Unknown");
 
@@ -45,7 +45,7 @@ public class PartExcelService : IPartExcelService
         {
             var p = parts[i];
             var row = i + 2;
-            worksheet.Cell(row, 1).Value = customers.GetValueOrDefault(p.CustomerID ?? 0, "Unknown");
+            worksheet.Cell(row, 1).Value = projects.GetValueOrDefault(p.ProjectID ?? 0, "Unknown");
             worksheet.Cell(row, 2).Value = p.PartNo;
             worksheet.Cell(row, 3).Value = p.PartDescription;
             worksheet.Cell(row, 4).Value = countries.GetValueOrDefault(p.CountryID ?? 0, "Unknown");
@@ -61,7 +61,7 @@ public class PartExcelService : IPartExcelService
     }
 
     /// <inheritdoc/>
-    public BulkUploadPreviewDto PreviewBulkUpload(int customerId, Stream fileStream)
+    public BulkUploadPreviewDto PreviewBulkUpload(int projectId, Stream fileStream)
     {
         using var workbook = new XLWorkbook(fileStream);
         var worksheet = workbook.Worksheet(1);
@@ -75,7 +75,7 @@ public class PartExcelService : IPartExcelService
             .GroupBy(c => c.Name.ToLower())
             .ToDictionary(g => g.Key, g => g.First().ID);
 
-        var suppliers = _commonRepository.GetSuppliers(customerId)
+        var suppliers = _commonRepository.GetSuppliers(projectId)
             .GroupBy(s => s.SupplierName?.ToLower() ?? "")
             .ToDictionary(g => g.Key, g => g.First().ID);
 
@@ -95,7 +95,7 @@ public class PartExcelService : IPartExcelService
 
             var newData = new PartDto
             {
-                CustomerId = customerId,
+                ProjectId = projectId,
                 PartNo = partNo,
                 Country = row.Cell(2).GetString(),
                 Division = row.Cell(3).GetString(),
@@ -116,7 +116,7 @@ public class PartExcelService : IPartExcelService
                 SupplierId = sId
             };
 
-            var existing = _repository.GetPartByNo(customerId, partNo);
+            var existing = _repository.GetPartByNo(projectId, partNo);
             PartDto? originalData = null;
             var rowStatus = "New";
 
@@ -124,7 +124,7 @@ public class PartExcelService : IPartExcelService
             {
                 originalData = new PartDto
                 {
-                    CustomerId = existing.CustomerID ?? 0,
+                    ProjectId = existing.ProjectID ?? 0,
                     PartNo = existing.PartNo ?? "",
                     PartDesc = existing.PartDescription ?? "",
                     CountryId = existing.CountryID ?? 0,
@@ -209,7 +209,7 @@ public class PartExcelService : IPartExcelService
             var newS = new CchSuppliers
             {
                 SupplierName = name,
-                CustomerID = parts.FirstOrDefault(p => p.Supplier == name)?.CustomerId,
+                ProjectID = parts.FirstOrDefault(p => p.Supplier == name)?.ProjectId,
                 Status = "Active",
                 CreatedBy = CurrentUser,
                 CreatedDate = now
@@ -225,8 +225,8 @@ public class PartExcelService : IPartExcelService
             {
             try
             {
-            var customerId = p.CustomerId ?? 0;
-            var existing = _repository.GetPartByNo(customerId, p.PartNo);
+            var projectId = p.ProjectId ?? 0;
+            var existing = _repository.GetPartByNo(projectId, p.PartNo);
             CchParts target;
 
             if (existing != null)
@@ -256,7 +256,7 @@ public class PartExcelService : IPartExcelService
             {
                 target = new CchParts
                 {
-                    CustomerID = p.CustomerId,
+                    ProjectID = p.ProjectId,
                     PartNo = p.PartNo,
                     PartDescription = p.PartDesc,
                     CountryID = p.CountryId,

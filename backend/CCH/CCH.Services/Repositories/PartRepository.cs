@@ -20,10 +20,10 @@ public class PartRepository : IPartRepository
     }
 
     /// <inheritdoc/>
-    public IEnumerable<CchParts> SearchParts(int? customerId, string? status, string? partNo, int? supplierId)
+    public IEnumerable<CchParts> SearchParts(int? projectId, string? status, string? partNo, int? supplierId)
     {
         var query = _context.CchParts.AsQueryable();
-        if (customerId > 0) query = query.Where(p => p.CustomerID == customerId);
+        if (projectId > 0) query = query.Where(p => p.ProjectID == projectId);
         if (!string.IsNullOrEmpty(status)) query = query.Where(p => p.Status == status);
         if (!string.IsNullOrEmpty(partNo))
         {
@@ -35,9 +35,9 @@ public class PartRepository : IPartRepository
     }
 
     /// <inheritdoc/>
-    public CchParts? GetPartByNo(int customerId, string partNo)
+    public CchParts? GetPartByNo(int projectId, string partNo)
     {
-        return _context.CchParts.FirstOrDefault(p => p.CustomerID == customerId && p.PartNo == partNo);
+        return _context.CchParts.FirstOrDefault(p => p.ProjectID == projectId && p.PartNo == partNo);
     }
 
     /// <inheritdoc/>
