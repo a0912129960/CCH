@@ -247,7 +247,7 @@ const initLoad = async (id: number) => {
       const m = detailData.modified;
       form.value = {
         partNo: m.partNo,
-        countryId: null,
+        countryId: m.countryId ?? null,
         division: m.division,
         supplier: m.supplier,
         partDesc: m.partDesc,
@@ -733,10 +733,10 @@ const handleReturn = async () => {
                   {{ $t('part_detail.btn_return_customer') }}
                 </button>
               </template>
-              <!-- S04 (Reviewed): all roles see Save; Customer/Dimerco additionally see Save & Send to Dimerco (→ S03) -->
-              <!-- (S04 已審核：所有角色皆顯示 Save；Customer/Dimerco 額外顯示 Save & Send to Dimerco，狀態改為 S03) -->
+              <!-- S04 (Reviewed): DCB sees Save only; Customer/Dimerco see Save & Send to Dimerco only (no bare Save) -->
+              <!-- (S04 已審核：DCB 僅顯示 Save；Customer/Dimerco 僅顯示 Save & Send to Dimerco，不顯示 Save) -->
               <template v-else-if="showS04Buttons">
-                <button class="btn-cch btn-save" :disabled="saving || submitting" @click="handleSave">
+                <button v-if="isDcb" class="btn-cch btn-save" :disabled="saving || submitting" @click="handleSave">
                   {{ saving ? '...' : $t('common.save') }}
                 </button>
                 <button

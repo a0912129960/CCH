@@ -78,6 +78,7 @@ public class ReturnReasonDto
 public class PartDetailDto
 {
     public string PartNo { get; set; } = string.Empty;
+    public int? CountryId { get; set; }
     public string Country { get; set; } = string.Empty;
     public string Division { get; set; } = string.Empty;
     public string Supplier { get; set; } = string.Empty;

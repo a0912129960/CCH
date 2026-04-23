@@ -621,6 +621,7 @@ export async function searchParts(params?: {
  */
 export interface PartDetailFields {
   partNo: string;
+  countryId?: number | null;
   country: string;
   division: string;
   supplier: string;
