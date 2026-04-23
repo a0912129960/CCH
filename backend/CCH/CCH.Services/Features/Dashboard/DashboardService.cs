@@ -68,26 +68,46 @@ public class DashboardService : IDashboardService
             Status      = p.Status,
             UpdatedBy   = p.UpdatedBy,
             UpdatedDate = p.UpdatedDate,
-            SlaStatus   = CalculateSlaStatus(p.UpdatedDate)
+            SlaStatus   = CalculateSlaStatus(p.UpdatedDate, p.Status, role)
         });
     }
 
     /// <summary>
-    /// Derives SLA urgency from the number of days a part has been waiting.
-    /// green  = 0–2 days  (within normal SLA)
-    /// yellow = 3–6 days  (approaching deadline)
-    /// red    = 7+ days   (overdue)
-    /// (依零件等待天數計算 SLA 緊急程度。)
+    /// Derives SLA urgency using the same hour-based, role-aware logic as PartQueryService.
+    /// Aligns Dashboard "Pending Review Parts" SLA indicator with the Parts List view.
+    ///
+    /// Customer role (S01 or S03):
+    ///   ≤ 36h → green | 36–48h → yellow | 48–72h → orange | &gt; 72h → red
+    ///
+    /// Employee role (S02):
+    ///   ≤ 24h → green | 24–36h → yellow | 36–48h → orange | &gt; 48h → red
+    ///
+    /// All other combinations → empty string (no indicator).
+    /// (客戶角色 S01/S03 用客戶閾值；員工角色 S02 用員工閾值；其餘不顯示。)
     /// </summary>
-    private static string CalculateSlaStatus(DateTime updatedDate)
+    private static string CalculateSlaStatus(DateTime updatedDate, string status, string? role)
     {
-        var daysPending = (DateTime.Now - updatedDate).TotalDays;
-        return daysPending switch
+        var hoursElapsed = (DateTime.Now - updatedDate).TotalHours;
+
+        if (string.Equals(role, "CUSTOMER", StringComparison.OrdinalIgnoreCase)
+            && (status == "S01" || status == "S03"))
         {
-            < 3  => "green",
-            < 7  => "yellow",
-            _    => "red"
-        };
+            if (hoursElapsed > 72) return "red";
+            if (hoursElapsed > 48) return "orange";
+            if (hoursElapsed > 36) return "yellow";
+            return "green";
+        }
+
+        if (!string.Equals(role, "CUSTOMER", StringComparison.OrdinalIgnoreCase)
+            && status == "S02")
+        {
+            if (hoursElapsed > 48) return "red";
+            if (hoursElapsed > 36) return "orange";
+            if (hoursElapsed > 24) return "yellow";
+            return "green";
+        }
+
+        return string.Empty;
     }
 
     /// <summary>

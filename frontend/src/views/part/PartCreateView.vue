@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { authService, UserRole } from '@src/services/auth/auth';
+import { authService } from '@src/services/auth/auth';
 import Card from '@src/components/common/Card.vue';
 import Button from '@src/components/common/Button.vue';
 import { partService, type CreatePartRequest, type SubmitPartRequest } from '@src/services/part/part';
@@ -16,8 +16,7 @@ import { ElMessage } from 'element-plus';
 const router = useRouter();
 const { t } = useI18n();
 
-const { role, customerId: userCustomerId } = authService.state;
-const isEmployee = role && role !== UserRole.CUSTOMER;
+const { customerId: userCustomerId } = authService.state;
 
 const countries = ref<CountryOption[]>([]);
 
@@ -38,20 +37,10 @@ const form = ref({
   htsCodeReciprocalTariff: '',
   rateReciprocalTariff: '',
   remark: '',
-  customerId: isEmployee ? '' : userCustomerId || ''
+  customerId: userCustomerId || ''
 });
 
-const customers = ref<{ id: string; name: string }[]>([]);
-
 onMounted(async () => {
-  // Load customers (mock) and countries (real API) independently
-  // so a failure in one does not block the other
-  try {
-    customers.value = await partService.getCustomers();
-  } catch (error) {
-    console.error('Failed to load customers:', error);
-  }
-
   try {
     const data = await commonService.getCountries();
     countries.value = data;
@@ -64,83 +53,41 @@ onMounted(async () => {
   }
 });
 
-// HTS Code format: XXXX.XX.XXXX — allows digits and up to TWO periods.
-// The old sanitizeDecimal stripped the second period, making the format impossible to type.
-const sanitizeHtsCode = (val: string): string => {
-  // Keep only digits and periods
-  const cleaned = val.replace(/[^\d.]/g, '');
-  // Allow at most 2 periods (XXXX.XX.XXXX has exactly 2)
-  let result = '';
-  let dotCount = 0;
-  for (const ch of cleaned) {
-    if (ch === '.') {
-      if (dotCount < 2) { result += ch; dotCount++; }
-    } else {
-      result += ch;
-    }
+// HTS Code auto-format — same logic as PartDetailView (與 PartDetailView 共用相同邏輯)
+// Strip non-digits, insert dots at XXXX.XX.XXXX positions on every keystroke.
+const HTS_PATTERN = /^\d{4}\.\d{2}\.\d{4}$/;
+const htsError     = ref('');
+const htsCode1Error = ref('');
+const htsCode2Error = ref('');
+const htsCode3Error = ref('');
+const htsCode4Error = ref('');
+
+const validateHts = (val: string | null | undefined, errRef: typeof htsError): boolean => {
+  if (!val) { errRef.value = ''; return true; }
+  if (!HTS_PATTERN.test(val)) {
+    errRef.value = 'Format must be XXXX.XX.XXXX';
+    return false;
   }
-  return result;
+  errRef.value = '';
+  return true;
 };
 
-watch(() => form.value.usHtsCode, (newVal) => {
-  if (!newVal) return;
-  const sanitized = sanitizeHtsCode(newVal);
-  if (newVal !== sanitized) form.value.usHtsCode = sanitized;
-});
+type HtsField = 'usHtsCode' | 'htsCode301' | 'htsCodeIeepa' | 'htsCode232Aluminum' | 'htsCodeReciprocalTariff';
 
-watch(() => form.value.generalDutyRate, (newVal) => {
-  if (!newVal) return;
-  const digitsOnly = newVal.replace(/\D/g, '');
-  if (newVal !== digitsOnly) form.value.generalDutyRate = digitsOnly;
-});
+const formatHtsCode = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '').slice(0, 10);
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 4)}.${digits.slice(4)}`;
+  return `${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6)}`;
+};
 
-watch(() => form.value.htsCode301, (newVal) => {
-  if (!newVal) return;
-  const sanitized = sanitizeHtsCode(newVal);
-  if (newVal !== sanitized) form.value.htsCode301 = sanitized;
-});
-
-watch(() => form.value.rate301, (newVal) => {
-  if (!newVal) return;
-  const digitsOnly = newVal.replace(/\D/g, '');
-  if (newVal !== digitsOnly) form.value.rate301 = digitsOnly;
-});
-
-watch(() => form.value.htsCodeIeepa, (newVal) => {
-  if (!newVal) return;
-  const sanitized = sanitizeHtsCode(newVal);
-  if (newVal !== sanitized) form.value.htsCodeIeepa = sanitized;
-});
-
-watch(() => form.value.rateIeepa, (newVal) => {
-  if (!newVal) return;
-  const digitsOnly = newVal.replace(/\D/g, '');
-  if (newVal !== digitsOnly) form.value.rateIeepa = digitsOnly;
-});
-
-watch(() => form.value.htsCode232Aluminum, (newVal) => {
-  if (!newVal) return;
-  const sanitized = sanitizeHtsCode(newVal);
-  if (newVal !== sanitized) form.value.htsCode232Aluminum = sanitized;
-});
-
-watch(() => form.value.rate232Aluminum, (newVal) => {
-  if (!newVal) return;
-  const digitsOnly = newVal.replace(/\D/g, '');
-  if (newVal !== digitsOnly) form.value.rate232Aluminum = digitsOnly;
-});
-
-watch(() => form.value.htsCodeReciprocalTariff, (newVal) => {
-  if (!newVal) return;
-  const sanitized = sanitizeHtsCode(newVal);
-  if (newVal !== sanitized) form.value.htsCodeReciprocalTariff = sanitized;
-});
-
-watch(() => form.value.rateReciprocalTariff, (newVal) => {
-  if (!newVal) return;
-  const digitsOnly = newVal.replace(/\D/g, '');
-  if (newVal !== digitsOnly) form.value.rateReciprocalTariff = digitsOnly;
-});
+const handleHtsInput = (field: HtsField, errRef: typeof htsError, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const formatted = formatHtsCode(input.value);
+  (form.value as any)[field] = formatted;
+  input.value = formatted; // sync DOM to show formatted value immediately
+  validateHts(formatted, errRef);
+};
 
 const errors = ref({
   partNo: '',
@@ -148,14 +95,13 @@ const errors = ref({
   division: '',
   supplier: '',
   partDescription: '',
-  usHtsCode: '',
-  customerId: ''
+  usHtsCode: ''
 });
 
 // Save：只檢查 Part No & Country of Origin
 const validateSave = () => {
   let valid = true;
-  errors.value = { partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '', customerId: '' };
+  errors.value = { partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
 
   if (!form.value.partNo) {
     errors.value.partNo = 'part_create.validation.required';
@@ -165,10 +111,6 @@ const validateSave = () => {
     errors.value.countryOfOrigin = 'part_create.validation.required';
     valid = false;
   }
-  if (isEmployee && !form.value.customerId) {
-    errors.value.customerId = 'part_create.validation.required';
-    valid = false;
-  }
 
   return valid;
 };
@@ -176,7 +118,7 @@ const validateSave = () => {
 // Save & Submit：檢查所有必填欄位
 const validateSaveAndSubmit = () => {
   let valid = true;
-  errors.value = { partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '', customerId: '' };
+  errors.value = { partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
 
   if (!form.value.partNo) {
     errors.value.partNo = 'part_create.validation.required';
@@ -200,10 +142,6 @@ const validateSaveAndSubmit = () => {
   }
   if (!form.value.usHtsCode) {
     errors.value.usHtsCode = 'part_create.validation.required';
-    valid = false;
-  }
-  if (isEmployee && !form.value.customerId) {
-    errors.value.customerId = 'part_create.validation.required';
     valid = false;
   }
 
@@ -323,26 +261,6 @@ const handleSaveAndSubmit = async () => {
                 <span>{{ $t('part_create.col_value') }}</span>
               </div>
 
-              <!-- Customer (Employee Only) -->
-              <div v-if="isEmployee" class="info-table__row">
-                <div class="info-table__field">
-                  {{ $t('employee.customer_select') }} <span class="required-asterisk">*</span>
-                </div>
-                <div class="info-table__value">
-                  <el-select
-                    v-model="form.customerId"
-                    :placeholder="$t('employee.customer_select')"
-                    class="form-select-el"
-                    :class="{ 'is-invalid': errors.customerId }"
-                    data-test="customer-select"
-                    filterable
-                  >
-                    <el-option v-for="c in customers" :key="c.id" :label="c.name" :value="c.id" />
-                  </el-select>
-                  <span v-if="errors.customerId" class="error-text">{{ $t(errors.customerId) }}</span>
-                </div>
-              </div>
-
               <!-- Part No -->
               <div class="info-table__row">
                 <div class="info-table__field">
@@ -408,8 +326,9 @@ const handleSaveAndSubmit = async () => {
                   {{ $t('part_create.us_hts_code') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
                 </div>
                 <div class="info-table__value">
-                  <input v-model="form.usHtsCode" type="text" :placeholder="$t('part_create.us_hts_code_placeholder')" class="form-input" :class="{ 'is-invalid': errors.usHtsCode }" data-test="us-hts-code-input" />
+                  <input :value="form.usHtsCode" type="text" :placeholder="$t('part_create.us_hts_code_placeholder')" class="form-input" :class="{ 'is-invalid': errors.usHtsCode || htsError }" data-test="us-hts-code-input" inputmode="numeric" @input="handleHtsInput('usHtsCode', htsError, $event)" @blur="validateHts(form.usHtsCode, htsError)" />
                   <span v-if="errors.usHtsCode" class="error-text">{{ $t(errors.usHtsCode) }}</span>
+                  <div v-if="htsError" class="error-text">{{ htsError }}</div>
                 </div>
               </div>
 
@@ -430,7 +349,8 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__row">
                 <div class="info-table__field">{{ $t('part_create.hts_code_301') }}</div>
                 <div class="info-table__value">
-                  <input v-model="form.htsCode301" type="text" :placeholder="$t('part_create.hts_code_301_placeholder')" class="form-input" data-test="hts-code-301-input" />
+                  <input :value="form.htsCode301" type="text" :placeholder="$t('part_create.hts_code_301_placeholder')" class="form-input" :class="{ 'input-error': htsCode1Error }" data-test="hts-code-301-input" inputmode="numeric" @input="handleHtsInput('htsCode301', htsCode1Error, $event)" @blur="validateHts(form.htsCode301, htsCode1Error)" />
+                  <div v-if="htsCode1Error" class="error-text">{{ htsCode1Error }}</div>
                 </div>
               </div>
 
@@ -446,7 +366,8 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__row">
                 <div class="info-table__field">{{ $t('part_create.hts_code_ieepa') }}</div>
                 <div class="info-table__value">
-                  <input v-model="form.htsCodeIeepa" type="text" :placeholder="$t('part_create.hts_code_ieepa_placeholder')" class="form-input" data-test="hts-code-ieepa-input" />
+                  <input :value="form.htsCodeIeepa" type="text" :placeholder="$t('part_create.hts_code_ieepa_placeholder')" class="form-input" :class="{ 'input-error': htsCode2Error }" data-test="hts-code-ieepa-input" inputmode="numeric" @input="handleHtsInput('htsCodeIeepa', htsCode2Error, $event)" @blur="validateHts(form.htsCodeIeepa, htsCode2Error)" />
+                  <div v-if="htsCode2Error" class="error-text">{{ htsCode2Error }}</div>
                 </div>
               </div>
 
@@ -462,7 +383,8 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__row">
                 <div class="info-table__field">{{ $t('part_create.hts_code_232_aluminum') }}</div>
                 <div class="info-table__value">
-                  <input v-model="form.htsCode232Aluminum" type="text" :placeholder="$t('part_create.hts_code_232_aluminum_placeholder')" class="form-input" data-test="hts-code-232-aluminum-input" />
+                  <input :value="form.htsCode232Aluminum" type="text" :placeholder="$t('part_create.hts_code_232_aluminum_placeholder')" class="form-input" :class="{ 'input-error': htsCode3Error }" data-test="hts-code-232-aluminum-input" inputmode="numeric" @input="handleHtsInput('htsCode232Aluminum', htsCode3Error, $event)" @blur="validateHts(form.htsCode232Aluminum, htsCode3Error)" />
+                  <div v-if="htsCode3Error" class="error-text">{{ htsCode3Error }}</div>
                 </div>
               </div>
 
@@ -478,7 +400,8 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__row">
                 <div class="info-table__field">{{ $t('part_create.hts_code_reciprocal_tariff') }}</div>
                 <div class="info-table__value">
-                  <input v-model="form.htsCodeReciprocalTariff" type="text" :placeholder="$t('part_create.hts_code_reciprocal_tariff_placeholder')" class="form-input" data-test="hts-code-reciprocal-tariff-input" />
+                  <input :value="form.htsCodeReciprocalTariff" type="text" :placeholder="$t('part_create.hts_code_reciprocal_tariff_placeholder')" class="form-input" :class="{ 'input-error': htsCode4Error }" data-test="hts-code-reciprocal-tariff-input" inputmode="numeric" @input="handleHtsInput('htsCodeReciprocalTariff', htsCode4Error, $event)" @blur="validateHts(form.htsCodeReciprocalTariff, htsCode4Error)" />
+                  <div v-if="htsCode4Error" class="error-text">{{ htsCode4Error }}</div>
                 </div>
               </div>
 
