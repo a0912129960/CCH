@@ -45,6 +45,8 @@ public class PartServiceTests : IDisposable
         mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Taiwan" } });
         mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<CchSuppliers> { new() { ID = 1, SupplierName = "TechSupply Corp" } });
         mockCommonRepo.Setup(r => r.GetStatuses()).Returns(new List<StatusEntity> { new() { Code = "S01", Description = "Active" } });
+        mockCommonRepo.Setup(r => r.GetUserName(It.IsAny<string>())).Returns((string s) => s);
+        mockCommonRepo.Setup(r => r.GetUserNames(It.IsAny<IEnumerable<string>>())).Returns((IEnumerable<string> ids) => ids.ToDictionary(id => id, id => id));
 
         _repository = new PartRepository(_context, resmContext);
 
@@ -52,8 +54,8 @@ public class PartServiceTests : IDisposable
         _mockUserContext.Setup(u => u.Role).Returns("admin"); 
 
         _queryService = new PartQueryService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
-        // Corrected constructor: PartExcelService only needs repository and common repository (修正建構函式)
-        _excelService = new PartExcelService(_repository, mockCommonRepo.Object);
+        // Corrected constructor: PartExcelService needs userContext as well (修正建構函式)
+        _excelService = new PartExcelService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
     }
 
     private void SeedData()
