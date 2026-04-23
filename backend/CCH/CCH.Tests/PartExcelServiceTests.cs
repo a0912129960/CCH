@@ -2,6 +2,7 @@ using CCH.Core.Entities;
 using CCH.Core.Entities.CSP;
 using CCH.Core.Entities.ReSm;
 using CCH.Core.Features.Parts.DTOs;
+using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Features.Parts;
 using FluentAssertions;
@@ -13,13 +14,15 @@ public class PartExcelServiceTests
 {
     private readonly Mock<IPartRepository> _mockRepo;
     private readonly Mock<ICommonRepository> _mockCommonRepo;
+    private readonly Mock<IUserContext> _mockUserContext;
     private readonly PartExcelService _service;
 
     public PartExcelServiceTests()
     {
         _mockRepo = new Mock<IPartRepository>();
         _mockCommonRepo = new Mock<ICommonRepository>();
-        _service = new PartExcelService(_mockRepo.Object, _mockCommonRepo.Object);
+        _mockUserContext = new Mock<IUserContext>();
+        _service = new PartExcelService(_mockRepo.Object, _mockCommonRepo.Object, _mockUserContext.Object);
     }
 
     [Fact]

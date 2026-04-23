@@ -146,7 +146,7 @@ public class AuthServiceTests
 
         // Assert
         Assert.NotNull(response);
-        Assert.Equal("customer001@client.com", response.User.UserId);
+        Assert.Equal("1001", response.User.UserId);
         Assert.Equal("customer", response.User.Role);
     }
 

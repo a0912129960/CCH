@@ -82,7 +82,7 @@ public class PartLifecycleService : IPartLifecycleService
         MapRequestToEntity(request, existing);
         existing.Status = "S02";
         _repository.UpdatePart(existing);
-        _repository.UpdateStatus(partId, "S02");
+        _repository.UpdateStatus(partId, "S02", CurrentUser);
         
         RecordHistory(partId, "Submitted", oldStatus, "S02");
         RecordSnapshot(existing); // Restore Snapshot call (還原快照呼叫)
@@ -95,7 +95,7 @@ public class PartLifecycleService : IPartLifecycleService
     {
         var existing = _repository.GetPartById(partId);
         var oldStatus = existing?.Status;
-        _repository.UpdateStatus(partId, "S04");
+        _repository.UpdateStatus(partId, "S04", CurrentUser);
         RecordHistory(partId, "Accepted", oldStatus, "S04");
         // No snapshot for simple status change (單純狀態變更不需紀錄欄位快照，除非業務需求)
         return new { partId, status = "S04" };
@@ -106,7 +106,7 @@ public class PartLifecycleService : IPartLifecycleService
     {
         var existing = _repository.GetPartById(partId);
         var oldStatus = existing?.Status;
-        _repository.UpdateStatus(partId, "S03");
+        _repository.UpdateStatus(partId, "S03", CurrentUser);
         RecordHistory(partId, "Returned", oldStatus, "S03", returnReason);
         return new { partId, status = "S03" };
     }
@@ -116,7 +116,7 @@ public class PartLifecycleService : IPartLifecycleService
     {
         var existing = _repository.GetPartById(partId);
         var oldStatus = existing?.Status;
-        _repository.UpdateStatus(partId, "Inactive");
+        _repository.UpdateStatus(partId, "Inactive", CurrentUser);
         RecordHistory(partId, "Inactivated", oldStatus, "Inactive");
         return new { partId, status = "Inactive" };
     }
@@ -131,7 +131,7 @@ public class PartLifecycleService : IPartLifecycleService
         MapRequestToEntity(request, existing);
         existing.Status = "S03";
         _repository.UpdatePart(existing);
-        _repository.UpdateStatus(partId, "S03");
+        _repository.UpdateStatus(partId, "S03", CurrentUser);
         RecordHistory(partId, "Sent to Cust Review", oldStatus, "S03");
         RecordSnapshot(existing);
         return new { partId, status = "S03" };

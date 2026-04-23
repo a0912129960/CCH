@@ -97,15 +97,13 @@ public class AuthService : IAuthService
                     if (BCrypt.Net.BCrypt.Verify(decodedPassword, pwd.Password))
                     {
                         var contactInfo = _reSmContext.SmCustomerContact.First(c => c.Hqid == pwd.ContactorHqid);
-                        // Use Hqid (integer string) as userId so it fits MaxLength(10) DB fields. (使用 HQID 整數字串確保不超過 DB 欄位長度限制。)
-                        var customerId = contactInfo.Hqid.ToString();
-                        var token = GenerateJwtToken(customerId, contactInfo.FullName ?? "", "customer");
+                        var token = GenerateJwtToken(contactInfo.Hqid.ToString(), contactInfo.FullName ?? "", "customer");
                         return new LoginResponse
                         {
                             Token = token,
                             User = new UserProfile
                             {
-                                UserId = customerId,
+                                UserId = contactInfo.Hqid.ToString(),
                                 Name = contactInfo.FullName ?? "",
                                 Role = "customer"
                             }

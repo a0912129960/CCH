@@ -66,6 +66,59 @@ public class CommonRepository : ICommonRepository
         return entity.ID;
     }
 
+    /// <inheritdoc/>
+    public string GetUserName(string userId)
+    {
+        if (string.IsNullOrEmpty(userId)) return string.Empty;
+
+        // 1. Try SmUser by UserID (Internal)
+        var smUser = _resmContext.SmUser.FirstOrDefault(u => u.UserID == userId);
+        if (smUser != null) return smUser.FullName;
+
+        // 2. Try SmCustomerContact by HQID (External)
+        if (int.TryParse(userId, out int hqid))
+        {
+            var contact = _resmContext.SmCustomerContact.FirstOrDefault(c => c.Hqid == hqid);
+            if (contact != null) return contact.FullName ?? "Unknown";
+        }
+
+        return userId; // Fallback to original value for legacy data (Admin, etc.)
+    }
+
+    /// <inheritdoc/>
+    public Dictionary<string, string> GetUserNames(IEnumerable<string> userIds)
+    {
+        var distinctIds = userIds.Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+        if (!distinctIds.Any()) return new Dictionary<string, string>();
+
+        var result = new Dictionary<string, string>();
+
+        // Fetch all matching internal users
+        var smUsers = _resmContext.SmUser
+            .Where(u => distinctIds.Contains(u.UserID))
+            .ToDictionary(u => u.UserID, u => u.FullName);
+
+        // Fetch all matching external customers (HQIDs)
+        var hqids = distinctIds
+            .Select(id => int.TryParse(id, out int hqid) ? (int?)hqid : null)
+            .Where(h => h.HasValue)
+            .Select(h => h!.Value)
+            .ToList();
+
+        var contacts = _resmContext.SmCustomerContact
+            .Where(c => hqids.Contains(c.Hqid))
+            .ToDictionary(c => c.Hqid.ToString(), c => c.FullName ?? "Unknown");
+
+        foreach (var id in distinctIds)
+        {
+            if (smUsers.TryGetValue(id, out var name)) result[id] = name;
+            else if (contacts.TryGetValue(id, out name)) result[id] = name;
+            else result[id] = id; // Fallback
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Maps an SmCountry to a CountryEntity domain model. (SSoT)
     /// (繁體中文) 將 SmCountry 映射至 CountryEntity 領域模型 (單一事實來源)。

@@ -1,6 +1,7 @@
 using CCH.Core.Entities.CSP;
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Features.Parts.Interfaces;
+using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 using ClosedXML.Excel;
 
@@ -14,12 +15,17 @@ public class PartExcelService : IPartExcelService
 {
     private readonly IPartRepository _repository;
     private readonly ICommonRepository _commonRepository;
+    private readonly IUserContext _userContext;
 
-    public PartExcelService(IPartRepository repository, ICommonRepository commonRepository)
+    public PartExcelService(IPartRepository repository, ICommonRepository commonRepository, IUserContext userContext)
     {
         _repository = repository;
         _commonRepository = commonRepository;
+        _userContext = userContext;
     }
+
+    // Use UserId (short login ID) for DB fields that have MaxLength(10). (使用簡短的登入 ID 寫入有長度限制的 DB 欄位。)
+    private string CurrentUser => (_userContext.UserId ?? "system")[..Math.Min((_userContext.UserId ?? "system").Length, 10)];
 
     /// <inheritdoc/>
     public byte[] ExportParts(int? customerId, string? status, string? partNo, int? supplierId)
@@ -200,81 +206,83 @@ public class PartExcelService : IPartExcelService
             var existing = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == name);
             if (existing == null)
             {
-                var newS = new CchSuppliers
-                {
-                    SupplierName = name,
-                    CustomerID = parts.FirstOrDefault(p => p.Supplier == name)?.CustomerId,
-                    Status = "Active",
-                    CreatedBy = "system",
-                    CreatedDate = now
-                };
-                _commonRepository.CreateSupplier(newS);
-                existing = newS;
+            var newS = new CchSuppliers
+            {
+                SupplierName = name,
+                CustomerID = parts.FirstOrDefault(p => p.Supplier == name)?.CustomerId,
+                Status = "Active",
+                CreatedBy = CurrentUser,
+                CreatedDate = now
+            };
+            _commonRepository.CreateSupplier(newS);
+            existing = newS;
             }
             foreach (var p in parts.Where(x => x.Supplier == name)) p.SupplierId = existing.ID;
-        }
+            }
 
-        // 2. Persist Parts
-        foreach (var p in parts)
-        {
+            // 2. Persist Parts
+            foreach (var p in parts)
+            {
             try
             {
-                var customerId = p.CustomerId ?? 0;
-                var existing = _repository.GetPartByNo(customerId, p.PartNo);
-                CchParts target;
+            var customerId = p.CustomerId ?? 0;
+            var existing = _repository.GetPartByNo(customerId, p.PartNo);
+            CchParts target;
 
-                if (existing != null)
-                {
-                    existing.PartDescription = p.PartDesc;
-                    existing.CountryID = p.CountryId;
-                    existing.Division = p.Division;
-                    existing.SupplierID = p.SupplierId;
-                    existing.HTSCode = p.HtsCode;
-                    existing.DutyRate = p.Rate;
-                    existing.AddHTSCode1 = p.HtsCode1;
-                    existing.AddDutyRate1 = p.Rate1;
-                    existing.AddHTSCode2 = p.HtsCode2;
-                    existing.AddDutyRate2 = p.Rate2;
-                    existing.AddHTSCode3 = p.HtsCode3;
-                    existing.AddDutyRate3 = p.Rate3;
-                    existing.AddHTSCode4 = p.HtsCode4;
-                    existing.AddDutyRate4 = p.Rate4;
-                    existing.Remark = p.Remark;
-                    existing.Status = "S01";
-                    _repository.UpdatePart(existing);
-                    target = existing;
-                    result.Updated++;
-                }
-                else
-                {
-                    target = new CchParts
-                    {
-                        CustomerID = p.CustomerId,
-                        PartNo = p.PartNo,
-                        PartDescription = p.PartDesc,
-                        CountryID = p.CountryId,
-                        Division = p.Division,
-                        SupplierID = p.SupplierId,
-                        HTSCode = p.HtsCode,
-                        DutyRate = p.Rate,
-                        AddHTSCode1 = p.HtsCode1,
-                        AddDutyRate1 = p.Rate1,
-                        AddHTSCode2 = p.HtsCode2,
-                        AddDutyRate2 = p.Rate2,
-                        AddHTSCode3 = p.HtsCode3,
-                        AddDutyRate3 = p.Rate3,
-                        AddHTSCode4 = p.HtsCode4,
-                        AddDutyRate4 = p.Rate4,
-                        Remark = p.Remark,
-                        Status = "S01"
-                    };
-                    _repository.CreatePart(target);
-                    result.Inserted++;
-                }
-
-                RecordSnapshot(target);
+            if (existing != null)
+            {
+                existing.PartDescription = p.PartDesc;
+                existing.CountryID = p.CountryId;
+                existing.Division = p.Division;
+                existing.SupplierID = p.SupplierId;
+                existing.HTSCode = p.HtsCode;
+                existing.DutyRate = p.Rate;
+                existing.AddHTSCode1 = p.HtsCode1;
+                existing.AddDutyRate1 = p.Rate1;
+                existing.AddHTSCode2 = p.HtsCode2;
+                existing.AddDutyRate2 = p.Rate2;
+                existing.AddHTSCode3 = p.HtsCode3;
+                existing.AddDutyRate3 = p.Rate3;
+                existing.AddHTSCode4 = p.HtsCode4;
+                existing.AddDutyRate4 = p.Rate4;
+                existing.Remark = p.Remark;
+                existing.Status = "S01";
+                existing.UpdatedBy = CurrentUser;
+                _repository.UpdatePart(existing);
+                target = existing;
+                result.Updated++;
             }
-            catch (Exception ex)
+            else
+            {
+                target = new CchParts
+                {
+                    CustomerID = p.CustomerId,
+                    PartNo = p.PartNo,
+                    PartDescription = p.PartDesc,
+                    CountryID = p.CountryId,
+                    Division = p.Division,
+                    SupplierID = p.SupplierId,
+                    HTSCode = p.HtsCode,
+                    DutyRate = p.Rate,
+                    AddHTSCode1 = p.HtsCode1,
+                    AddDutyRate1 = p.Rate1,
+                    AddHTSCode2 = p.HtsCode2,
+                    AddDutyRate2 = p.Rate2,
+                    AddHTSCode3 = p.HtsCode3,
+                    AddDutyRate3 = p.Rate3,
+                    AddHTSCode4 = p.HtsCode4,
+                    AddDutyRate4 = p.Rate4,
+                    Remark = p.Remark,
+                    Status = "S01",
+                    CreatedBy = CurrentUser,
+                    UpdatedBy = CurrentUser
+                };
+                _repository.CreatePart(target);
+                result.Inserted++;
+            }
+
+            RecordSnapshot(target);
+            }            catch (Exception ex)
             {
                 result.Failed++;
                 result.Errors.Add($"{p.PartNo}: {ex.Message}");

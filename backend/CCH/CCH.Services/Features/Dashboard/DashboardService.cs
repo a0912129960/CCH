@@ -64,7 +64,7 @@ public class DashboardService : IDashboardService
             Status      = p.Status ?? string.Empty,
             UpdatedBy   = p.UpdatedBy ?? string.Empty,
             UpdatedDate = p.UpdatedDate ?? DateTime.MinValue,
-            SlaStatus   = CalculateSlaStatus(p.UpdatedDate, p.Status, role)
+            SlaStatus   = CalculateSlaStatus(p.UpdatedDate ?? DateTime.MinValue, p.Status, role)
         });
     }
 

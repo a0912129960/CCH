@@ -70,12 +70,13 @@ public class PartRepository : IPartRepository
     }
 
     /// <inheritdoc/>
-    public void UpdateStatus(int partId, string status)
+    public void UpdateStatus(int partId, string status, string updatedBy)
     {
         var existing = _context.CchParts.FirstOrDefault(p => p.ID == partId);
         if (existing != null)
         {
             existing.Status = status;
+            existing.UpdatedBy = updatedBy;
             existing.UpdatedDate = DateTime.Now;
             _context.SaveChanges();
         }
