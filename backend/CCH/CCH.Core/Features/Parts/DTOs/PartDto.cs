@@ -98,6 +98,49 @@ public class PartDetailDto
 }
 
 /// <summary>
+/// Request for creating a part in draft status (Save only).
+/// Only PartNo and CountryId are required; all other fields are optional.
+/// (繁體中文) 建立草稿零件的請求（僅儲存）。只有 PartNo 與 CountryId 為必填，其餘欄位選填。
+/// </summary>
+public class PartCreateRequest
+{
+    public int? CustomerId { get; set; }
+
+    [Required(ErrorMessage = "PartNo is required. / 零件編號為必填。")]
+    public string PartNo { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "CountryId is required. / 原產地為必填。")]
+    public int? CountryId { get; set; }
+
+    public string? Division { get; set; }
+    public string? Supplier { get; set; }
+    public string? PartDesc { get; set; }
+
+    [RegularExpression(@"^\d{4}\.\d{2}\.\d{4}$", ErrorMessage = "HtsCode must be in XXXX.XX.XXXX format. / HTS Code 格式須為 XXXX.XX.XXXX。")]
+    public string? HtsCode { get; set; }
+
+    public decimal? Rate { get; set; }
+
+    [RegularExpression(@"^\d{4}\.\d{2}\.\d{4}$", ErrorMessage = "HtsCode1 must be in XXXX.XX.XXXX format.")]
+    public string? HtsCode1 { get; set; }
+    public decimal? Rate1 { get; set; }
+
+    [RegularExpression(@"^\d{4}\.\d{2}\.\d{4}$", ErrorMessage = "HtsCode2 must be in XXXX.XX.XXXX format.")]
+    public string? HtsCode2 { get; set; }
+    public decimal? Rate2 { get; set; }
+
+    [RegularExpression(@"^\d{4}\.\d{2}\.\d{4}$", ErrorMessage = "HtsCode3 must be in XXXX.XX.XXXX format.")]
+    public string? HtsCode3 { get; set; }
+    public decimal? Rate3 { get; set; }
+
+    [RegularExpression(@"^\d{4}\.\d{2}\.\d{4}$", ErrorMessage = "HtsCode4 must be in XXXX.XX.XXXX format.")]
+    public string? HtsCode4 { get; set; }
+    public decimal? Rate4 { get; set; }
+
+    public string? Remark { get; set; }
+}
+
+/// <summary>
 /// Request for creating or updating a part.
 /// (繁體中文) 新增或修改零件的請求。
 /// </summary>
@@ -111,7 +154,8 @@ public class PartSaveRequest
     [Required(ErrorMessage = "PartNo is required. / 零件編號為必填。")]
     public string PartNo { get; set; } = string.Empty;
 
-    // Country of Origin — not editable via PUT (View Detail), kept nullable (原產地在 View Detail 不可編輯，保留 nullable)
+    // CountryId is required for Save & Submit (原產地在新增送審時為必填)
+    [Required(ErrorMessage = "CountryId is required. / 原產地為必填。")]
     public int? CountryId { get; set; }
 
     // Division is required (部門為必填)
@@ -120,8 +164,8 @@ public class PartSaveRequest
 
     // INTERNAL-AI-20260420: Changed from SupplierId (int FK) to Supplier (free-text string) per spec.
     // (INTERNAL-AI-20260420: 依規格將供應商由整數 FK 改為自由輸入字串。)
-    /* [Required(ErrorMessage = "SupplierId is required. / 供應商為必填。")]
-    public int? SupplierId { get; set; } */
+    // Supplier is required for Save & Submit (供應商在送審時為必填)
+    [Required(ErrorMessage = "Supplier is required. / 供應商為必填。")]
     public string Supplier { get; set; } = string.Empty;
 
     // Part Description is required (零件描述為必填)
@@ -175,4 +219,33 @@ public class MilestoneDto
     public string UpdatedBy { get; set; } = string.Empty;
     public DateTime UpdatedDate { get; set; }
     public string Remark { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Part data transfer object for bulk upload and preview.
+/// (繁體中文) 用於批次上傳與預覽的零件資料傳輸物件。
+/// </summary>
+public class PartDto
+{
+    public int? Id { get; set; }
+    public int? CustomerId { get; set; }
+    public string PartNo { get; set; } = string.Empty;
+    public int? CountryId { get; set; }
+    public string Country { get; set; } = string.Empty;
+    public string Division { get; set; } = string.Empty;
+    public string Supplier { get; set; } = string.Empty;
+    public int? SupplierId { get; set; }
+    public string PartDesc { get; set; } = string.Empty;
+    public string HtsCode { get; set; } = string.Empty;
+    public decimal Rate { get; set; }
+    public string? HtsCode1 { get; set; }
+    public decimal? Rate1 { get; set; }
+    public string? HtsCode2 { get; set; }
+    public decimal? Rate2 { get; set; }
+    public string? HtsCode3 { get; set; }
+    public decimal? Rate3 { get; set; }
+    public string? HtsCode4 { get; set; }
+    public decimal? Rate4 { get; set; }
+    public string Remark { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
 }

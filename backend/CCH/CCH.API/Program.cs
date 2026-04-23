@@ -12,11 +12,20 @@ using CCH.Services.Features.Auth;
 using CCH.Services.Features.Common;
 using CCH.Services.Features.Dashboard;
 using CCH.Services.Infrastructure;
+using CCH.Services.Repositories.Data;
+using CCH.API.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Register DbContexts / 註冊資料庫內容
+builder.Services.AddDbContext<CspDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("CspConnection")));
+builder.Services.AddDbContext<ReSmDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ReSmConnection")));
 
 // Add services to the container.
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -95,6 +104,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
+app.UseMiddleware<CchAuditLogMiddleware>();
 
 // Use CORS middleware / 使用 CORS 中介軟體
 // Update by AI (2026-04-15): Apply "AllowAll" policy

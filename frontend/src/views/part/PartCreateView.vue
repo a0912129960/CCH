@@ -2,7 +2,7 @@
 import { authService, UserRole } from '@src/services/auth/auth';
 import Card from '@src/components/common/Card.vue';
 import Button from '@src/components/common/Button.vue';
-import { partService, type CreatePartRequest } from '@src/services/part/part';
+import { partService, type CreatePartRequest, type SubmitPartRequest } from '@src/services/part/part';
 import { commonService, type CountryOption } from '@src/services/common/common';
 import { ElMessage } from 'element-plus';
 
@@ -64,12 +64,27 @@ onMounted(async () => {
   }
 });
 
-const sanitizeDecimal = (val: string): string =>
-  val.replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1');
+// HTS Code format: XXXX.XX.XXXX — allows digits and up to TWO periods.
+// The old sanitizeDecimal stripped the second period, making the format impossible to type.
+const sanitizeHtsCode = (val: string): string => {
+  // Keep only digits and periods
+  const cleaned = val.replace(/[^\d.]/g, '');
+  // Allow at most 2 periods (XXXX.XX.XXXX has exactly 2)
+  let result = '';
+  let dotCount = 0;
+  for (const ch of cleaned) {
+    if (ch === '.') {
+      if (dotCount < 2) { result += ch; dotCount++; }
+    } else {
+      result += ch;
+    }
+  }
+  return result;
+};
 
 watch(() => form.value.usHtsCode, (newVal) => {
   if (!newVal) return;
-  const sanitized = sanitizeDecimal(newVal);
+  const sanitized = sanitizeHtsCode(newVal);
   if (newVal !== sanitized) form.value.usHtsCode = sanitized;
 });
 
@@ -81,7 +96,7 @@ watch(() => form.value.generalDutyRate, (newVal) => {
 
 watch(() => form.value.htsCode301, (newVal) => {
   if (!newVal) return;
-  const sanitized = sanitizeDecimal(newVal);
+  const sanitized = sanitizeHtsCode(newVal);
   if (newVal !== sanitized) form.value.htsCode301 = sanitized;
 });
 
@@ -93,7 +108,7 @@ watch(() => form.value.rate301, (newVal) => {
 
 watch(() => form.value.htsCodeIeepa, (newVal) => {
   if (!newVal) return;
-  const sanitized = sanitizeDecimal(newVal);
+  const sanitized = sanitizeHtsCode(newVal);
   if (newVal !== sanitized) form.value.htsCodeIeepa = sanitized;
 });
 
@@ -105,7 +120,7 @@ watch(() => form.value.rateIeepa, (newVal) => {
 
 watch(() => form.value.htsCode232Aluminum, (newVal) => {
   if (!newVal) return;
-  const sanitized = sanitizeDecimal(newVal);
+  const sanitized = sanitizeHtsCode(newVal);
   if (newVal !== sanitized) form.value.htsCode232Aluminum = sanitized;
 });
 
@@ -117,7 +132,7 @@ watch(() => form.value.rate232Aluminum, (newVal) => {
 
 watch(() => form.value.htsCodeReciprocalTariff, (newVal) => {
   if (!newVal) return;
-  const sanitized = sanitizeDecimal(newVal);
+  const sanitized = sanitizeHtsCode(newVal);
   if (newVal !== sanitized) form.value.htsCodeReciprocalTariff = sanitized;
 });
 
@@ -209,6 +224,7 @@ const toCountryId = (val: string | number | ''): string | number | undefined => 
   return Number.isNaN(n) ? val : n;  // numeric string → number; code string → keep as-is
 };
 
+// [Save] → PartCreateRequest: only partNo + countryId required
 const handleSubmit = async () => {
   if (!validateSave()) return;
 
@@ -216,7 +232,7 @@ const handleSubmit = async () => {
     const body: CreatePartRequest = {
       customerId:  form.value.customerId  || undefined,
       partNo:      form.value.partNo,
-      countryId:   toCountryId(form.value.countryOfOrigin),
+      countryId:   toCountryId(form.value.countryOfOrigin)!,
       division:    form.value.division    || undefined,
       supplier:    form.value.supplier    || undefined,
       partDesc:    form.value.partDescription || undefined,
@@ -244,18 +260,19 @@ const handleSubmit = async () => {
   }
 };
 
+// [Save & Submit] → SubmitPartRequest: partNo + countryId + division + supplier + partDesc + htsCode all required
 const handleSaveAndSubmit = async () => {
   if (!validateSaveAndSubmit()) return;
 
   try {
-    const body: CreatePartRequest = {
+    const body: SubmitPartRequest = {
       customerId:  form.value.customerId  || undefined,
       partNo:      form.value.partNo,
-      countryId:   toCountryId(form.value.countryOfOrigin),
-      division:    form.value.division    || undefined,
-      supplier:    form.value.supplier    || undefined,
-      partDesc:    form.value.partDescription || undefined,
-      htsCode:     form.value.usHtsCode   || undefined,
+      countryId:   toCountryId(form.value.countryOfOrigin) as number,
+      division:    form.value.division,
+      supplier:    form.value.supplier,
+      partDesc:    form.value.partDescription,
+      htsCode:     form.value.usHtsCode,
       rate:        toNum(form.value.generalDutyRate),
       htsCode1:    form.value.htsCode301  || undefined,
       rate1:       toNum(form.value.rate301),
@@ -352,10 +369,10 @@ const handleSaveAndSubmit = async () => {
                 </div>
               </div>
 
-              <!-- Division -->
+              <!-- Division (required for Save & Submit only) -->
               <div class="info-table__row">
                 <div class="info-table__field">
-                  {{ $t('part_create.division') }} <span class="required-asterisk">*</span>
+                  {{ $t('part_create.division') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
                 </div>
                 <div class="info-table__value">
                   <input v-model="form.division" type="text" :placeholder="$t('part_create.division_placeholder')" class="form-input" :class="{ 'is-invalid': errors.division }" data-test="division-input" />
@@ -363,10 +380,10 @@ const handleSaveAndSubmit = async () => {
                 </div>
               </div>
 
-              <!-- Supplier -->
+              <!-- Supplier (required for Save & Submit only) -->
               <div class="info-table__row">
                 <div class="info-table__field">
-                  {{ $t('common.supplier') }} <span class="required-asterisk">*</span>
+                  {{ $t('common.supplier') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
                 </div>
                 <div class="info-table__value">
                   <input v-model="form.supplier" type="text" :placeholder="$t('part_list.filter_supplier')" class="form-input" :class="{ 'is-invalid': errors.supplier }" data-test="supplier-input" />
@@ -374,10 +391,10 @@ const handleSaveAndSubmit = async () => {
                 </div>
               </div>
 
-              <!-- Part Description -->
+              <!-- Part Description (required for Save & Submit only) -->
               <div class="info-table__row">
                 <div class="info-table__field">
-                  {{ $t('part_create.part_description') }} <span class="required-asterisk">*</span>
+                  {{ $t('part_create.part_description') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
                 </div>
                 <div class="info-table__value">
                   <input v-model="form.partDescription" type="text" :placeholder="$t('part_create.part_description_placeholder')" class="form-input" :class="{ 'is-invalid': errors.partDescription }" data-test="part-description-input" />
@@ -385,10 +402,10 @@ const handleSaveAndSubmit = async () => {
                 </div>
               </div>
 
-              <!-- US HTS Code -->
+              <!-- US HTS Code (required for Save & Submit only) -->
               <div class="info-table__row">
                 <div class="info-table__field">
-                  {{ $t('part_create.us_hts_code') }} <span class="required-asterisk">*</span>
+                  {{ $t('part_create.us_hts_code') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
                 </div>
                 <div class="info-table__value">
                   <input v-model="form.usHtsCode" type="text" :placeholder="$t('part_create.us_hts_code_placeholder')" class="form-input" :class="{ 'is-invalid': errors.usHtsCode }" data-test="us-hts-code-input" />
@@ -625,6 +642,12 @@ h1 {
   color: #F56C6C;
   font-weight: bold;
   margin-left: 2px;
+}
+
+/* Fields required only for [Save & Submit] — shown in amber to distinguish from always-required (*) */
+.submit-only-asterisk {
+  color: #E6A23C;
+  cursor: help;
 }
 
 .form-input, .form-textarea, .form-select-el {

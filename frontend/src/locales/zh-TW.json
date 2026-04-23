@@ -27,6 +27,7 @@
     "resubmit": "重新提交",
     "back": "返回",
     "no_data": "暫無資料",
+    "refresh": "重新整理",
     "close_all": "關閉全部",
     "close_others": "關閉其他",
     "collapse_all": "全數收合"
@@ -55,7 +56,8 @@
     "part_no": "零件編號",
     "hts_code": "HTS Code",
     "supplier": "供應商",
-    "last_updated": "最後更新"
+    "last_updated": "最後更新",
+    "updated_date": "更新日期"
   },
   "customer": {
     "title": "客戶儀表板",
@@ -64,7 +66,10 @@
     "sla_countdown": "SLA 倒數 (待處理項目)",
     "sla_remaining": "剩餘 {min} 分鐘",
     "part_no": "零件編號",
-    "hts_code": "HTS Code"
+    "hts_code": "HTS Code",
+    "pending_review": "待審核零件",
+    "no_pending": "目前無待審核零件",
+    "review": "審核"
   },
   "part_list": {
     "title": "零件清單",
@@ -80,7 +85,24 @@
     "coo": "原產地",
     "duty_rate": "一般關稅率 (%)",
     "updated_by": "更新者",
-    "sla": "SLA"
+    "sla": "SLA",
+    "sla_legend": {
+      "title": "SLA 規則說明",
+      "customer_rule": "目前僅列出「未知」與「待中菲行審核」之紀錄。SLA 計算（自前次提交起）：",
+      "staff_rule": "目前僅列出「待客戶提交」之紀錄。SLA 計算（自前次客戶提交起）：",
+      "range_normal": "正常",
+      "range_warning": "警告",
+      "range_urgent": "緊急",
+      "range_overdue": "逾期",
+      "customer_normal": "0-36h",
+      "customer_warning": "36-48h",
+      "customer_urgent": "48-72h",
+      "customer_overdue": ">72h",
+      "staff_normal": "0-24h",
+      "staff_warning": "24-36h",
+      "staff_urgent": "36-48h",
+      "staff_overdue": ">48h"
+    }
   },
   "part_upload": {
     "title": "批量上傳零件",
@@ -101,6 +123,28 @@
       "updated": "更新",
       "unchanged": "無變動",
       "rejected": "拒絕"
+    },
+    "preview_details": "預覽詳情",
+    "summary": {
+      "total": "總計",
+      "new": "新增",
+      "modified": "已修改",
+      "error": "錯誤",
+      "nochange": "無變動",
+      "new_desc": "新零件，準備匯入",
+      "modified_desc": "偵測到欄位變更",
+      "no_change_desc": "與系統資料一致"
+    },
+    "confirm_button": "批量上傳",
+    "confirm_success": "批量上傳完成。",
+    "confirm_failed": "批量上傳失敗。",
+    "success_title": "上傳成功",
+    "success_message": "資料已成功處理。",
+    "re_upload": "上傳其他資料",
+    "comparison": {
+      "field": "欄位",
+      "original": "原始值",
+      "new": "新值"
     }
   },
   "part_create": {
@@ -200,20 +244,19 @@
     "updated_date": "更新日期"
   },
   "status": {
-    "unknown": "未知",
-    "pending_customer": "待客戶提交",
-    "pending_review": "待中菲行審核",
-    "returned": "退回 (待修正)",
-    "active": "生效中",
-    "flagged": "標記重估",
-    "superseded": "已取代",
     "s01": "未知",
-    "s02": "待客戶提交",
-    "s03": "待中菲行審核",
-    "s04": "生效中",
-    "s05": "退回 (待修正)",
-    "s06": "標記重估",
-    "s07": "已取代"
+    "s02": "待中菲行審核",
+    "s03": "待客戶審核",
+    "s04": "已審核",
+    "s05": "標記",
+    "inactive": "停用",
+    "unknown": "未知",
+    "pending_customer": "待客戶審核",
+    "pending_review": "待中菲行審核",
+    "returned": "待客戶審核",
+    "active": "已審核",
+    "flagged": "標記",
+    "superseded": "停用"
   },
   "sla": {
     "green": "正常",

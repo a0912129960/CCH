@@ -161,6 +161,10 @@ public class PartRepository : IPartRepository
     }
 
     /// <inheritdoc/>
+    public PartEntity? GetPartByNo(int customerId, string partNo) =>
+        _parts.FirstOrDefault(p => p.CustomerID == customerId && p.PartNo.Equals(partNo, StringComparison.OrdinalIgnoreCase));
+
+    /// <inheritdoc/>
     public PartEntity? GetPartById(int partId) => _parts.FirstOrDefault(p => p.ID == partId);
 
     /// <inheritdoc/>

@@ -10,10 +10,7 @@ import { useUIStore } from '../stores/ui';
  * Update by Gemini AI on 2026-04-15
  */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api'
 });
 
 // Request Interceptor (請求攔截器)

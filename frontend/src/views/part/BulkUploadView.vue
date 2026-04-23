@@ -1,27 +1,51 @@
 <script setup lang="ts">
 import { authService, UserRole } from '@src/services/auth/auth';
-import { partService, type ImportBatchReport, ImportResultStatus } from '@src/services/part/part';
+import { partService, type BulkUploadPreviewReport } from '@src/services/part/part';
 import Card from '@src/components/common/Card.vue';
 import Button from '@src/components/common/Button.vue';
 import { ElMessage, type UploadFile } from 'element-plus';
+import { useI18n } from 'vue-i18n';
+import BulkUploadPreviewTable from '@src/components/features/part/BulkUploadPreviewTable.vue';
 
 /**
  * Bulk Upload View (批量上傳頁面)
- * BR-16: Drag and drop Excel upload
- * BR-18: Progress display
- * BR-19: Import report
- * Updated: Mandatory Customer ID for Employees and Breadcrumb Navigation.
- * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
+ * Updated by Gemini AI on 2026-04-21 per Supreme Quality Mandate.
+ * (INTERNAL-AI-20260421: 依最高品質授權重構：1. 使用 shallowRef 2. 邏輯解耦 3. UI 原子化。)
  */
 
+const { t } = useI18n();
 const router = useRouter();
 const { role, customerId: userCustomerId } = authService.state;
 const isEmployee = role && role !== UserRole.CUSTOMER;
 
 const uploadFile = ref<File | null>(null);
-const uploading = ref(false);
-const progress = ref(0);
-const report = ref<ImportBatchReport | null>(null);
+const previewing = ref(false);
+const confirming = ref(false);
+const isCompleted = ref(false);
+
+/**
+ * MANDATORY: Using shallowRef for massive array data to optimize performance (Rule 1.2).
+ * (針對巨量陣列資料使用 shallowRef 以優化效能。)
+ */
+const previewData = shallowRef<BulkUploadPreviewReport | null>(null);
+const filterStatus = ref<string | null>(null); // 'NEW', 'MODIFIED', 'ERROR', 'NOCHANGE' or null
+
+const filteredRows = computed(() => {
+  if (!previewData.value) return [];
+  if (!filterStatus.value) return previewData.value.rows;
+  return previewData.value.rows.filter(row => {
+    const s = row.rowStatus?.toUpperCase();
+    return s === filterStatus.value;
+  });
+});
+
+const handleFilter = (status: string | null) => {
+  if (filterStatus.value === status) {
+    filterStatus.value = null; // Toggle off
+  } else {
+    filterStatus.value = status;
+  }
+};
 
 const customers = ref<{ id: string; name: string }[]>([]);
 const selectedCustomerId = ref(isEmployee ? '' : userCustomerId || '');
@@ -36,51 +60,73 @@ onMounted(async () => {
   }
 });
 
+const handlePreview = async () => {
+  if (isEmployee && !selectedCustomerId.value) {
+    ElMessage.warning(t('employee.customer_select'));
+    return;
+  }
+  if (!uploadFile.value) return;
+
+  previewing.value = true;
+  try {
+    const result = await partService.previewBulkUpload(uploadFile.value, Number(selectedCustomerId.value));
+    previewData.value = result;
+    ElMessage.success('Preview loaded.');
+  } catch (error: any) {
+    ElMessage.error(error.message || 'Preview failed.');
+  } finally {
+    previewing.value = false;
+  }
+};
+
 const handleFileChange = (file: UploadFile) => {
   if (file.raw) {
     uploadFile.value = file.raw;
-    report.value = null;
-    progress.value = 0;
+    previewData.value = null;
+    handlePreview();
   }
 };
 
-const handleUpload = async () => {
-  if (isEmployee && !selectedCustomerId.value) {
-    ElMessage.warning('Please select a customer first.');
-    return;
-  }
-  if (!uploadFile.value) {
-    ElMessage.warning('Please select a file first.');
+const handleConfirm = async () => {
+  if (!previewData.value || !previewData.value.rows.length) return;
+
+  const validData = previewData.value.rows
+    .filter(row => row.rowStatus?.toUpperCase() !== 'ERROR')
+    .map(row => row.newData);
+
+  if (validData.length === 0) {
+    ElMessage.warning(t('part_upload.confirm_failed'));
     return;
   }
 
-  uploading.value = true;
-  progress.value = 0;
-  
+  confirming.value = true;
   try {
-    const result = await partService.uploadParts(uploadFile.value, selectedCustomerId.value, (p) => {
-      progress.value = p;
-    });
-    report.value = result;
-    ElMessage.success('Upload completed successfully.');
-  } catch (error) {
-    ElMessage.error('Upload failed. Please try again.');
+    const result = await partService.confirmBulkUpload(validData);
+    ElMessage.success(`${t('part_upload.confirm_success')} (Inserted: ${result.inserted}, Updated: ${result.updated}, Failed: ${result.failed})`);
+
+    if (result.failed === 0) {
+      isCompleted.value = true;
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || t('part_upload.confirm_failed'));
   } finally {
-    uploading.value = false;
+    confirming.value = false;
   }
 };
 
-const handleDownloadTemplate = () => {
-  partService.downloadTemplate();
+const handleReset = () => {
+  isCompleted.value = false;
+  previewData.value = null;
+  uploadFile.value = null;
+  filterStatus.value = null;
+  if (isEmployee) selectedCustomerId.value = '';
 };
 
-const getStatusType = (status: ImportResultStatus) => {
-  switch (status) {
-    case ImportResultStatus.NEW: return 'success';
-    case ImportResultStatus.UPDATED: return 'warning';
-    case ImportResultStatus.UNCHANGED: return 'info';
-    case ImportResultStatus.REJECTED: return 'danger';
-    default: return 'info';
+const handleDownloadTemplate = async () => {
+  try {
+    await partService.downloadTemplate();
+  } catch (error) {
+    console.error('Template download failed:', error);
   }
 };
 </script>
@@ -88,7 +134,6 @@ const getStatusType = (status: ImportResultStatus) => {
 <template>
   <div class="page-wrapper">
     <div class="page-container">
-      <!-- Breadcrumb Navigation -->
       <nav class="breadcrumb">
         <a href="#" @click.prevent="router.back()">{{ $t('common.menu.parts') }}</a>
         <span class="separator">/</span>
@@ -101,90 +146,93 @@ const getStatusType = (status: ImportResultStatus) => {
 
       <div class="upload-section">
         <Card class="upload-card">
-          <div class="template-action">
-            <Button type="secondary" @click="handleDownloadTemplate">
-              {{ $t('part_upload.download_template') }}
-            </Button>
-          </div>
-
-          <!-- Customer Selection (Employee Only) - Mandatory -->
-          <div v-if="isEmployee" class="customer-selection-row mb-6">
-            <label class="block text-sm text-gray-600 mb-2">{{ $t('employee.customer_select') }} <span class="text-red-500">*</span></label>
-            <el-select 
-              v-model="selectedCustomerId" 
-              :placeholder="$t('employee.customer_select')"
-              class="w-full max-w-md"
-              filterable
-            >
-              <el-option
-                v-for="c in customers"
-                :key="c.id"
-                :label="c.name"
-                :value="c.id"
-              />
-            </el-select>
-          </div>
-
-          <el-upload
-            class="upload-dragger"
-            drag
-            action="#"
-            :auto-upload="false"
-            :on-change="handleFileChange"
-            :limit="1"
-            accept=".csv,.xls,.xlsx"
-          >
-            <i class="el-icon-upload"></i>
-            <div class="el-upload__text">
-              {{ $t('part_upload.dragger_text') }}
+          <template v-if="!isCompleted">
+            <div class="template-action">
+              <Button type="secondary" @click="handleDownloadTemplate">
+                {{ $t('part_upload.download_template') }}
+              </Button>
             </div>
-            <template #tip>
-              <div class="el-upload__tip">
-                {{ $t('part_upload.dragger_hint') }}
-              </div>
-            </template>
-          </el-upload>
 
-          <div v-if="uploadFile" class="action-footer">
-            <Button :loading="uploading" @click="handleUpload">
-              {{ $t('part_upload.upload_button') }}
-            </Button>
-          </div>
+            <div v-if="isEmployee" class="customer-selection-row mb-6">
+              <label class="block text-sm text-gray-600 mb-2">{{ $t('employee.customer_select') }} <span class="text-red-500">*</span></label>
+              <el-select 
+                v-model="selectedCustomerId" 
+                :placeholder="$t('employee.customer_select')"
+                class="w-full max-w-md"
+                filterable
+                :disabled="!!previewData || previewing"
+              >
+                <el-option v-for="c in customers" :key="c.id" :label="c.name" :value="c.id" />
+              </el-select>
+            </div>
 
-          <div v-if="uploading" class="progress-wrapper">
-            <label>{{ $t('part_upload.progress') }}</label>
-            <el-progress :percentage="progress" />
-          </div>
+            <div v-loading="previewing">
+              <el-upload
+                class="upload-dragger"
+                drag
+                action="#"
+                :auto-upload="false"
+                :on-change="handleFileChange"
+                :limit="1"
+                accept=".csv,.xls,.xlsx"
+                :show-file-list="false"
+                :disabled="!!previewData || previewing"
+              >
+                <div class="el-upload__text">{{ $t('part_upload.dragger_text') }}</div>
+              </el-upload>
+            </div>
+
+            <div v-if="previewData" class="action-footer mt-6 flex justify-center">
+              <Button 
+                :loading="confirming" 
+                :disabled="previewData.summary.errorCount === previewData.summary.totalRows"
+                @click="handleConfirm"
+              >
+                {{ $t('part_upload.confirm_button') }}
+              </Button>
+            </div>
+          </template>
+          
+          <template v-else>
+            <div class="completion-status text-center py-10">
+              <el-result icon="success" :title="$t('part_upload.success_title')" :sub-title="$t('part_upload.success_message')">
+                <template #extra>
+                  <Button @click="handleReset">{{ $t('part_upload.re_upload') }}</Button>
+                </template>
+              </el-result>
+            </div>
+          </template>
         </Card>
       </div>
 
-      <div v-if="report" class="report-section mt-6">
+      <!-- Preview Section (預覽區塊) -->
+      <div v-if="previewData" class="report-section mt-6">
+        <div class="summary-banner mb-4">
+          <div v-for="s in ['TOTAL', 'NEW', 'MODIFIED', 'ERROR', 'NOCHANGE']" 
+            :key="s"
+            class="summary-item cursor-pointer transition-all"
+            :class="[
+              { 'is-active': filterStatus === (s === 'TOTAL' ? null : s) },
+              s === 'NEW' ? 'text-success' : s === 'MODIFIED' ? 'text-warning' : s === 'ERROR' ? 'text-danger' : s === 'NOCHANGE' ? 'text-info' : ''
+            ]"
+            @click="handleFilter(s === 'TOTAL' ? null : s)"
+          >
+            <span class="label">{{ $t(`part_upload.summary.${s.toLowerCase()}`) }}</span>
+            <span class="value">
+              {{ s === 'TOTAL' ? previewData.summary.totalRows : 
+                 s === 'NEW' ? previewData.summary.newCount : 
+                 s === 'MODIFIED' ? previewData.summary.modifiedCount : 
+                 s === 'ERROR' ? previewData.summary.errorCount : previewData.summary.noChangeCount }}
+            </span>
+          </div>
+        </div>
+
         <Card>
           <div class="card-header-padding">
-            <h3>{{ $t('part_upload.report_title') }}</h3>
+            <h3>{{ $t('part_upload.preview_details') }}</h3>
           </div>
-          <div class="card-body-padding">
-            <div class="summary-banner">
-              <el-tag type="info">Total: {{ report.totalRows }}</el-tag>
-              <el-tag type="success">New: {{ report.newCount }}</el-tag>
-              <el-tag type="warning">Updated: {{ report.updatedCount }}</el-tag>
-              <el-tag type="info" effect="plain">Unchanged: {{ report.unchangedCount }}</el-tag>
-              <el-tag type="danger">Rejected: {{ report.rejectedCount }}</el-tag>
-            </div>
-
-            <el-table :data="report.rows" style="width: 100%" class="report-table mt-4">
-              <el-table-column prop="partNo" :label="$t('part_upload.table.part_no')" width="180" />
-              <el-table-column prop="htsCode" :label="$t('part_upload.table.hts_code')" width="180" />
-              <el-table-column prop="status" :label="$t('part_upload.table.status')" width="120">
-                <template #default="scope">
-                  <el-tag :type="getStatusType(scope.row.status)">
-                    {{ $t('part_upload.result.' + scope.row.status.toLowerCase()) }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="message" :label="$t('part_upload.table.message')" />
-            </el-table>
-          </div>
+          <!-- Refactored: Extracted Table Component (Rule 2.2) -->
+          <BulkUploadPreviewTable :rows="filteredRows" />
         </Card>
       </div>
     </div>
@@ -192,124 +240,43 @@ const getStatusType = (status: ImportResultStatus) => {
 </template>
 
 <style scoped>
-.page-wrapper {
-  background-color: #f4f7fc;
-  min-height: 100vh;
-  padding: 2rem 0;
-}
-
-.page-container {
-  padding: 0 3rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  font-family: "MyDimerco-WorkSansBold", sans-serif;
-}
-
-/* Breadcrumb */
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-  font-size: 0.9rem;
-}
-
-.breadcrumb a {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
+.page-wrapper { background-color: #f4f7fc; min-height: 100vh; padding: 2rem 0; }
+.page-container { padding: 0 3rem; max-width: 1400px; margin: 0 auto; }
+.breadcrumb { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; font-size: 0.9rem; }
+.breadcrumb a { color: var(--primary-color); text-decoration: none; }
 .breadcrumb .separator { color: #adb5bd; }
 .breadcrumb .current { color: #6c757d; }
-
-.page-header {
-  margin-bottom: 2.5rem;
-}
-
-h1 {
-  font-size: 2rem;
-  color: var(--sidebar-color);
-  margin: 0;
-}
-
-.upload-card {
-  padding: 2rem;
-  border-radius: 12px;
-}
-
-.template-action {
-  margin-bottom: 1.5rem;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.customer-selection-row {
-  background: #f8f9fe;
-  padding: 1.5rem;
-  border-radius: 10px;
-  border: 1px solid #e9ecef;
-}
-
-.upload-dragger {
-  width: 100%;
-}
-
-:deep(.el-upload-dragger) {
-  border: 2px dashed #dee2e6;
-  border-radius: 12px;
-  padding: 40px;
-  transition: border-color 0.3s;
-}
-
-:deep(.el-upload-dragger:hover) {
-  border-color: var(--primary-color);
-}
-
-.action-footer {
-  margin-top: 2rem;
-  display: flex;
-  justify-content: center;
-}
-
-.progress-wrapper {
-  margin-top: 2rem;
-}
-
-.progress-wrapper label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-  color: #8898aa;
-}
-
-.summary-banner {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding: 1.2rem;
-  background: #f8f9fe;
-  border-radius: 10px;
-  border: 1px solid #e9ecef;
-}
-
-.report-table :deep(th) {
-  background-color: #f8f9fe;
-  color: #8898aa;
-  font-size: 0.85rem;
-}
-
-.card-body-padding { padding: 1.5rem 2rem; }
-.card-header-padding { padding: 1.2rem 2rem; border-bottom: 1px solid #f1f3f5; }
-
+.page-header { margin-bottom: 2.5rem; }
+h1 { font-size: 2rem; color: var(--sidebar-color); margin: 0; }
+.upload-card { padding: 2.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+.template-action { margin-bottom: 1.5rem; display: flex; justify-content: flex-end; }
+.customer-selection-row { background: #f8f9fe; padding: 1.5rem; border-radius: 12px; border: 1px solid #e9ecef; }
+.upload-dragger { width: 100%; }
+:deep(.el-upload-dragger) { border: 2px dashed #dee2e6; border-radius: 16px; padding: 50px; transition: all 0.3s; background: #fafbfc; }
+:deep(.el-upload-dragger:hover) { border-color: var(--primary-color); background: white; }
+.summary-banner { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5rem; background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.summary-item { display: flex; flex-direction: column; align-items: center; }
+.summary-item .label { font-size: 0.8rem; color: #8898aa; text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 600; }
+.summary-item .value { font-size: 1.75rem; font-weight: 700; }
+.summary-item.cursor-pointer:hover { background-color: #f8f9fe; transform: translateY(-2px); }
+.summary-item.is-active { background-color: #f0f7ff; border-radius: 8px; }
+.card-header-padding { padding: 1.5rem 2rem; border-bottom: 1px solid #f1f3f5; background: #fafbfc; }
+.card-header-padding h3 { margin: 0; font-size: 1.1rem; color: #303133; }
+.text-success { color: #67C23A; }
+.text-warning { color: #E6A23C; }
+.text-danger { color: #F56C6C; }
+.text-info { color: #909399; }
 .mb-6 { margin-bottom: 1.5rem; }
-.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
 .mt-6 { margin-top: 1.5rem; }
-.mt-4 { margin-top: 1rem; }
-.mr-4 { margin-right: 1rem; }
+.flex { display: flex; }
+.justify-center { justify-content: center; }
 .w-full { width: 100%; }
 .max-w-md { max-width: 28rem; }
 .block { display: block; }
 .text-sm { font-size: 0.875rem; }
 .text-gray-600 { color: #4b5563; }
 .text-red-500 { color: #ef4444; }
+.text-center { text-center: center; }
+.py-10 { padding: 2.5rem 0; }
 </style>

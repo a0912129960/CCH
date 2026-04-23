@@ -8,7 +8,7 @@ namespace CCH.Core.Features.Parts.Interfaces;
 /// </summary>
 public interface IPartLifecycleService
 {
-    object CreatePart(PartSaveRequest request, string status);
+    object CreatePart(PartCreateRequest request, string status);
     object UpdatePart(int partId, PartSaveRequest request);
     object SubmitPart(int partId, PartSaveRequest request);
     object AcceptPart(int partId);

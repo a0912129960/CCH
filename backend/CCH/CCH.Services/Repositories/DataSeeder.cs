@@ -50,8 +50,7 @@ public static class DataSeeder
         new() { Code = "S02", Description = "Pending Dimerco Review" },
         new() { Code = "S03", Description = "Pending Customer Review" },
         new() { Code = "S04", Description = "Reviewed" },
-        new() { Code = "S05", Description = "Flagged" },
-        new() { Code = "", Description = "Inactive" }
+        new() { Code = "S05", Description = "Flagged" }
     };
 
     private static readonly List<SupplierEntity> DefaultSuppliers = new() {

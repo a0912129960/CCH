@@ -29,6 +29,7 @@
     "back": "Back",
     "no_data": "No data found",
     "confirm": "Confirm",
+    "refresh": "Refresh",
     "close_all": "Close All",
     "close_others": "Close Others",
     "collapse_all": "Collapse All"
@@ -57,7 +58,8 @@
     "part_no": "Part No",
     "hts_code": "HTS Code",
     "supplier": "Supplier",
-    "last_updated": "Last Updated"
+    "last_updated": "Last Updated",
+    "updated_date": "Updated Date"
   },
   "customer": {
     "title": "Customer Dashboard",
@@ -66,7 +68,10 @@
     "sla_countdown": "SLA Countdown (Pending Items)",
     "sla_remaining": "{min} mins remaining",
     "part_no": "Part No",
-    "hts_code": "HTS Code"
+    "hts_code": "HTS Code",
+    "pending_review": "Pending Review Parts",
+    "no_pending": "No parts pending review",
+    "review": "Review"
   },
   "part_list": {
     "title": "Parts List",
@@ -82,7 +87,24 @@
     "coo": "Country of Origin",
     "duty_rate": "General Duty Rate (%)",
     "updated_by": "Updated By",
-    "sla": "SLA"
+    "sla": "SLA",
+    "sla_legend": {
+      "title": "SLA Rule Guide",
+      "customer_rule": "Currently listing Unknown and Pending Review records. SLA (from last submission):",
+      "staff_rule": "Currently listing Pending Customer records. SLA (from last customer submission):",
+      "range_normal": "Normal",
+      "range_warning": "Warning",
+      "range_urgent": "Urgent",
+      "range_overdue": "Overdue",
+      "customer_normal": "0-36h",
+      "customer_warning": "36-48h",
+      "customer_urgent": "48-72h",
+      "customer_overdue": ">72h",
+      "staff_normal": "0-24h",
+      "staff_warning": "24-36h",
+      "staff_urgent": "36-48h",
+      "staff_overdue": ">48h"
+    }
   },
   "part_upload": {
     "title": "Bulk Upload Parts",
@@ -103,6 +125,25 @@
       "updated": "Updated",
       "unchanged": "Unchanged",
       "rejected": "Rejected"
+    },
+    "preview_details": "Preview Details",
+    "summary": {
+      "total": "Total",
+      "new": "New",
+      "modified": "Modified",
+      "error": "Error",
+      "nochange": "No Change"
+    },
+    "confirm_button": "Bulk Upload",
+    "confirm_success": "Bulk upload completed.",
+    "confirm_failed": "Bulk upload failed.",
+    "success_title": "Upload Successful",
+    "success_message": "Data has been processed successfully.",
+    "re_upload": "Upload Other Data",
+    "comparison": {
+      "field": "Field",
+      "original": "Original",
+      "new": "New"
     }
   },
   "part_create": {
@@ -202,20 +243,19 @@
     "updated_date": "Updated Date"
   },
   "status": {
-    "unknown": "Unknown",
-    "pending_customer": "Pending Customer",
-    "pending_review": "Pending Dimerco Review",
-    "returned": "Returned",
-    "active": "Active",
-    "flagged": "Flagged",
-    "superseded": "Superseded",
     "s01": "Unknown",
-    "s02": "Pending Customer",
-    "s03": "Pending Review",
-    "s04": "Active",
-    "s05": "Returned",
-    "s06": "Flagged",
-    "s07": "Superseded"
+    "s02": "Pending Dimerco Review",
+    "s03": "Pending Customer Review",
+    "s04": "Reviewed",
+    "s05": "Flagged",
+    "inactive": "Inactive",
+    "unknown": "Unknown",
+    "pending_customer": "Pending Customer Review",
+    "pending_review": "Pending Dimerco Review",
+    "returned": "Pending Customer Review",
+    "active": "Reviewed",
+    "flagged": "Flagged",
+    "superseded": "Inactive"
   },
   "sla": {
     "green": "Normal",

@@ -21,7 +21,7 @@ public class CommonService : ICommonService
         _repository.GetCustomers().Select(c => new KeyValuePairDto { Key = c.ID.ToString(), Value = c.Name });
 
     public IEnumerable<KeyValuePairDto> GetCountries() => 
-        _repository.GetCountries().Select(c => new KeyValuePairDto { Key = c.Code, Value = c.Name });
+        _repository.GetCountries().Select(c => new KeyValuePairDto { Key = c.ID.ToString(), Value = c.Name });
 
     public IEnumerable<KeyValuePairDto> GetSuppliers(string? customerId)
     {
