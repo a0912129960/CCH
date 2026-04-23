@@ -23,10 +23,12 @@ public class PartLifecycleService : IPartLifecycleService
         _userContext = userContext;
     }
 
+    private string CurrentUser => _userContext.UserName ?? "system";
+
     /// <inheritdoc/>
     public object CreatePart(PartCreateRequest request, string status)
     {
-        var entity = new PartEntity
+        var entity = new CchParts
         {
             CustomerID = request.CustomerId ?? 101,
             PartNo = request.PartNo,
@@ -50,11 +52,11 @@ public class PartLifecycleService : IPartLifecycleService
             UpdatedBy = CurrentUser
         };
 
-        var partId = _repository.CreatePart(entity);
+        var id = _repository.CreatePart(entity);
         // INTERNAL-AI-20260420: Record creation in history + take initial snapshot. (記錄建立歷程並拍攝初始快照。)
-        RecordHistory(partId, "Created");
-        RecordSnapshot(partId, entity);
-        return new { partId, partNo = request.PartNo, status };
+        RecordHistory(id, "Created", null, status);
+        RecordSnapshot(entity);
+        return new { partId = id, partNo = request.PartNo, status };
     }
 
     /// <inheritdoc/>
@@ -123,9 +125,14 @@ public class PartLifecycleService : IPartLifecycleService
     /// <inheritdoc/>
     public object SendToCustomerReview(int partId, PartSaveRequest request)
     {
-        UpdatePart(partId, request);
+        var existing = GetExistingPart(partId);
+        var oldStatus = existing.Status;
+        MapRequestToEntity(request, existing);
+        existing.Status = "S03";
+        _repository.UpdatePart(existing);
         _repository.UpdateStatus(partId, "S03");
-        RecordHistory(partId, "Sent to Customer Review");
+        RecordHistory(partId, "Sent to Customer Review", oldStatus, "S03");
+        RecordSnapshot(existing);
         return new { partId, status = "S03" };
     }
 
@@ -231,4 +238,7 @@ public class PartLifecycleService : IPartLifecycleService
         var supplier = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == req.Supplier);
         e.SupplierID = supplier?.ID ?? 0;
     }
+
+    private int ResolveSupplierIdByName(string supplierName) =>
+        _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == supplierName)?.ID ?? 1;
 }
