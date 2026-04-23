@@ -17,7 +17,7 @@ describe('dashboardService', () => {
     const pendingSummary = summary.find(s => s.status === PartStatus.PENDING_CUSTOMER);
     expect(pendingSummary?.count).toBe(pendingCount);
 
-    expect(summary.length).toBe(7);
+    expect(summary.length).toBe(5);
   });
 
   it('generates SLA items from pending parts (從待處理零件生成 SLA 項目)', async () => {

@@ -1,5 +1,7 @@
 using CCH.API.Middlewares;
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces;
 using CCH.Services.Repositories.Data;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +22,7 @@ public class CchAuditLogMiddlewareTests
         // Arrange
         var mockLogs = new Mock<DbSet<CchLog>>();
         var mockDbContext = new Mock<CspDbContext>(new DbContextOptions<CspDbContext>());
-        mockDbContext.Setup(m => m.Logs).Returns(mockLogs.Object);
+        mockDbContext.Setup(m => m.CchLog).Returns(mockLogs.Object);
 
         var mockUserContext = new Mock<IUserContext>();
         mockUserContext.Setup(u => u.UserId).Returns("test-user");
@@ -68,7 +70,7 @@ public class CchAuditLogMiddlewareTests
         // Arrange
         var mockLogs = new Mock<DbSet<CchLog>>();
         var mockDbContext = new Mock<CspDbContext>(new DbContextOptions<CspDbContext>());
-        mockDbContext.Setup(m => m.Logs).Returns(mockLogs.Object);
+        mockDbContext.Setup(m => m.CchLog).Returns(mockLogs.Object);
 
         var mockUserContext = new Mock<IUserContext>();
 

@@ -17,9 +17,8 @@ public class CommonService : ICommonService
         _repository = repository;
     }
 
-    public IEnumerable<KeyValuePairDto> GetCustomers() => 
-        _repository.GetCustomers().Select(c => new KeyValuePairDto { Key = c.ID.ToString(), Value = c.Name });
-
+    public IEnumerable<KeyValuePairDto> GetCustomers() =>
+        _repository.GetCustomers().Select(c => new KeyValuePairDto { Key = c.HQID.ToString(), Value = c.CustomerName ?? "Unknown" });
     public IEnumerable<KeyValuePairDto> GetCountries() => 
         _repository.GetCountries().Select(c => new KeyValuePairDto { Key = c.ID.ToString(), Value = c.Name });
 
@@ -28,7 +27,7 @@ public class CommonService : ICommonService
         int? cId = null;
         if (int.TryParse(customerId, out int parsedId)) cId = parsedId;
 
-        return _repository.GetSuppliers(cId).Select(s => new KeyValuePairDto { Key = s.ID.ToString(), Value = s.Name });
+        return _repository.GetSuppliers(cId).Select(s => new KeyValuePairDto { Key = s.ID.ToString(), Value = s.SupplierName ?? "Unknown" });
     }
 
     public IEnumerable<KeyValuePairDto> GetStatus() => 

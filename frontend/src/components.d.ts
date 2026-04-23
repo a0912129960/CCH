@@ -25,6 +25,7 @@ declare module 'vue' {
     ElIcon: typeof import('element-plus/es')['ElIcon']
     ElOption: typeof import('element-plus/es')['ElOption']
     ElPagination: typeof import('element-plus/es')['ElPagination']
+    ElResult: typeof import('element-plus/es')['ElResult']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ExpandCollapseBtn: typeof import('./components/common/ExpandCollapseBtn.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']

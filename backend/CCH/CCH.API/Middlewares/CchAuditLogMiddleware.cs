@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Text;
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces;
 using CCH.Services.Repositories.Data;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -73,7 +75,7 @@ public class CchAuditLogMiddleware
                 CreatedDate = DateTime.Now
             };
 
-            dbContext.Logs.Add(log);
+            dbContext.CchLog.Add(log);
             await dbContext.SaveChangesAsync();
 
             // 5. Copy captured response back to original stream (將擷取的回應複製回原始串流)

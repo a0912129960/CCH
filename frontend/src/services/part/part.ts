@@ -797,6 +797,20 @@ export async function sendToCustomerReview(partId: number, payload: PartSavePayl
 }
 
 /**
+ * Fetch snapshot history for a part (GET /api/parts/{partId}/history).
+ * Returns an array of PartDetailFields ordered newest-first.
+ * (取得零件的快照歷史，依最新到最舊排序。)
+ */
+export async function getHistory(partId: number): Promise<PartDetailFields[]> {
+  try {
+    const response = await api.get<{ success: boolean; data: PartDetailFields[] }>(`/parts/${partId}/history`);
+    return response.data.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Import Result Status (匯入結果狀態)
  */
 export const ImportResultStatus = {
