@@ -15,10 +15,14 @@ vi.mock('vue-i18n', () => ({
   })
 }));
 
+/**
+ * Login View Tests (登入頁面測試)
+ * Update on 2026-04-23: Refactored from Customer to Project focus.
+ */
 vi.mock('../../../services/auth/auth', () => ({
   authService: {
     login: vi.fn(),
-    state: { role: 'CUSTOMER' },
+    state: { role: 'CUSTOMER', projectId: 'project001' },
     isAuthenticated: vi.fn()
   },
   UserRole: { CUSTOMER: 'CUSTOMER', DCB: 'DCB', DIMERCO: 'DIMERCO' }

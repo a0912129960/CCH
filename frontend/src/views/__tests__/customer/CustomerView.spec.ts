@@ -5,6 +5,7 @@ import CustomerView from '../../customer/CustomerView.vue';
 
 /**
  * Customer Dashboard View Tests (客戶儀表板測試)
+ * Update on 2026-04-23: Refactored from Customer to Project focus.
  */
 
 vi.mock('../../../services/dashboard/dashboard', () => ({
@@ -13,7 +14,7 @@ vi.mock('../../../services/dashboard/dashboard', () => ({
       { status: 'S04', count: 10, labelKey: 'status.active', color: '#67C23A' }
     ]),
     getPendingReviewParts: vi.fn().mockResolvedValue([
-      { id: 1, customer: 'Test Corp', partNo: 'PN-001', partDesc: 'Desc', htsCode: '1234.56.7890', status: 'S03', updatedBy: 'user', updatedDate: '2026-04-23T10:00:00', slaStatus: 'red' }
+      { id: 1, project: 'Test Project Corp', partNo: 'PN-001', partDesc: 'Desc', htsCode: '1234.56.7890', status: 'S03', updatedBy: 'user', updatedDate: '2026-04-23T10:00:00', slaStatus: 'red' }
     ]),
     getSLAItems: vi.fn().mockResolvedValue([])
   }
@@ -21,7 +22,7 @@ vi.mock('../../../services/dashboard/dashboard', () => ({
 
 vi.mock('../../../services/part/part', () => ({
   partService: {
-    getCustomers: vi.fn().mockResolvedValue([])
+    getProjects: vi.fn().mockResolvedValue([])
   },
   statusToI18nKey: vi.fn((s: string) => s.toLowerCase()),
   statusToColor: vi.fn(() => '#67C23A'),

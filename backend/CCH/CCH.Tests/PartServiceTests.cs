@@ -41,7 +41,8 @@ public class PartServiceTests : IDisposable
         SeedData();
 
         var mockCommonRepo = new Mock<ICommonRepository>();
-        mockCommonRepo.Setup(r => r.GetProjects()).Returns(new List<CpProject> { new() { Id = 101, ProjectName = "Project A" } });
+        mockCommonRepo.Setup(r => r.GetProjects(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(new List<CpProject> { new() { Id = 101, ProjectName = "Project A" } });
         mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Taiwan" } });
         mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<CchSuppliers> { new() { ID = 1, SupplierName = "TechSupply Corp" } });
         mockCommonRepo.Setup(r => r.GetStatuses()).Returns(new List<StatusEntity> { new() { Code = "S01", Description = "Active" } });

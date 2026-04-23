@@ -19,6 +19,7 @@
     "last_updated": "Last Updated",
     "supplier": "Supplier",
     "customer": "Customer",
+    "project": "Project",
     "menu": {
       "dashboard": "Dashboard",
       "parts": "Parts List"
@@ -49,8 +50,8 @@
   "employee": {
     "title": "Dashboard",
     "role_name": "Dimerco Employee",
-    "customer_select": "Select Customer",
-    "all_customers": "All Customers",
+    "project_select": "Select Project",
+    "all_projects": "All Projects",
     "status_summary": "Part Status Summary",
     "pending_audit": "Pending Review Parts",
     "no_pending": "No parts pending review",

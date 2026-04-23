@@ -30,6 +30,7 @@ vi.mock('vue-i18n', async () => {
 /**
  * Part Creation View Component Tests (新增零件組件測試)
  * BR-08: HTS Format | BR-21: Description Quality
+ * Update on 2026-04-23: Refactored from Customer to Project focus.
  */
 vi.mock('../../../services/auth/auth', async () => {
   const actual = await vi.importActual('../../../services/auth/auth') as any;
@@ -38,7 +39,7 @@ vi.mock('../../../services/auth/auth', async () => {
     authService: {
       state: {
         role: 'CUSTOMER',
-        customerId: 'customer001'
+        projectId: 'project001'
       }
     }
   };
@@ -53,7 +54,7 @@ vi.mock('../../../services/part/part', () => ({
     createPartApi: vi.fn().mockResolvedValue({ success: true }),
     submitPartApi: vi.fn().mockResolvedValue({ success: true }),
     getSuppliers: vi.fn().mockResolvedValue(['Supplier A', 'Supplier B']),
-    getCustomers: vi.fn().mockResolvedValue([{ id: 'customer001', name: 'Test Customer' }])
+    getProjects: vi.fn().mockResolvedValue([{ id: 'project001', name: 'Test Project' }])
   }
 }));
 
@@ -99,19 +100,20 @@ describe('PartCreateView.vue', () => {
     expect(wrapper.find('h1').text()).toBe('part_create.title');
   });
 
-  it('shows customer selection for employees but not for customers (員工可見客戶選擇器，客戶則不可見)', async () => {
+  it('shows project selection for employees but not for customers (員工可見專案選擇器，客戶則不可見)', async () => {
     const { authService, UserRole } = await import('../../../services/auth/auth');
     
     // Customer case
     authService.state.role = UserRole.CUSTOMER;
     let wrapper = mount(PartCreateView, globalConfig);
-    expect(wrapper.findComponent({ name: 'ElSelect', from: 'element-plus' }).exists()).toBe(false); // Using tag search instead
+    // Project select should not exist for customers
+    expect(wrapper.find('[data-test="project-select"]').exists()).toBe(false);
 
     // Employee case
     authService.state.role = UserRole.DIMERCO;
     wrapper = mount(PartCreateView, globalConfig);
-    // Find by the test data attribute I added
-    expect(wrapper.find('[data-test="customer-select"]').exists()).toBe(true);
+    // Find by the test data attribute
+    expect(wrapper.find('[data-test="project-select"]').exists()).toBe(true);
   });
 
   it('sets status to ACTIVE when employee creates part (員工建立零件時，狀態自動設為 ACTIVE)', async () => {
@@ -121,7 +123,7 @@ describe('PartCreateView.vue', () => {
 
     // Manually set data to avoid stub event issues
     const vm = wrapper.vm as any;
-    vm.form.customerId = 'customer001';
+    vm.form.projectId = 'project001';
     vm.form.partNo = 'PN-EMP-001';
     vm.form.countryOfOrigin = 1;
     vm.form.usHtsCode = '1111.22.3333';
@@ -131,7 +133,7 @@ describe('PartCreateView.vue', () => {
     await wrapper.find('form').trigger('submit.prevent');
 
     expect(partService.createPartApi).toHaveBeenCalledWith(expect.objectContaining({
-      customerId: 'customer001'
+      projectId: 'project001'
     }));
   });
 

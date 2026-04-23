@@ -1,24 +1,26 @@
 <script setup lang="ts">
-import { authService } from '@src/services/auth/auth';
+import { authService, UserRole } from '@src/services/auth/auth';
 import Card from '@src/components/common/Card.vue';
 import Button from '@src/components/common/Button.vue';
 import { partService, type CreatePartRequest, type SubmitPartRequest } from '@src/services/part/part';
-import { commonService, type CountryOption } from '@src/services/common/common';
+import { commonService, type CountryOption, type ProjectOption } from '@src/services/common/common';
 import { ElMessage } from 'element-plus';
 
 /**
  * Part No Creation View (新增零件編號頁面)
  * BR-08: HTS Format Validation | BR-21: Description Quality Scoring
- * Updated: Mandatory Customer ID for Employees and Auto-Activation logic.
- * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
+ * Updated: Mandatory Project ID for Employees and Auto-Activation logic.
+ * Update by Gemini AI on 2026-04-23: Added Project Selection for Employees.
  */
 
 const router = useRouter();
 const { t } = useI18n();
 
-const { customerId: userCustomerId } = authService.state;
+const { role: userRole, projectId: userProjectId } = authService.state;
+const isEmployee = computed(() => userRole && userRole !== UserRole.CUSTOMER);
 
 const countries = ref<CountryOption[]>([]);
+const projects = ref<ProjectOption[]>([]);
 
 const form = ref({
   partNo: '',
@@ -37,19 +39,25 @@ const form = ref({
   htsCodeReciprocalTariff: '',
   rateReciprocalTariff: '',
   remark: '',
-  customerId: userCustomerId || ''
+  projectId: userProjectId || ''
 });
 
 onMounted(async () => {
   try {
-    const data = await commonService.getCountries();
-    countries.value = data;
-    if (!data.length) {
+    const [countriesData, projectsData] = await Promise.all([
+      commonService.getCountries(),
+      isEmployee.value ? commonService.getProjects() : Promise.resolve([])
+    ]);
+    
+    countries.value = countriesData;
+    projects.value = projectsData;
+
+    if (!countriesData.length) {
       ElMessage.warning(t('part_create.countries_load_failed'));
     }
   } catch (error) {
-    console.error('Failed to load countries:', error);
-    ElMessage.error(t('part_create.countries_load_failed'));
+    console.error('Failed to load initial data:', error);
+    ElMessage.error(t('part_create.initial_load_failed'));
   }
 });
 
@@ -90,6 +98,7 @@ const handleHtsInput = (field: HtsField, errRef: typeof htsError, event: Event) 
 };
 
 const errors = ref({
+  projectId: '',
   partNo: '',
   countryOfOrigin: '',
   division: '',
@@ -101,8 +110,12 @@ const errors = ref({
 // Save：只檢查 Part No & Country of Origin
 const validateSave = () => {
   let valid = true;
-  errors.value = { partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
+  errors.value = { projectId: '', partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
 
+  if (isEmployee.value && !form.value.projectId) {
+    errors.value.projectId = 'part_create.validation.required';
+    valid = false;
+  }
   if (!form.value.partNo) {
     errors.value.partNo = 'part_create.validation.required';
     valid = false;
@@ -118,8 +131,12 @@ const validateSave = () => {
 // Save & Submit：檢查所有必填欄位
 const validateSaveAndSubmit = () => {
   let valid = true;
-  errors.value = { partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
+  errors.value = { projectId: '', partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
 
+  if (isEmployee.value && !form.value.projectId) {
+    errors.value.projectId = 'part_create.validation.required';
+    valid = false;
+  }
   if (!form.value.partNo) {
     errors.value.partNo = 'part_create.validation.required';
     valid = false;
@@ -168,7 +185,7 @@ const handleSubmit = async () => {
 
   try {
     const body: CreatePartRequest = {
-      customerId:  form.value.customerId  || undefined,
+      projectId:   form.value.projectId  || undefined,
       partNo:      form.value.partNo,
       countryId:   toCountryId(form.value.countryOfOrigin)!,
       division:    form.value.division    || undefined,
@@ -204,7 +221,7 @@ const handleSaveAndSubmit = async () => {
 
   try {
     const body: SubmitPartRequest = {
-      customerId:  form.value.customerId  || undefined,
+      projectId:   form.value.projectId  || undefined,
       partNo:      form.value.partNo,
       countryId:   toCountryId(form.value.countryOfOrigin) as number,
       division:    form.value.division,
@@ -233,6 +250,39 @@ const handleSaveAndSubmit = async () => {
     console.error('Failed to save and submit part:', error);
   }
 };
+
+const htsError = ref('');
+const htsCode1Error = ref('');
+const htsCode2Error = ref('');
+const htsCode3Error = ref('');
+const htsCode4Error = ref('');
+
+const HTS_PATTERN = /^\d{4}\.\d{2}\.\d{4}$/;
+
+const validateHts = (val: string | null | undefined, errRef: Ref<string>) => {
+  if (!val) { errRef.value = ''; return true; }
+  if (!HTS_PATTERN.test(val)) {
+    errRef.value = 'part_create.validation.hts_format';
+    return false;
+  }
+  errRef.value = '';
+  return true;
+};
+
+const formatHtsCode = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '').slice(0, 10);
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 4)}.${digits.slice(4)}`;
+  return `${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6)}`;
+};
+
+const handleHtsInput = (field: keyof typeof form.value, errRef: Ref<string>, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const formatted = formatHtsCode(input.value);
+  (form.value as any)[field] = formatted;
+  input.value = formatted;
+  validateHts(formatted, errRef);
+};
 </script>
 
 <template>
@@ -259,6 +309,19 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__header">
                 <span>{{ $t('part_create.col_field') }}</span>
                 <span>{{ $t('part_create.col_value') }}</span>
+              </div>
+
+              <!-- Project (Employee only) -->
+              <div v-if="isEmployee" class="info-table__row">
+                <div class="info-table__field">
+                  {{ $t('common.project') }} <span class="required-asterisk">*</span>
+                </div>
+                <div class="info-table__value">
+                  <el-select v-model="form.projectId" :placeholder="$t('employee.project_select')" class="form-select-el" :class="{ 'is-invalid': errors.projectId }" data-test="project-select" filterable>
+                    <el-option v-for="p in projects" :key="p.key" :label="p.value" :value="p.key" />
+                  </el-select>
+                  <span v-if="errors.projectId" class="error-text">{{ $t(errors.projectId) }}</span>
+                </div>
               </div>
 
               <!-- Part No -->

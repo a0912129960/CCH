@@ -56,9 +56,10 @@ builder.Services.AddControllers()
         };
     });
 
-// Add HttpContextAccessor and UserContext / 新增 HttpContextAccessor 與 UserContext
+// Add HttpContextAccessor, UserContext, and MemoryCache / 新增 HttpContextAccessor、UserContext 與 MemoryCache
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserContext, UserContext>();
+builder.Services.AddMemoryCache();
 
 // Add CORS configuration / 新增 CORS 配置
 builder.Services.AddCors(options =>

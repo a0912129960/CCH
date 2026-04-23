@@ -1,31 +1,50 @@
 using CCH.Core.Entities;
 using CCH.Core.Entities.CSP;
-using CCH.Core.Entities.ReSm;
+using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Features.Common;
+using Microsoft.Extensions.Caching.Memory;
 using Moq;
-using Xunit;
 
 namespace CCH.Tests;
 
 public class CommonServiceTests
 {
+    private readonly Mock<IUserContext> _mockUserContext;
+    private readonly IMemoryCache _cache;
+
+    public CommonServiceTests()
+    {
+        _mockUserContext = new Mock<IUserContext>();
+        _cache = new MemoryCache(new MemoryCacheOptions());
+    }
+
     [Fact]
-    public void GetProjects_ReturnsMappedDtos()
+    public void GetProjects_ReturnsMappedDtosAndUsesCache()
     {
         var mockRepo = new Mock<ICommonRepository>();
-        mockRepo.Setup(r => r.GetProjects()).Returns(new List<CpProject>
+        _mockUserContext.Setup(u => u.UserId).Returns("user1");
+        _mockUserContext.Setup(u => u.Role).Returns("admin");
+
+        mockRepo.Setup(r => r.GetProjects("user1", "admin")).Returns(new List<CpProject>
         {
             new() { Id = 1, ProjectName = "Project A", Status = "Active" },
             new() { Id = 2, ProjectName = "Project B", Status = "Active" }
         });
-        var service = new CommonService(mockRepo.Object);
+        var service = new CommonService(mockRepo.Object, _mockUserContext.Object, _cache);
 
+        // First call - should call repository (第一次呼叫 - 應呼叫倉儲)
         var result = service.GetProjects().ToList();
 
         Assert.Equal(2, result.Count);
         Assert.Equal("1", result[0].Key);
         Assert.Equal("Project A", result[0].Value);
+        mockRepo.Verify(r => r.GetProjects("user1", "admin"), Times.Once);
+
+        // Second call - should use cache (第二次呼叫 - 應使用快取)
+        var result2 = service.GetProjects().ToList();
+        Assert.Equal(2, result2.Count);
+        mockRepo.Verify(r => r.GetProjects("user1", "admin"), Times.Once); // Still Once
     }
 
     [Fact]
@@ -37,7 +56,7 @@ public class CommonServiceTests
             new() { ID = 1, Code = "US", Name = "United States" },
             new() { ID = 2, Code = "TW", Name = "Taiwan" }
         });
-        var service = new CommonService(mockRepo.Object);
+        var service = new CommonService(mockRepo.Object, _mockUserContext.Object, _cache);
 
         var result = service.GetCountries().ToList();
 
@@ -56,7 +75,7 @@ public class CommonServiceTests
             new() { ID = 2, SupplierName = "Supplier B", ProjectID = 101 }
         };
         mockRepo.Setup(r => r.GetSuppliers(101)).Returns(mockSuppliers);
-        var service = new CommonService(mockRepo.Object);
+        var service = new CommonService(mockRepo.Object, _mockUserContext.Object, _cache);
 
         var result = service.GetSuppliers("101").ToList();
 
@@ -73,7 +92,7 @@ public class CommonServiceTests
         {
             new() { Code = "S01", Description = "Draft" }
         });
-        var service = new CommonService(mockRepo.Object);
+        var service = new CommonService(mockRepo.Object, _mockUserContext.Object, _cache);
 
         var result = service.GetStatus().ToList();
 

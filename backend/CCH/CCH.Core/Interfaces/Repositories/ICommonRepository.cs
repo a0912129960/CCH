@@ -10,7 +10,7 @@ namespace CCH.Core.Interfaces.Repositories;
 /// </summary>
 public interface ICommonRepository
 {
-    IEnumerable<CpProject> GetProjects();
+    IEnumerable<CpProject> GetProjects(string? userId = null, string? role = null);
     IEnumerable<CountryEntity> GetCountries();
     IEnumerable<StatusEntity> GetStatuses();
     IEnumerable<CchSuppliers> GetSuppliers(int? projectId = null);

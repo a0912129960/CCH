@@ -19,6 +19,8 @@
     "all": "全部",
     "last_updated": "最后更新",
     "supplier": "供应商",
+    "customer": "客户",
+    "project": "集团/项目",
     "menu": {
       "dashboard": "仪表板",
       "parts": "零件清单"
@@ -28,6 +30,7 @@
     "resubmit": "重新提交",
     "back": "返回",
     "no_data": "暂无数据",
+    "confirm": "确认",
     "refresh": "刷新",
     "close_all": "关闭全部",
     "close_others": "关闭其他",
@@ -39,7 +42,7 @@
     "password_label": "密码",
     "account_placeholder": "请输入账号",
     "password_placeholder": "请输入密码",
-    "error_invalid": "账号或密码错误。",
+    "error_invalid": "账号 or 密码错误。",
     "error_network": "网络不稳定，请稍后再尝试。",
     "hint_employee": "员工: Y9999 / 888888",
     "hint_customer": "Customer: toXXXXXXXXXXXXXXXXXXm / Bit@202605"
@@ -47,8 +50,8 @@
   "employee": {
     "title": "仪表板",
     "role_name": "Dimerco 员工",
-    "customer_select": "选择客户",
-    "all_customers": "所有客户",
+    "project_select": "选择集团/项目",
+    "all_projects": "所有集团/项目",
     "status_summary": "零件状态摘要",
     "pending_audit": "待审核零件",
     "no_pending": "目前无待审核零件",
@@ -88,8 +91,8 @@
     "sla": "SLA",
     "sla_legend": {
       "title": "SLA 规则说明",
-      "customer_rule": "目前仅列出「未知」与「待中菲行审核」之纪录。SLA 计算（自前次提交起）：",
-      "staff_rule": "目前仅列出「待客户提交」之纪录。SLA 计算（自前次客户提交起）：",
+      "customer_rule": "目前仅列出「未知」与「待中菲行审核」之紀錄。SLA 計算（自前次提交起）：",
+      "staff_rule": "目前僅列出「待客戶提交」之紀錄。SLA 計算（自前次客戶提交起）：",
       "range_normal": "正常",
       "range_warning": "警告",
       "range_urgent": "紧急",
@@ -104,7 +107,6 @@
       "staff_overdue": ">48h"
     }
   },
-
   "part_upload": {
     "title": "批量上传零件",
     "dragger_text": "点击或将文件拖拽到此区域上传",
@@ -140,11 +142,11 @@
     "success_message": "数据已成功处理。",
     "re_upload": "上传其他资料",
     "comparison": {
-      "field": "欄位",
+      "field": "字段",
       "original": "原始值",
       "new": "新值"
     }
-    },
+  },
   "part_create": {
     "title": "建立新零件",
     "part_no_placeholder": "请输入零件编号",
@@ -192,7 +194,7 @@
       "strong": "良好"
     },
     "validation": {
-      "hts_format": "HTS Code 格式错误 (必须为 NNNN.NN.NNNN)",
+      "hts_format": "HTS Code 格式错误 (必须為 NNNN.NN.NNNN)",
       "required": "此字段为必填"
     },
     "success": "零件建立成功",

@@ -22,7 +22,8 @@ vi.mock('vue-i18n', () => ({
 vi.mock('../../../services/auth/auth', () => ({
   UserRole: { DIMERCO: 'DIMERCO', CUSTOMER: 'CUSTOMER', DCB: 'DCB' },
   authService: {
-    state: { role: 'CUSTOMER', customerId: 'customer001' }
+    /* Update by Gemini AI on 2026-04-23: Align with project rename. (繁體中文) 配合專案更名。 */
+    state: { role: 'CUSTOMER', projectId: 'project001' }
   }
 }));
 
@@ -42,6 +43,7 @@ vi.mock('../../../services/part/part', () => ({
   getPartDetail: vi.fn().mockResolvedValue({
     status: 'S02', // RETURNED
     modified: { 
+      project: 'Dimerco Electronics',
       partNo: 'PN-2024-007', 
       partDesc: 'Test Desc', 
       htsCode: '8517.12.00', 
@@ -50,26 +52,31 @@ vi.mock('../../../services/part/part', () => ({
       division: 'Div A',
       supplier: 'Supplier Alpha'
     },
-    before: { division: 'Old Div', supplier: 'Old Supp', partDesc: 'Old Desc', htsCode: '8517.12.00', rate: 5 }
+    before: { project: 'Dimerco Electronics', division: 'Old Div', supplier: 'Old Supp', partDesc: 'Old Desc', htsCode: '8517.12.00', rate: 5 }
   }),
   getMilestones: vi.fn().mockResolvedValue([
     { action: 'Created', updatedDate: '2026-04-01', updatedBy: 'User A', remark: 'Initial' }
   ]),
+  getHistory: vi.fn().mockResolvedValue([]),
   statusToI18nKey: (s: string) => s,
   updatePart: vi.fn().mockResolvedValue({ success: true }),
   submitPart: vi.fn().mockResolvedValue({ success: true }),
   acceptPart: vi.fn().mockResolvedValue({ success: true }),
   returnPart: vi.fn().mockResolvedValue({ success: true }),
+  inactivatePart: vi.fn().mockResolvedValue({ success: true }),
+  sendToCustomerReview: vi.fn().mockResolvedValue({ success: true }),
   PartStatus: { ACTIVE: 'S04', PENDING_CUSTOMER: 'S02' }
 }));
 
+/**
+ * Part Detail View Tests (零件詳情測試)
+ * Update on 2026-04-23: Refactored from Customer to Project focus.
+ */
 describe('PartDetailView.vue', () => {
   const globalConfig = {
     global: {
       mocks: { $t: (key: string) => key },
       stubs: {
-        // Card is not a registered component in this test, but handled by unplugin-vue-components?
-        // Actually we should stub it if it's not imported.
         Card: { template: '<div class="card"><slot></slot></div>' }
       }
     }
@@ -79,12 +86,15 @@ describe('PartDetailView.vue', () => {
     vi.clearAllMocks();
   });
 
-  it('renders part details correctly (正確渲染零件詳情)', async () => {
+  it('renders part details and project name correctly (正確渲染零件詳情與專案名稱)', async () => {
     const wrapper = mount(PartDetailView, globalConfig);
     await flushPromises();
 
     expect(wrapper.find('h1').text()).toContain('PN-2024-007');
-    // Using a more flexible selector for the value
+    // Verify Project field
+    expect(wrapper.text()).toContain('common.project');
+    expect(wrapper.text()).toContain('Dimerco Electronics');
+    // Verify HTS
     expect(wrapper.text()).toContain('8517.12.00');
   });
 

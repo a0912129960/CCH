@@ -4,6 +4,8 @@ using CCH.Core.Entities.CSP;
 using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories.Data;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace CCH.Services.Repositories;
 
@@ -28,18 +30,54 @@ public class CommonRepository : ICommonRepository
     }
 
     /// <inheritdoc/>
-    public IEnumerable<CpProject> GetProjects()
+    public IEnumerable<CpProject> GetProjects(string? userId = null, string? role = null)
     {
-        // Fetch projects using Select projection to ensure stability even if some columns have unexpected NULLs.
-        // (繁體中文) 使用 Select 投影取得專案，確保即使部分欄位有非預期的 NULL，系統仍能穩定運作。
-        return _cspContext.CpProject
-            .Where(p => p.Status == "Active")
-            .Select(p => new CpProject
+        // Update by AI (2026-04-23): Re-implemented using Raw SQL commands as requested for better consistency with MyDimerco logic
+        // (繁體中文) 由 AI 更新 (2026-04-23)：依要求改用 Raw SQL 指令重新實作，以確保與 MyDimerco 邏輯的一致性
+
+        var parameters = new List<SqlParameter>();
+        // Fix: Use SELECT * because EF FromSqlRaw requires all columns defined in the entity to be present in the result set
+        // (繁體中文) 修正：使用 SELECT *，因為 EF FromSqlRaw 要求結果集必須包含實體中定義的所有欄位
+        var sql = "SELECT * FROM CPProject WHERE Status = 'Active'";
+
+        if (!string.IsNullOrEmpty(role))
+        {
+            if (role == "customer" && int.TryParse(userId, out int hqid))
             {
-                Id = p.Id,
-                ProjectName = p.ProjectName ?? "Unknown",
-                Status = p.Status
-            })
+                // External User SQL filtering (外部使用者 SQL 過濾)
+                sql += " AND ID IN (SELECT ProjectID FROM CPProjectContactor WHERE ContactorHQID = @hqid)";
+                parameters.Add(new SqlParameter("@hqid", hqid));
+            }
+            else if (role == "dimerco" || role == "dcb")
+            {
+                // Internal User: Fetch SmUser to get HQID and Admin status using SQL
+                // (內部使用者：使用 SQL 取得 SmUser 以獲取 HQID 與管理者狀態)
+                var user = _resmContext.SmUser
+                    .FromSqlRaw("SELECT * FROM SMUser WHERE UserID = @uId", new SqlParameter("@uId", userId ?? ""))
+                    .AsNoTracking()
+                    .FirstOrDefault();
+
+                if (user == null) return Enumerable.Empty<CpProject>();
+
+                if (user.Admin != "Y")
+                {
+                    // Granular filtering SQL using numeric HQID (使用數值 HQID 進行細粒度過濾 SQL)
+                    sql += @" AND ID IN (
+                                SELECT ProjectID 
+                                FROM CPProjectUser 
+                                WHERE OwnerType='Group' 
+                                  AND OwnerID IN (SELECT GroupID FROM rcgroupmemberv2 WHERE UserID = @hqid))";
+                    parameters.Add(new SqlParameter("@hqid", user.HQID));
+                }
+            }
+        }
+
+        sql += " ORDER BY ProjectName ASC";
+
+        // Execute raw SQL on CspDbContext
+        return _cspContext.CpProject
+            .FromSqlRaw(sql, parameters.ToArray())
+            .AsNoTracking()
             .ToList();
     }
 
