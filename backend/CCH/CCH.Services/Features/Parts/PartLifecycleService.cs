@@ -23,7 +23,8 @@ public class PartLifecycleService : IPartLifecycleService
         _userContext = userContext;
     }
 
-    private string CurrentUser => _userContext.UserName ?? "system";
+    // Use UserId (short login ID) for DB fields that have MaxLength(10). (使用簡短的登入 ID 寫入有長度限制的 DB 欄位。)
+    private string CurrentUser => (_userContext.UserId ?? "system")[..Math.Min((_userContext.UserId ?? "system").Length, 10)];
 
     /// <inheritdoc/>
     public object CreatePart(PartCreateRequest request, string status)
@@ -131,7 +132,7 @@ public class PartLifecycleService : IPartLifecycleService
         existing.Status = "S03";
         _repository.UpdatePart(existing);
         _repository.UpdateStatus(partId, "S03");
-        RecordHistory(partId, "Sent to Customer Review", oldStatus, "S03");
+        RecordHistory(partId, "Sent to Cust Review", oldStatus, "S03");
         RecordSnapshot(existing);
         return new { partId, status = "S03" };
     }
@@ -141,7 +142,7 @@ public class PartLifecycleService : IPartLifecycleService
     {
         var failed = new List<object>();
         var validIds = new List<int>();
-        var user = _userContext.UserName ?? "system";
+        var user = CurrentUser;
         var now = DateTime.Now;
 
         foreach (var id in partIds)
@@ -185,7 +186,7 @@ public class PartLifecycleService : IPartLifecycleService
             FromStatus = fromStatus,
             ToStatus = toStatus,
             Remark = remark,
-            CreatedBy = _userContext.UserName ?? "system", 
+            CreatedBy = CurrentUser, 
             CreatedDate = DateTime.Now
         };
         _repository.AddHistory(history);
@@ -219,7 +220,7 @@ public class PartLifecycleService : IPartLifecycleService
             HtsCode4 = entity.AddHTSCode4,
             Rate4 = entity.AddDutyRate4,
             Remark = entity.Remark,
-            CreatedBy = _userContext.UserName ?? "system",
+            CreatedBy = CurrentUser,
             CreatedDate = DateTime.Now
         };
         _repository.AddSnapshot(snapshot);
@@ -232,7 +233,7 @@ public class PartLifecycleService : IPartLifecycleService
         e.DutyRate = req.Rate; e.AddHTSCode1 = req.HtsCode1; e.AddDutyRate1 = req.Rate1;
         e.AddHTSCode2 = req.HtsCode2; e.AddDutyRate2 = req.Rate2; e.AddHTSCode3 = req.HtsCode3;
         e.AddDutyRate3 = req.Rate3; e.AddHTSCode4 = req.HtsCode4; e.AddDutyRate4 = req.Rate4;
-        e.Remark = req.Remark; e.UpdatedBy = _userContext.UserName ?? "system";
+        e.Remark = req.Remark; e.UpdatedBy = CurrentUser;
 
         // Map Supplier Name string to SupplierID FK (SSoT from Common Repository)
         var supplier = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == req.Supplier);

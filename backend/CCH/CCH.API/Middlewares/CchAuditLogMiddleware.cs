@@ -50,18 +50,29 @@ public class CchAuditLogMiddleware
         using var responseBody = new MemoryStream();
         context.Response.Body = responseBody;
 
+        Exception? controllerException = null;
         try
         {
             await _next(context);
-
+        }
+        catch (Exception ex)
+        {
+            // Capture controller/service exception — do NOT swallow; re-throw after logging attempt.
+            controllerException = ex;
+        }
+        finally
+        {
             sw.Stop();
+        }
 
-            // 3. Read Response Body (讀取 Response Body)
-            responseBody.Seek(0, SeekOrigin.Begin);
-            var responseText = await new StreamReader(responseBody).ReadToEndAsync();
-            responseBody.Seek(0, SeekOrigin.Begin);
+        // 3. Read Response Body (讀取 Response Body)
+        responseBody.Seek(0, SeekOrigin.Begin);
+        var responseText = await new StreamReader(responseBody).ReadToEndAsync();
+        responseBody.Seek(0, SeekOrigin.Begin);
 
-            // 4. Log to Database (紀錄至資料庫)
+        // 4. Log to Database — isolated so a logging failure never hides the real error (隔離日誌，確保日誌失敗不遮蔽真實錯誤)
+        try
+        {
             var log = new CchLog
             {
                 Request = requestBody,
@@ -69,7 +80,7 @@ public class CchAuditLogMiddleware
                 HttpMethod = context.Request.Method,
                 EndpointUrl = $"{context.Request.Path}{context.Request.QueryString}",
                 FunctionName = $"{controllerActionDescriptor.ControllerName}/{controllerActionDescriptor.ActionName}",
-                StatusCode = context.Response.StatusCode,
+                StatusCode = controllerException != null ? 500 : context.Response.StatusCode,
                 ExecutionTime = (int)sw.ElapsedMilliseconds,
                 CreatedBy = userContext.UserId ?? "System",
                 CreatedDate = DateTime.Now
@@ -77,20 +88,20 @@ public class CchAuditLogMiddleware
 
             dbContext.CchLog.Add(log);
             await dbContext.SaveChangesAsync();
+        }
+        catch (Exception logEx)
+        {
+            Console.WriteLine($"Audit log write failed: {logEx.Message}");
+        }
 
-            // 5. Copy captured response back to original stream (將擷取的回應複製回原始串流)
-            await responseBody.CopyToAsync(originalBodyStream);
-        }
-        catch (Exception ex)
+        // 5. Copy captured response back to original stream (將擷取的回應複製回原始串流)
+        await responseBody.CopyToAsync(originalBodyStream);
+        context.Response.Body = originalBodyStream;
+
+        // 6. Re-throw controller exception so ASP.NET Core returns the correct error response (重新拋出控制器例外，確保回傳正確的錯誤碼)
+        if (controllerException != null)
         {
-            // Fail-safe: ensure logging failure doesn't break the API (確保日誌失敗不影響 API)
-            Console.WriteLine($"Logging Error: {ex.Message}");
-            responseBody.Seek(0, SeekOrigin.Begin);
-            await responseBody.CopyToAsync(originalBodyStream);
-        }
-        finally
-        {
-            context.Response.Body = originalBodyStream;
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(controllerException).Throw();
         }
     }
 }

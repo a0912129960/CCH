@@ -96,6 +96,7 @@ public class PartQueryService : IPartQueryService
             Modified = new PartDetailDto
             {
                 PartNo    = listItem.PartNo,
+                CountryId = entity.CountryID,
                 Country   = listItem.Country,
                 Division  = entity.Division ?? "",
                 Supplier  = listItem.Supplier,

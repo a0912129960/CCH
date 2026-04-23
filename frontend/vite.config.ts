@@ -31,6 +31,14 @@ export default defineConfig({
       resolvers: [ElementPlusResolver({ importStyle: false })],
     })
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5047',
+        changeOrigin: true,
+      }
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
