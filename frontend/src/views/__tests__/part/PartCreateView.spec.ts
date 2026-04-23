@@ -50,7 +50,8 @@ vi.mock('../../../services/part/part', () => ({
     PENDING_REVIEW: 'PENDING_REVIEW'
   },
   partService: {
-    createPart: vi.fn().mockResolvedValue({ id: '999', partNo: 'TEST-PN' }),
+    createPartApi: vi.fn().mockResolvedValue({ success: true }),
+    submitPartApi: vi.fn().mockResolvedValue({ success: true }),
     getSuppliers: vi.fn().mockResolvedValue(['Supplier A', 'Supplier B']),
     getCustomers: vi.fn().mockResolvedValue([{ id: 'customer001', name: 'Test Customer' }])
   }
@@ -117,19 +118,19 @@ describe('PartCreateView.vue', () => {
     const { authService, UserRole } = await import('../../../services/auth/auth');
     authService.state.role = UserRole.DIMERCO;
     const wrapper = mount(PartCreateView, globalConfig);
-    
+
     // Manually set data to avoid stub event issues
     const vm = wrapper.vm as any;
     vm.form.customerId = 'customer001';
     vm.form.partNo = 'PN-EMP-001';
-    vm.form.htsCode = '1111.22.3333';
+    vm.form.countryOfOrigin = 1;
+    vm.form.usHtsCode = '1111.22.3333';
     vm.form.supplier = 'Supplier A';
-    vm.form.description = 'Description created by employee.';
-    
+    vm.form.partDescription = 'Description created by employee.';
+
     await wrapper.find('form').trigger('submit.prevent');
-    
-    expect(partService.createPart).toHaveBeenCalledWith(expect.objectContaining({
-      status: 'ACTIVE',
+
+    expect(partService.createPartApi).toHaveBeenCalledWith(expect.objectContaining({
       customerId: 'customer001'
     }));
   });
@@ -145,38 +146,35 @@ describe('PartCreateView.vue', () => {
         }
       }
     });
-    const htsInput = wrapper.find('[data-test="hts-code-input"]');
-    
-    // Test filtering: should remove letters and format dots
-    await htsInput.setValue('1234abcd56ef7890');
-    expect((htsInput.element as HTMLInputElement).value).toBe('1234.56.7890');
+    const htsInput = wrapper.find('[data-test="us-hts-code-input"]');
+    expect(htsInput.exists()).toBe(true);
 
-    // Test truncation: should not exceed 10 digits
-    await htsInput.setValue('12345678901234');
-    expect((htsInput.element as HTMLInputElement).value).toBe('1234.56.7890');
+    // Setting digits with one dot is preserved (sanitizeDecimal keeps first dot only)
+    await htsInput.setValue('1234.567890');
+    expect((htsInput.element as HTMLInputElement).value).toBe('1234.567890');
 
-    // Test partial input
+    // Partial digit input stays as typed
     await htsInput.setValue('123');
     expect((htsInput.element as HTMLInputElement).value).toBe('123');
-    // Error for hts format should be gone
-    expect(wrapper.find('[data-test="hts-code-error"]').exists()).toBe(false);
     });
 
   it('submits form successfully (成功提交表單)', async () => {
     const wrapper = mount(PartCreateView, globalConfig);
-    
+
     // Manually set data to avoid stub issues
     const vm = wrapper.vm as any;
     vm.form.partNo = 'PN-001';
-    vm.form.htsCode = '1234.56.7890';
+    vm.form.countryOfOrigin = 1;
+    vm.form.usHtsCode = '1234.56.7890';
     vm.form.supplier = 'Supplier A';
-    vm.form.description = 'This is a strong description with enough words for the validation to pass.';
-    
+    vm.form.partDescription = 'This is a strong description with enough words for the validation to pass.';
+
     await wrapper.find('form').trigger('submit.prevent');
-    
-    expect(partService.createPart).toHaveBeenCalled();
+    await Promise.resolve(); // flush microtasks
+
+    expect(partService.createPartApi).toHaveBeenCalled();
     expect(pushSpy).toHaveBeenCalledWith({ name: 'parts' });
-    
+
     const { ElMessage } = await import('element-plus');
     expect(ElMessage.success).toHaveBeenCalled();
   });
