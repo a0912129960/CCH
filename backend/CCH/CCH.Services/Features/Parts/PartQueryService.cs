@@ -60,37 +60,62 @@ public class PartQueryService : IPartQueryService
 
         var listItem = MapToListItemDto(entity);
 
-        // INTERNAL-AI-20260420: Include SlaStatus in detail response so frontend can apply SLA badge color.
-        // (INTERNAL-AI-20260420: 詳細回應中加入 SlaStatus，供前端套用 SLA 標籤顏色。)
+        // INTERNAL-AI-20260421: Before = second-most-recent snapshot (state before last save).
+        //   Modified = current entity with all Additional Duty fields included.
+        //   Previously both Before and Modified pointed at the same current entity and were missing HtsCode1-4.
+        // (INTERNAL-AI-20260421: Before 改為倒數第二筆快照（上次存檔前的狀態）；
+        //   Modified 補上 Additional Duty 欄位；舊版兩者皆指向相同現在資料且缺少 HtsCode1-4。)
+        var snapshots = _repository.GetSnapshotsByPartId(partId)
+            .OrderByDescending(s => s.UpdatedDate)
+            .ToList();
+
+        var beforeSnapshot = snapshots.Count > 1 ? snapshots[1] : null;
+
         return new PartDetailResponseDto
         {
             Status = entity.Status,
             SlaStatus = listItem.SlaStatus,
-            Before = new PartDetailDto
-            { 
-                PartNo = listItem.PartNo, 
-                Country = listItem.Country, 
-                Division = entity.Division, 
-                Supplier = listItem.Supplier, 
-                PartDesc = listItem.PartDesc, 
-                HtsCode = listItem.HtsCode, 
-                Rate = listItem.Rate, 
-                Remark = entity.Remark, 
-                UpdatedBy = listItem.UpdatedBy, 
-                UpdatedDate = listItem.UpdatedDate 
-            },
-            Modified = new PartDetailDto 
-            { 
-                PartNo = listItem.PartNo, 
-                Country = listItem.Country, 
-                Division = entity.Division, 
-                Supplier = listItem.Supplier, 
-                PartDesc = listItem.PartDesc, 
-                HtsCode = listItem.HtsCode, 
-                Rate = listItem.Rate, 
-                Remark = entity.Remark, 
-                UpdatedBy = listItem.UpdatedBy, 
-                UpdatedDate = listItem.UpdatedDate 
+            Before = beforeSnapshot != null ? new PartDetailDto
+            {
+                PartNo    = beforeSnapshot.PartNo,
+                Country   = beforeSnapshot.Country,
+                Division  = beforeSnapshot.Division,
+                Supplier  = beforeSnapshot.Supplier,
+                PartDesc  = beforeSnapshot.PartDesc,
+                HtsCode   = beforeSnapshot.HtsCode,
+                Rate      = beforeSnapshot.Rate,
+                HtsCode1  = beforeSnapshot.HtsCode1,
+                Rate1     = beforeSnapshot.Rate1,
+                HtsCode2  = beforeSnapshot.HtsCode2,
+                Rate2     = beforeSnapshot.Rate2,
+                HtsCode3  = beforeSnapshot.HtsCode3,
+                Rate3     = beforeSnapshot.Rate3,
+                HtsCode4  = beforeSnapshot.HtsCode4,
+                Rate4     = beforeSnapshot.Rate4,
+                Remark    = beforeSnapshot.Remark,
+                UpdatedBy   = beforeSnapshot.UpdatedBy,
+                UpdatedDate = beforeSnapshot.UpdatedDate
+            } : new PartDetailDto(),
+            Modified = new PartDetailDto
+            {
+                PartNo    = listItem.PartNo,
+                Country   = listItem.Country,
+                Division  = entity.Division,
+                Supplier  = listItem.Supplier,
+                PartDesc  = listItem.PartDesc,
+                HtsCode   = listItem.HtsCode,
+                Rate      = listItem.Rate,
+                HtsCode1  = listItem.HtsCode1,
+                Rate1     = listItem.Rate1,
+                HtsCode2  = listItem.HtsCode2,
+                Rate2     = listItem.Rate2,
+                HtsCode3  = listItem.HtsCode3,
+                Rate3     = listItem.Rate3,
+                HtsCode4  = listItem.HtsCode4,
+                Rate4     = listItem.Rate4,
+                Remark    = entity.Remark,
+                UpdatedBy   = listItem.UpdatedBy,
+                UpdatedDate = listItem.UpdatedDate
             }
         };
     }

@@ -786,6 +786,16 @@ export async function inactivatePart(partId: number): Promise<void> {
   await api.post(`/parts/${partId}/inactive`);
 }
 
+// INTERNAL-AI-20260421: S04 → S03 for Dimerco/Customer: save + set Pending Customer Review.
+// (INTERNAL-AI-20260421: S04 → S03，Dimerco/Customer 儲存後將狀態改為 Pending Customer Review。)
+/**
+ * Save part data and transition to Pending Customer Review (S03) via POST /api/parts/{partId}/send-to-customer-review.
+ * (儲存零件資料並將狀態改為 S03 Pending Customer Review。)
+ */
+export async function sendToCustomerReview(partId: number, payload: PartSavePayload): Promise<void> {
+  await api.post(`/parts/${partId}/send-to-customer-review`, payload);
+}
+
 /**
  * Import Result Status (匯入結果狀態)
  */

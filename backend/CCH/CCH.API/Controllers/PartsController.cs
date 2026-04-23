@@ -262,6 +262,29 @@ public class PartsController : ControllerBase
     public ActionResult<ApiResponse<object>> InactivatePart(int partId) =>
         Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.InactivatePart(partId)));
 
+    // INTERNAL-AI-20260421: S04 → S03 transition for Dimerco/Customer: saves data then sets Pending Customer Review.
+    // (INTERNAL-AI-20260421: S04 → S03，Dimerco/Customer 儲存後通知客戶審核。)
+    /// <summary>
+    /// Saves part data and sets status to Pending Customer Review (Dimerco/Customer, S04 only).
+    /// (繁體中文) 儲存零件資料並將狀態設為 Pending Customer Review（Dimerco/Customer，僅限 S04）。
+    /// </summary>
+    [HttpPost("{partId}/send-to-customer-review")]
+    [Authorize(Roles = "customer,dimerco")]
+    public ActionResult<ApiResponse<object>> SendToCustomerReview(int partId, [FromBody] PartSaveRequest request)
+    {
+        var part = _queryService.GetPartDetail(partId);
+        if (part == null)
+            return NotFound(ApiResponse<object>.FailureResponse("Part not found. / 零件不存在。"));
+        if (part.Status != "S04")
+            return BadRequest(ApiResponse<object>.FailureResponse("Part must be in Reviewed (S04) status. / 零件狀態須為 S04。"));
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+            return BadRequest(ApiResponse<object>.FailureResponse(string.Join(" | ", errors)));
+        }
+        return Ok(ApiResponse<object>.SuccessResponse(_lifecycleService.SendToCustomerReview(partId, request)));
+    }
+
     /// <summary>
     /// Retrieves milestones for a specific part.
     /// (繁體中文) 取得特定零件的里程碑（歷程）。
