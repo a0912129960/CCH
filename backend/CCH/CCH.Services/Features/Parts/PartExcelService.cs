@@ -152,6 +152,8 @@ public class PartExcelService : IPartExcelService
             {
                 var customerId = p.CustomerId ?? 0;
                 var existing = _repository.GetPartByNo(customerId, p.PartNo);
+                CchParts target;
+
                 if (existing != null)
                 {
                     existing.PartDescription = p.PartDesc;
@@ -161,11 +163,12 @@ public class PartExcelService : IPartExcelService
                     existing.DutyRate = p.Rate;
                     existing.Status = "S01";
                     _repository.UpdatePart(existing);
+                    target = existing;
                     result.Updated++;
                 }
                 else
                 {
-                    _repository.CreatePart(new CchParts
+                    target = new CchParts
                     {
                         CustomerID = p.CustomerId,
                         PartNo = p.PartNo,
@@ -175,9 +178,14 @@ public class PartExcelService : IPartExcelService
                         HTSCode = p.HtsCode,
                         DutyRate = p.Rate,
                         Status = "S01"
-                    });
+                    };
+                    _repository.CreatePart(target);
                     result.Inserted++;
                 }
+
+                // INTERNAL-AI-20260423: Record snapshot after bulk upload confirmation.
+                // (繁體中文) 批次上傳確認後紀錄快照。
+                RecordSnapshot(target);
             }
             catch (Exception ex)
             {
@@ -186,6 +194,31 @@ public class PartExcelService : IPartExcelService
             }
         }
         return result;
+    }
+
+    /// <summary>
+    /// Simplified internal snapshot recorder for Excel service.
+    /// (繁體中文) Excel 服務專用的簡化快照紀錄方法。
+    /// </summary>
+    private void RecordSnapshot(CchParts entity)
+    {
+        var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
+        var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.SupplierName ?? "Unknown";
+
+        _repository.AddSnapshot(new CchPartHistories
+        {
+            PartID = entity.ID,
+            PartNo = entity.PartNo,
+            Country = countryName,
+            Division = entity.Division,
+            Supplier = supplierName,
+            PartDesc = entity.PartDescription,
+            HtsCode = entity.HTSCode,
+            Rate = entity.DutyRate,
+            Remark = entity.Remark,
+            CreatedBy = entity.UpdatedBy ?? "system",
+            CreatedDate = DateTime.Now
+        });
     }
 
     /// <inheritdoc/>

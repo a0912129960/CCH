@@ -29,7 +29,10 @@ public class PartLifecycleService : IPartLifecycleService
         var entity = new CchParts { Status = status, CreatedBy = _userContext.UserName ?? "system" };
         MapRequestToEntity(request, entity);
         var id = _repository.CreatePart(entity);
+        
         RecordHistory(id, "Created", null, status);
+        RecordSnapshot(entity); // Restore Snapshot call (還原快照呼叫)
+        
         return new { partId = id, status };
     }
 
@@ -40,7 +43,10 @@ public class PartLifecycleService : IPartLifecycleService
         var oldStatus = existing.Status;
         MapRequestToEntity(request, existing);
         _repository.UpdatePart(existing);
+        
         RecordHistory(partId, "Modified", oldStatus, existing.Status);
+        RecordSnapshot(existing); // Restore Snapshot call (還原快照呼叫)
+        
         return new { partId };
     }
 
@@ -53,7 +59,10 @@ public class PartLifecycleService : IPartLifecycleService
         existing.Status = "S02";
         _repository.UpdatePart(existing);
         _repository.UpdateStatus(partId, "S02");
+        
         RecordHistory(partId, "Submitted", oldStatus, "S02");
+        RecordSnapshot(existing); // Restore Snapshot call (還原快照呼叫)
+        
         return new { partId, status = "S02" };
     }
 
@@ -64,6 +73,7 @@ public class PartLifecycleService : IPartLifecycleService
         var oldStatus = existing?.Status;
         _repository.UpdateStatus(partId, "S04");
         RecordHistory(partId, "Accepted", oldStatus, "S04");
+        // No snapshot for simple status change (單純狀態變更不需紀錄欄位快照，除非業務需求)
         return new { partId, status = "S04" };
     }
 
@@ -140,6 +150,40 @@ public class PartLifecycleService : IPartLifecycleService
             CreatedDate = DateTime.Now
         };
         _repository.AddHistory(history);
+    }
+
+    /// <summary>
+    /// Takes a full data snapshot of the part for field-level history tracking.
+    /// (繁體中文) 為零件拍攝完整資料快照，用於欄位級別的歷程追蹤。
+    /// </summary>
+    private void RecordSnapshot(CchParts entity)
+    {
+        var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
+        var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.SupplierName ?? "Unknown";
+
+        var snapshot = new CchPartHistories
+        {
+            PartID = entity.ID,
+            PartNo = entity.PartNo,
+            Country = countryName,
+            Division = entity.Division,
+            Supplier = supplierName,
+            PartDesc = entity.PartDescription,
+            HtsCode = entity.HTSCode,
+            Rate = entity.DutyRate,
+            HtsCode1 = entity.AddHTSCode1,
+            Rate1 = entity.AddDutyRate1,
+            HtsCode2 = entity.AddHTSCode2,
+            Rate2 = entity.AddDutyRate2,
+            HtsCode3 = entity.AddHTSCode3,
+            Rate3 = entity.AddDutyRate3,
+            HtsCode4 = entity.AddHTSCode4,
+            Rate4 = entity.AddDutyRate4,
+            Remark = entity.Remark,
+            CreatedBy = _userContext.UserName ?? "system",
+            CreatedDate = DateTime.Now
+        };
+        _repository.AddSnapshot(snapshot);
     }
 
     private void MapRequestToEntity(PartSaveRequest req, CchParts e)
