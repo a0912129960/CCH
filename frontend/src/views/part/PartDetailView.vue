@@ -5,9 +5,9 @@ import { authService, UserRole } from '@src/services/auth/auth';
 /* import { partService, type Part, PartStatus } from '../../services/part/part'; */
 import {
   /* partService, PartStatus, */
-  getPartDetail, updatePart, submitPart, getMilestones, acceptPart, returnPart, inactivatePart,
+  getPartDetail, updatePart, submitPart, getMilestones, getHistory, acceptPart, returnPart, inactivatePart, sendToCustomerReview,
   statusToI18nKey,
-  type PartDetailResponse, type PartSavePayload, type Milestone
+  type PartDetailResponse, type PartDetailFields, type PartSavePayload, type Milestone
 } from '@src/services/part/part';
 // INTERNAL-AI-20260420: commonService import removed (supplier is now free-text, no dropdown needed).
 // (INTERNAL-AI-20260420: 移除 commonService 匯入，供應商改為自由輸入文字，不需下拉清單。)
@@ -38,6 +38,34 @@ const loading = ref(true);
 const saving = ref(false);
 const submitting = ref(false);
 const inactivating = ref(false);
+const showHistoryPanel = ref(false);
+const historyRows = ref<PartDetailFields[]>([]);
+
+const openHistoryPanel = async () => {
+  if (historyRows.value.length === 0) {
+    historyRows.value = await getHistory(partId);
+  }
+  showHistoryPanel.value = true;
+};
+
+const DATA_FIELDS: (keyof PartDetailFields)[] = [
+  'partNo', 'country', 'division', 'supplier', 'partDesc',
+  'htsCode', 'rate', 'htsCode1', 'rate1', 'htsCode2', 'rate2',
+  'htsCode3', 'rate3', 'htsCode4', 'rate4', 'remark'
+];
+
+const isSameData = (a: PartDetailFields, b: PartDetailFields): boolean =>
+  DATA_FIELDS.every(f => (a[f] ?? null) === (b[f] ?? null));
+
+// Filter out snapshots where only status changed (data fields identical to the older snapshot).
+// History is newest-first; compare each row to index+1 (the snapshot it evolved from).
+const filteredHistoryRows = computed(() =>
+  historyRows.value.filter((row, i) => {
+    const older = historyRows.value[i + 1];
+    if (!older) return true; // oldest snapshot always shown
+    return !isSameData(row, older);
+  })
+);
 
 // INTERNAL-AI-20260420: Supplier is now free-text; dropdown and supplierOptions removed.
 // (INTERNAL-AI-20260420: 供應商改為自由輸入文字，已移除下拉選單與 supplierOptions。)
@@ -59,6 +87,37 @@ const validateHts = (val: string | null | undefined, errRef: typeof htsError): b
   }
   errRef.value = '';
   return true;
+};
+
+// INTERNAL-AI-20260421: Auto-format HTS Code: strip non-digits, insert dots at XXXX.XX.XXXX positions.
+// (INTERNAL-AI-20260421: HTS Code 自動格式化：濾除非數字字元，於對應位置自動插入點。)
+type HtsField = 'htsCode' | 'htsCode1' | 'htsCode2' | 'htsCode3' | 'htsCode4';
+
+const formatHtsCode = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '').slice(0, 10);
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 4)}.${digits.slice(4)}`;
+  return `${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6)}`;
+};
+
+// Lookup map keeps refs in script scope — avoids passing Ref objects as template arguments.
+const htsErrMap = {
+  htsCode: htsError,
+  htsCode1: htsCode1Error,
+  htsCode2: htsCode2Error,
+  htsCode3: htsCode3Error,
+  htsCode4: htsCode4Error,
+};
+
+const validateHtsField = (field: HtsField, val: string | null | undefined): boolean =>
+  validateHts(val, htsErrMap[field]);
+
+const handleHtsInput = (field: HtsField, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const formatted = formatHtsCode(input.value);
+  (form.value as any)[field] = formatted;
+  input.value = formatted; // sync DOM to show formatted value immediately
+  validateHts(formatted, htsErrMap[field]);
 };
 
 const form = ref<PartSavePayload>({
@@ -104,11 +163,21 @@ const statusBadgeBg = computed(() => {
   return '#67C23A'; // green (default)
 });
 
-// Customer buttons visible only when status is Unknown (S01) or Pending Customer Review (S03).
-// (Customer 按鈕僅在狀態為 S01 或 S03 時顯示。)
-const showCustomerButtons = computed(() =>
-  isCustomer.value && (currentStatus.value === 'S01' || currentStatus.value === 'S03')
-);
+// Field editability is status-based, not role-based. (欄位可編輯性依狀態決定，非角色。)
+// Basic fields (Division/Supplier/PartDesc/HTS/Rate): editable when S01/S03/S04.
+// (基本欄位在 S01/S03/S04 狀態下可編輯。)
+const canEditBasicFields = computed(() => ['S01', 'S03', 'S04'].includes(currentStatus.value));
+// Additional duty fields + Remark: editable when S02/S04.
+// (附加關稅欄位及備註在 S02/S04 狀態下可編輯。)
+const canEditAdditionalFields = computed(() => ['S02', 'S04'].includes(currentStatus.value));
+
+// S01 (Unknown): Customer sees [Save] + [Save & Send to Dimerco] + [Inactive].
+// (S01 Unknown：Customer 顯示 Save + Save & Send to Dimerco + Inactive。)
+const showCustomerButtons = computed(() => isCustomer.value && currentStatus.value === 'S01');
+
+// S03 (Pending Customer Review): Customer sees [Save & Send to Dimerco] + [Inactive] only (no bare Save).
+// (S03 Pending Customer Review：Customer 僅顯示 Save & Send to Dimerco + Inactive，不顯示 Save。)
+const showCustomerS03Buttons = computed(() => isCustomer.value && currentStatus.value === 'S03');
 
 // DCB review panel: Return Reason field + Accept / Return to Customer buttons, shown only for S02.
 // (DCB 審核面板：退回原因欄位 + 接受 / 退回按鈕，僅在狀態 S02 時顯示。)
@@ -310,10 +379,9 @@ const handleInactivate = async () => {
   }
 };
 
-// INTERNAL-AI-20260420: S04 — Save & Send to Dimerco handler for Dimerco/Customer role.
-// Validates HTS Code is required, then re-submits (status → S02 Pending Dimerco Review).
-// (INTERNAL-AI-20260420: S04 狀態下 Dimerco/Customer 的 Save & Send to Dimerco 處理函式。
-// 驗證 HTS Code 必填後重新送審，狀態變更為 S02。)
+// INTERNAL-AI-20260421: S04 — Save & Send to Dimerco for Dimerco/Customer: validates HTS Code, status → S03.
+// (INTERNAL-AI-20260421: S04 狀態下 Dimerco/Customer 的 Save & Send to Dimerco，驗證 HTS Code 必填後狀態改為 S03。)
+/* old: submitPart → S02 */
 const handleSaveAndResend = async () => {
   if (!form.value.htsCode?.trim()) {
     ElMessage.error('US HTS Code is required before submitting. / 送審前 HTS Code 為必填。');
@@ -336,8 +404,8 @@ const handleSaveAndResend = async () => {
 
   submitting.value = true;
   try {
-    await submitPart(partId, buildPayload());
-    ElMessage.success('Submitted to Dimerco for review. / 已送審給 Dimerco。');
+    await sendToCustomerReview(partId, buildPayload());
+    ElMessage.success('Sent to Customer Review. / 已送交客戶審核。');
     router.push('/parts');
   } catch {
     // interceptor handles error (攔截器顯示錯誤)
@@ -396,7 +464,8 @@ const handleReturn = async () => {
       <header class="page-header">
         <h1>
           {{ modified.partNo }}
-          <span class="title-desc">({{ modified.partDesc }})</span>
+          <span class="title-sep">–</span>
+          <span class="title-desc">{{ modified.partDesc }}</span>
         </h1>
         <span class="status-badge" :style="{ backgroundColor: statusBadgeBg }">
           {{ statusBadgeLabel }}
@@ -410,8 +479,16 @@ const handleReturn = async () => {
         <div class="main-col">
           <div class="info-card">
             <div class="card-header-row">
-              <div class="header-decorator"></div>
-              <span class="card-title">{{ $t('part_detail.part_information') }}</span>
+              <div class="header-left">
+                <div class="header-decorator"></div>
+                <span class="card-title">{{ $t('part_detail.part_information') }}</span>
+              </div>
+              <button class="btn-history" :title="$t('part_detail.history')" @click="openHistoryPanel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </button>
             </div>
 
             <table class="part-table">
@@ -426,67 +503,69 @@ const handleReturn = async () => {
                 <!-- Part No: read-only (零件編號：唯讀) -->
                 <tr>
                   <td class="field-label">{{ $t('customer.part_no') }}</td>
-                  <td class="before-val">—</td>
+                  <td class="before-val"></td>
                   <td class="value-blue">{{ modified.partNo }}</td>
                 </tr>
                 <!-- Country of Origin: read-only (原產地：唯讀) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.country_of_origin') }}</td>
-                  <td class="before-val">—</td>
+                  <td class="before-val"></td>
                   <td class="value-blue">{{ modified.country }}</td>
                 </tr>
-                <!-- Division -->
+                <!-- Division: editable when S01/S03/S04 (可在 S01/S03/S04 狀態編輯) -->
                 <tr>
-                  <td class="field-label">{{ $t('part_detail.division') }}<span v-if="isCustomer" class="req">*</span></td>
+                  <td class="field-label">{{ $t('part_detail.division') }}<span v-if="canEditBasicFields" class="req">*</span></td>
                   <td class="before-val">{{ before?.division || '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model="form.division" class="cell-input" />
+                    <input v-if="canEditBasicFields" v-model="form.division" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.division }}</span>
                   </td>
                 </tr>
-                <!-- Supplier: free-text input for Customer (供應商：Customer 顯示自由輸入框) -->
+                <!-- Supplier: free-text, editable when S01/S03/S04 (自由輸入，可在 S01/S03/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('common.supplier') }}</td>
                   <td class="before-val">{{ before?.supplier || '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model="form.supplier" class="cell-input" />
+                    <input v-if="canEditBasicFields" v-model="form.supplier" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.supplier }}</span>
                   </td>
                 </tr>
-                <!-- Part Description -->
+                <!-- Part Description: editable when S01/S03/S04 (可在 S01/S03/S04 狀態編輯) -->
                 <tr>
-                  <td class="field-label">{{ $t('part_create.description') }}<span v-if="isCustomer" class="req">*</span></td>
+                  <td class="field-label">{{ $t('part_create.description') }}<span v-if="canEditBasicFields" class="req">*</span></td>
                   <td class="before-val">{{ before?.partDesc || '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model="form.partDesc" class="cell-input" />
+                    <input v-if="canEditBasicFields" v-model="form.partDesc" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.partDesc }}</span>
                   </td>
                 </tr>
-                <!-- US HTS Code (with format validation) -->
+                <!-- US HTS Code: required, format XXXX.XX.XXXX, editable when S01/S03/S04 -->
+                <!-- (US HTS Code：必填，格式 XXXX.XX.XXXX，可在 S01/S03/S04 狀態編輯) -->
                 <tr>
-                  <td class="field-label">{{ $t('part_detail.us_hts_code') }}<span v-if="isCustomer" class="req">*</span></td>
+                  <td class="field-label">{{ $t('part_detail.us_hts_code') }}<span v-if="canEditBasicFields" class="req">*</span></td>
                   <td class="before-val mono">{{ before?.htsCode || '—' }}</td>
                   <td>
-                    <template v-if="isCustomer">
+                    <template v-if="canEditBasicFields">
                       <input
-                        v-model="form.htsCode"
+                        :value="form.htsCode"
                         class="cell-input mono"
                         :class="{ 'input-error': htsError }"
                         placeholder="XXXX.XX.XXXX"
-                        @blur="validateHts(form.htsCode, htsError)"
-                        @input="validateHts(form.htsCode, htsError)"
+                        inputmode="numeric"
+                        @blur="validateHtsField('htsCode', form.htsCode)"
+                        @input="handleHtsInput('htsCode', $event)"
                       />
                       <div v-if="htsError" class="field-error">{{ htsError }}</div>
                     </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode }}</span>
                   </td>
                 </tr>
-                <!-- General Duty Rate -->
+                <!-- General Duty Rate: numeric, editable when S01/S03/S04 (數字，可在 S01/S03/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.general_duty_rate') }}</td>
                   <td class="before-val">{{ before?.rate ?? '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model.number="form.rate" type="number" class="cell-input" />
+                    <input v-if="canEditBasicFields" v-model.number="form.rate" type="number" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.rate }}</span>
                   </td>
                 </tr>
@@ -496,96 +575,96 @@ const handleReturn = async () => {
                   <td colspan="3">{{ $t('part_detail.additional_duty') }}</td>
                 </tr>
 
-                <!-- HTS Code (301) -->
+                <!-- HTS Code (301): format XXXX.XX.XXXX, editable when S02/S04 (可在 S02/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.hts_code_301') }}</td>
                   <td class="before-val mono">{{ before?.htsCode1 || '—' }}</td>
                   <td>
-                    <template v-if="isCustomer">
-                      <input v-model="form.htsCode1" class="cell-input mono" :class="{ 'input-error': htsCode1Error }" placeholder="XXXX.XX.XXXX" @blur="validateHts(form.htsCode1, htsCode1Error)" @input="validateHts(form.htsCode1, htsCode1Error)" />
+                    <template v-if="canEditAdditionalFields">
+                      <input :value="form.htsCode1" class="cell-input mono" :class="{ 'input-error': htsCode1Error }" placeholder="XXXX.XX.XXXX" inputmode="numeric" @blur="validateHtsField('htsCode1', form.htsCode1)" @input="handleHtsInput('htsCode1', $event)" />
                       <div v-if="htsCode1Error" class="field-error">{{ htsCode1Error }}</div>
                     </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode1 || '—' }}</span>
                   </td>
                 </tr>
-                <!-- Rate (301) -->
+                <!-- Rate (301): editable when S02/S04 (可在 S02/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.rate_301') }}</td>
                   <td class="before-val">{{ before?.rate1 ?? '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model.number="form.rate1" type="number" class="cell-input" />
+                    <input v-if="canEditAdditionalFields" v-model.number="form.rate1" type="number" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.rate1 ?? '—' }}</span>
                   </td>
                 </tr>
-                <!-- HTS Code (IEEPA) -->
+                <!-- HTS Code (IEEPA): format XXXX.XX.XXXX, editable when S02/S04 (可在 S02/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.hts_code_ieepa') }}</td>
                   <td class="before-val mono">{{ before?.htsCode2 || '—' }}</td>
                   <td>
-                    <template v-if="isCustomer">
-                      <input v-model="form.htsCode2" class="cell-input mono" :class="{ 'input-error': htsCode2Error }" placeholder="XXXX.XX.XXXX" @blur="validateHts(form.htsCode2, htsCode2Error)" @input="validateHts(form.htsCode2, htsCode2Error)" />
+                    <template v-if="canEditAdditionalFields">
+                      <input :value="form.htsCode2" class="cell-input mono" :class="{ 'input-error': htsCode2Error }" placeholder="XXXX.XX.XXXX" inputmode="numeric" @blur="validateHtsField('htsCode2', form.htsCode2)" @input="handleHtsInput('htsCode2', $event)" />
                       <div v-if="htsCode2Error" class="field-error">{{ htsCode2Error }}</div>
                     </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode2 || '—' }}</span>
                   </td>
                 </tr>
-                <!-- Rate (IEEPA) -->
+                <!-- Rate (IEEPA): editable when S02/S04 (可在 S02/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.rate_ieepa') }}</td>
                   <td class="before-val">{{ before?.rate2 ?? '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model.number="form.rate2" type="number" class="cell-input" />
+                    <input v-if="canEditAdditionalFields" v-model.number="form.rate2" type="number" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.rate2 ?? '—' }}</span>
                   </td>
                 </tr>
-                <!-- HTS Code (232 Aluminum) -->
+                <!-- HTS Code (232 Aluminum): format XXXX.XX.XXXX, editable when S02/S04 (可在 S02/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.hts_code_232') }}</td>
                   <td class="before-val mono">{{ before?.htsCode3 || '—' }}</td>
                   <td>
-                    <template v-if="isCustomer">
-                      <input v-model="form.htsCode3" class="cell-input mono" :class="{ 'input-error': htsCode3Error }" placeholder="XXXX.XX.XXXX" @blur="validateHts(form.htsCode3, htsCode3Error)" @input="validateHts(form.htsCode3, htsCode3Error)" />
+                    <template v-if="canEditAdditionalFields">
+                      <input :value="form.htsCode3" class="cell-input mono" :class="{ 'input-error': htsCode3Error }" placeholder="XXXX.XX.XXXX" inputmode="numeric" @blur="validateHtsField('htsCode3', form.htsCode3)" @input="handleHtsInput('htsCode3', $event)" />
                       <div v-if="htsCode3Error" class="field-error">{{ htsCode3Error }}</div>
                     </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode3 || '—' }}</span>
                   </td>
                 </tr>
-                <!-- Rate (232 Aluminum) -->
+                <!-- Rate (232 Aluminum): editable when S02/S04 (可在 S02/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.rate_232') }}</td>
                   <td class="before-val">{{ before?.rate3 ?? '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model.number="form.rate3" type="number" class="cell-input" />
+                    <input v-if="canEditAdditionalFields" v-model.number="form.rate3" type="number" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.rate3 ?? '—' }}</span>
                   </td>
                 </tr>
-                <!-- HTS Code (Reciprocal Tariff) -->
+                <!-- HTS Code (Reciprocal Tariff): format XXXX.XX.XXXX, editable when S02/S04 (可在 S02/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.hts_code_reciprocal') }}</td>
                   <td class="before-val mono">{{ before?.htsCode4 || '—' }}</td>
                   <td>
-                    <template v-if="isCustomer">
-                      <input v-model="form.htsCode4" class="cell-input mono" :class="{ 'input-error': htsCode4Error }" placeholder="XXXX.XX.XXXX" @blur="validateHts(form.htsCode4, htsCode4Error)" @input="validateHts(form.htsCode4, htsCode4Error)" />
+                    <template v-if="canEditAdditionalFields">
+                      <input :value="form.htsCode4" class="cell-input mono" :class="{ 'input-error': htsCode4Error }" placeholder="XXXX.XX.XXXX" inputmode="numeric" @blur="validateHtsField('htsCode4', form.htsCode4)" @input="handleHtsInput('htsCode4', $event)" />
                       <div v-if="htsCode4Error" class="field-error">{{ htsCode4Error }}</div>
                     </template>
                     <span v-else class="cell-text mono">{{ modified.htsCode4 || '—' }}</span>
                   </td>
                 </tr>
-                <!-- Rate (Reciprocal Tariff) -->
+                <!-- Rate (Reciprocal Tariff): editable when S02/S04 (可在 S02/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.rate_reciprocal') }}</td>
                   <td class="before-val">{{ before?.rate4 ?? '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model.number="form.rate4" type="number" class="cell-input" />
+                    <input v-if="canEditAdditionalFields" v-model.number="form.rate4" type="number" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.rate4 ?? '—' }}</span>
                   </td>
                 </tr>
-                <!-- Remark -->
+                <!-- Remark: editable when S02/S04 (可在 S02/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.remark') }}</td>
                   <td class="before-val">{{ before?.remark || '—' }}</td>
                   <td>
-                    <input v-if="isCustomer" v-model="form.remark" class="cell-input" />
+                    <input v-if="canEditAdditionalFields" v-model="form.remark" class="cell-input" />
                     <span v-else class="cell-text">{{ modified.remark || '—' }}</span>
                   </td>
                 </tr>
@@ -618,8 +697,8 @@ const handleReturn = async () => {
 
             <!-- Action buttons (操作按鈕) -->
             <div class="action-footer">
-              <!-- Customer: Save + Save & Send + Inactive; only shown when status is S01 or S03 -->
-              <!-- (Customer：儲存 + 儲存並送審 + 停用，僅在狀態為 S01 或 S03 時顯示) -->
+              <!-- S01 (Unknown) Customer: Save + Save & Send to Dimerco + Inactive -->
+              <!-- (S01 Unknown Customer：Save + Save & Send to Dimerco + Inactive) -->
               <template v-if="showCustomerButtons">
                 <button class="btn-cch btn-save" :disabled="saving || submitting || inactivating" @click="handleSave">
                   {{ saving ? '...' : $t('common.save') }}
@@ -628,6 +707,16 @@ const handleReturn = async () => {
                   {{ submitting ? '...' : $t('part_detail.btn_save_send') }}
                 </button>
                 <button class="btn-cch btn-inactive" :disabled="saving || submitting || inactivating" @click="handleInactivate">
+                  {{ inactivating ? '...' : 'Inactive' }}
+                </button>
+              </template>
+              <!-- S03 (Pending Customer Review) Customer: Save & Send to Dimerco + Inactive (no bare Save) -->
+              <!-- (S03 Pending Customer Review Customer：Save & Send to Dimerco + Inactive，不顯示 Save) -->
+              <template v-else-if="showCustomerS03Buttons">
+                <button class="btn-cch btn-submit" :disabled="submitting || inactivating" @click="handleSubmit">
+                  {{ submitting ? '...' : $t('part_detail.btn_save_send') }}
+                </button>
+                <button class="btn-cch btn-inactive" :disabled="submitting || inactivating" @click="handleInactivate">
                   {{ inactivating ? '...' : 'Inactive' }}
                 </button>
               </template>
@@ -644,14 +733,14 @@ const handleReturn = async () => {
                   {{ $t('part_detail.btn_return_customer') }}
                 </button>
               </template>
-              <!-- S04 (Reviewed): all roles see Save; Customer additionally sees Save & Send to Dimerco -->
-              <!-- (S04 已審核：所有角色皆顯示 Save；僅 Customer 額外顯示 Save & Send to Dimerco) -->
+              <!-- S04 (Reviewed): all roles see Save; Customer/Dimerco additionally see Save & Send to Dimerco (→ S03) -->
+              <!-- (S04 已審核：所有角色皆顯示 Save；Customer/Dimerco 額外顯示 Save & Send to Dimerco，狀態改為 S03) -->
               <template v-else-if="showS04Buttons">
                 <button class="btn-cch btn-save" :disabled="saving || submitting" @click="handleSave">
                   {{ saving ? '...' : $t('common.save') }}
                 </button>
                 <button
-                  v-if="isCustomer"
+                  v-if="isCustomer || isDimerco"
                   class="btn-cch btn-submit"
                   :disabled="saving || submitting"
                   @click="handleSaveAndResend"
@@ -704,6 +793,76 @@ const handleReturn = async () => {
         </div>
       </div>
     </div>
+
+    <!-- History Modal (歷史紀錄視窗) -->
+    <div v-if="showHistoryPanel" class="history-overlay" @click.self="showHistoryPanel = false">
+      <div class="history-modal">
+        <div class="history-modal-header">
+          <div class="history-modal-title-group">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f68b39" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="history-title-icon">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <h2 class="history-modal-title">Change History</h2>
+            <span class="history-modal-partno">— {{ modified?.partNo }}</span>
+          </div>
+          <button class="history-close-btn" @click="showHistoryPanel = false" aria-label="Close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th class="h-col-date">{{ $t('common.updated_date') }}</th>
+                <th class="h-col-by">{{ $t('common.updated_by') }}</th>
+                <th>{{ $t('customer.part_no') }}</th>
+                <th>{{ $t('part_detail.country_of_origin') }}</th>
+                <th>{{ $t('part_detail.division') }}</th>
+                <th>{{ $t('common.supplier') }}</th>
+                <th>{{ $t('part_create.description') }}</th>
+                <th>{{ $t('part_detail.us_hts_code') }}</th>
+                <th>{{ $t('part_detail.general_duty_rate') }}</th>
+                <th>{{ $t('part_detail.hts_code_301') }}</th>
+                <th>{{ $t('part_detail.rate_301') }}</th>
+                <th>{{ $t('part_detail.hts_code_ieepa') }}</th>
+                <th>{{ $t('part_detail.rate_ieepa') }}</th>
+                <th>{{ $t('part_detail.hts_code_232') }}</th>
+                <th>{{ $t('part_detail.rate_232') }}</th>
+                <th>{{ $t('part_detail.hts_code_reciprocal') }}</th>
+                <th>{{ $t('part_detail.rate_reciprocal') }}</th>
+                <th>{{ $t('part_detail.remark') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, idx) in filteredHistoryRows" :key="idx" :class="{ 'h-row-latest': idx === 0 }">
+                <td class="h-col-date mono">{{ formatDate(row.updatedDate) }}</td>
+                <td class="h-col-by">{{ row.updatedBy }}</td>
+                <td class="h-bold">{{ row.partNo }}</td>
+                <td>{{ row.country }}</td>
+                <td>{{ row.division }}</td>
+                <td>{{ row.supplier }}</td>
+                <td>{{ row.partDesc }}</td>
+                <td class="mono">{{ row.htsCode }}</td>
+                <td class="h-num">{{ row.rate }}</td>
+                <td class="mono">{{ row.htsCode1 || '—' }}</td>
+                <td class="h-num">{{ row.rate1 ?? '—' }}</td>
+                <td class="mono">{{ row.htsCode2 || '—' }}</td>
+                <td class="h-num">{{ row.rate2 ?? '—' }}</td>
+                <td class="mono">{{ row.htsCode3 || '—' }}</td>
+                <td class="h-num">{{ row.rate3 ?? '—' }}</td>
+                <td class="mono">{{ row.htsCode4 || '—' }}</td>
+                <td class="h-num">{{ row.rate4 ?? '—' }}</td>
+                <td>{{ row.remark || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-if="filteredHistoryRows.length === 0" class="history-empty">No history records found.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -749,6 +908,13 @@ h1 {
   letter-spacing: -0.01em;
 }
 
+.title-sep {
+  font-weight: 300;
+  color: #adb5bd;
+  font-size: 1.6rem;
+  margin: 0 0.3rem;
+}
+
 .title-desc {
   font-weight: 400;
   color: #525f7f;
@@ -784,9 +950,35 @@ h1 {
 .card-header-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
   padding: 1.1rem 1.5rem;
   border-bottom: 1px solid #f1f3f5;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-history {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #f4f7fc;
+  color: #8898aa;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-history:hover {
+  background: var(--primary-color);
+  color: #fff;
 }
 
 .header-decorator {
@@ -846,7 +1038,8 @@ h1 {
 }
 
 .before-val {
-  color: #8898aa;
+  color: #f68b39;
+  font-weight: 500;
 }
 
 .value-blue {
@@ -1101,4 +1294,138 @@ h1 {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── History Modal ────────────────────────────────── */
+.history-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 28, 50, 0.48);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.history-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  width: 92vw;
+  max-width: 1300px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.history-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f0f2f5;
+  flex-shrink: 0;
+}
+
+.history-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.history-title-icon { flex-shrink: 0; }
+
+.history-modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #32325d;
+  margin: 0;
+}
+
+.history-modal-partno {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #8898aa;
+}
+
+.history-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #f4f7fc;
+  color: #8898aa;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  flex-shrink: 0;
+}
+
+.history-close-btn:hover {
+  background: #f56c6c;
+  color: #fff;
+}
+
+.history-table-wrap {
+  overflow: auto;
+  flex: 1;
+}
+
+.history-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.history-table thead tr {
+  background: #f8f9fe;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.history-table th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #8898aa;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid #eef0f5;
+  white-space: nowrap;
+}
+
+.history-table td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid #f0f2f5;
+  color: #525f7f;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.history-table tbody tr:hover { background: #fafbff; }
+
+.h-row-latest td {
+  background: #fff8f2;
+  font-weight: 500;
+}
+
+.h-col-date { min-width: 140px; }
+.h-col-by   { min-width: 110px; }
+
+.h-bold { font-weight: 600; color: var(--primary-color); }
+
+.h-num { text-align: right; }
+
+.history-empty {
+  text-align: center;
+  color: #adb5bd;
+  padding: 2rem;
+  font-size: 0.9rem;
+}
 </style>

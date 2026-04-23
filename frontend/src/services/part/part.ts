@@ -149,16 +149,43 @@ export interface PartListItem {
 }
 
 /**
- * Create Part API Request Body (新增零件 API 請求參數)
+ * Create Part API Request Body — POST /api/parts ([Save] button).
+ * Only partNo and countryId are required; all other fields are optional.
+ * (新增零件 API 請求參數 — [儲存] 按鈕。只有 partNo 與 countryId 必填。)
  */
 export interface CreatePartRequest {
   customerId?: string;
-  partNo: string;
-  countryId?: string | number;
+  partNo: string;           // Required / 必填
+  countryId: string | number; // Required / 必填
   division?: string;
   supplier?: string;
   partDesc?: string;
   htsCode?: string;
+  rate?: number;
+  htsCode1?: string;
+  rate1?: number;
+  htsCode2?: string;
+  rate2?: number;
+  htsCode3?: string;
+  rate3?: number;
+  htsCode4?: string;
+  rate4?: number;
+  remark?: string;
+}
+
+/**
+ * Submit Part API Request Body — POST /api/parts/submit ([Save & Submit] button).
+ * partNo, countryId, division, supplier, partDesc, and htsCode are all required.
+ * (送審零件 API 請求參數 — [儲存並送審] 按鈕。六個核心欄位全部必填。)
+ */
+export interface SubmitPartRequest {
+  customerId?: string;
+  partNo: string;           // Required / 必填
+  countryId: number;        // Required / 必填
+  division: string;         // Required / 必填
+  supplier: string;         // Required / 必填
+  partDesc: string;         // Required / 必填
+  htsCode: string;          // Required / 必填
   rate?: number;
   htsCode1?: string;
   rate1?: number;
@@ -405,8 +432,10 @@ export const partService = {
 
   /**
    * Submit Part to Dimerco via real API  POST /api/parts/submit
+   * Requires all 6 core fields: partNo, countryId, division, supplier, partDesc, htsCode.
+   * (送審零件至 Dimerco。六個核心欄位必填。)
    */
-  async submitPartApi(body: CreatePartRequest): Promise<SubmitPartResponse> {
+  async submitPartApi(body: SubmitPartRequest): Promise<SubmitPartResponse> {
     const response = await api.post<SubmitPartResponse>('/parts/submit', body);
     return response.data;
   },
@@ -755,6 +784,30 @@ export async function returnPart(partId: number, reason: string): Promise<void> 
  */
 export async function inactivatePart(partId: number): Promise<void> {
   await api.post(`/parts/${partId}/inactive`);
+}
+
+// INTERNAL-AI-20260421: S04 → S03 for Dimerco/Customer: save + set Pending Customer Review.
+// (INTERNAL-AI-20260421: S04 → S03，Dimerco/Customer 儲存後將狀態改為 Pending Customer Review。)
+/**
+ * Save part data and transition to Pending Customer Review (S03) via POST /api/parts/{partId}/send-to-customer-review.
+ * (儲存零件資料並將狀態改為 S03 Pending Customer Review。)
+ */
+export async function sendToCustomerReview(partId: number, payload: PartSavePayload): Promise<void> {
+  await api.post(`/parts/${partId}/send-to-customer-review`, payload);
+}
+
+/**
+ * Fetch snapshot history for a part (GET /api/parts/{partId}/history).
+ * Returns an array of PartDetailFields ordered newest-first.
+ * (取得零件的快照歷史，依最新到最舊排序。)
+ */
+export async function getHistory(partId: number): Promise<PartDetailFields[]> {
+  try {
+    const response = await api.get<{ success: boolean; data: PartDetailFields[] }>(`/parts/${partId}/history`);
+    return response.data.data ?? [];
+  } catch {
+    return [];
+  }
 }
 
 /**

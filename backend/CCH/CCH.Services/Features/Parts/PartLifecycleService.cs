@@ -24,16 +24,37 @@ public class PartLifecycleService : IPartLifecycleService
     }
 
     /// <inheritdoc/>
-    public object CreatePart(PartSaveRequest request, string status)
+    public object CreatePart(PartCreateRequest request, string status)
     {
-        var entity = new CchParts { Status = status, CreatedBy = _userContext.UserName ?? "system" };
-        MapRequestToEntity(request, entity);
-        var id = _repository.CreatePart(entity);
-        
-        RecordHistory(id, "Created", null, status);
-        RecordSnapshot(entity); // Restore Snapshot call (還原快照呼叫)
-        
-        return new { partId = id, status };
+        var entity = new PartEntity
+        {
+            CustomerID = request.CustomerId ?? 101,
+            PartNo = request.PartNo,
+            CountryID = request.CountryId ?? 1,
+            PartDescription = request.PartDesc,
+            Division = request.Division ?? string.Empty,
+            SupplierID = !string.IsNullOrEmpty(request.Supplier) ? ResolveSupplierIdByName(request.Supplier) : 1,
+            HTSCode = request.HtsCode,
+            DutyRate = request.Rate ?? 0m,
+            AddHTSCode1 = request.HtsCode1,
+            AddDutyRate1 = request.Rate1,
+            AddHTSCode2 = request.HtsCode2,
+            AddDutyRate2 = request.Rate2,
+            AddHTSCode3 = request.HtsCode3,
+            AddDutyRate3 = request.Rate3,
+            AddHTSCode4 = request.HtsCode4,
+            AddDutyRate4 = request.Rate4,
+            Remark = request.Remark ?? string.Empty,
+            Status = status,
+            CreatedBy = CurrentUser,
+            UpdatedBy = CurrentUser
+        };
+
+        var partId = _repository.CreatePart(entity);
+        // INTERNAL-AI-20260420: Record creation in history + take initial snapshot. (記錄建立歷程並拍攝初始快照。)
+        RecordHistory(partId, "Created");
+        RecordSnapshot(partId, entity);
+        return new { partId, partNo = request.PartNo, status };
     }
 
     /// <inheritdoc/>
@@ -95,6 +116,17 @@ public class PartLifecycleService : IPartLifecycleService
         _repository.UpdateStatus(partId, "Inactive");
         RecordHistory(partId, "Inactivated", oldStatus, "Inactive");
         return new { partId, status = "Inactive" };
+    }
+
+    // INTERNAL-AI-20260421: S04 → S03: save additional duty fields then set status to Pending Customer Review.
+    // (INTERNAL-AI-20260421: S04 → S03：儲存附加關稅欄位後將狀態設為 Pending Customer Review。)
+    /// <inheritdoc/>
+    public object SendToCustomerReview(int partId, PartSaveRequest request)
+    {
+        UpdatePart(partId, request);
+        _repository.UpdateStatus(partId, "S03");
+        RecordHistory(partId, "Sent to Customer Review");
+        return new { partId, status = "S03" };
     }
 
     /// <inheritdoc/>

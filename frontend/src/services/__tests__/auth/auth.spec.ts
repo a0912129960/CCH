@@ -6,6 +6,12 @@ import api from '../../api';
 // Mock the API and Pinia store (模擬 API 與 Pinia Store)
 vi.mock('../../api');
 
+// Prevent tabStore.closeAll() → router.push('/') from failing in test env
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useRoute: () => ({ path: '/' })
+}));
+
 describe('Auth Service (驗證服務測試)', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -18,8 +24,11 @@ describe('Auth Service (驗證服務測試)', () => {
   it('login should succeed and store token/user (登入應成功並儲存 Token 與 User)', async () => {
     const mockResponse = {
       data: {
-        token: 'fake-jwt-token',
-        user: { id: 'U123', name: 'Admin', role: UserRole.DIMERCO }
+        success: true,
+        data: {
+          token: 'fake-jwt-token',
+          user: { id: 'U123', name: 'Admin', role: UserRole.DIMERCO }
+        }
       }
     };
     

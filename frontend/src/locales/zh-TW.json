@@ -56,7 +56,8 @@
     "part_no": "零件編號",
     "hts_code": "HTS Code",
     "supplier": "供應商",
-    "last_updated": "最後更新"
+    "last_updated": "最後更新",
+    "updated_date": "更新日期"
   },
   "customer": {
     "title": "客戶儀表板",
@@ -65,7 +66,10 @@
     "sla_countdown": "SLA 倒數 (待處理項目)",
     "sla_remaining": "剩餘 {min} 分鐘",
     "part_no": "零件編號",
-    "hts_code": "HTS Code"
+    "hts_code": "HTS Code",
+    "pending_review": "待審核零件",
+    "no_pending": "目前無待審核零件",
+    "review": "審核"
   },
   "part_list": {
     "title": "零件清單",
