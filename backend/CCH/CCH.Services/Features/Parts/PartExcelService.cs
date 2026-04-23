@@ -64,10 +64,14 @@ public class PartExcelService : IPartExcelService
         var previewRows = new List<PartPreviewRowDto>();
         var summary = new BulkUploadSummaryDto();
 
-        var countries = _commonRepository.GetCountries().ToDictionary(c => c.Name.ToLower(), c => c.ID);
-        var countriesById = _commonRepository.GetCountries().ToDictionary(c => c.ID, c => c.Name);
-        var suppliers = _commonRepository.GetSuppliers(customerId).ToDictionary(s => s.SupplierName?.ToLower() ?? "", s => s.ID);
-        var suppliersById = _commonRepository.GetSuppliers(customerId).ToDictionary(s => s.ID, s => s.SupplierName ?? "Unknown");
+        // Handle duplicates by taking the first entry for each name
+        var countries = _commonRepository.GetCountries()
+            .GroupBy(c => c.Name.ToLower())
+            .ToDictionary(g => g.Key, g => g.First().ID);
+
+        var suppliers = _commonRepository.GetSuppliers(customerId)
+            .GroupBy(s => s.SupplierName?.ToLower() ?? "")
+            .ToDictionary(g => g.Key, g => g.First().ID);
 
         foreach (var row in rows)
         {
@@ -77,10 +81,12 @@ public class PartExcelService : IPartExcelService
 
             var errors = new List<string>();
             var countryName = row.Cell(3).GetString().ToLower();
-            var supplierName = row.Cell(4).GetString().ToLower();
+            var supplierName = row.Cell(4).GetString(); // Keep casing for creation
 
             if (!countries.ContainsKey(countryName)) errors.Add($"Country '{countryName}' not found.");
-            if (!suppliers.ContainsKey(supplierName)) errors.Add($"Supplier '{supplierName}' not found.");
+            
+            // Revert: Supplier check is no longer a hard error if missing (還原：供應商若不存在不報錯，標記為建立)
+            var sId = suppliers.GetValueOrDefault(supplierName.ToLower(), 0);
 
             row.Cell(6).TryGetValue(out decimal rate);
 
@@ -90,7 +96,8 @@ public class PartExcelService : IPartExcelService
                 PartNo = partNo,
                 PartDesc = row.Cell(2).GetString(),
                 CountryId = countries.GetValueOrDefault(countryName, 0),
-                SupplierId = suppliers.GetValueOrDefault(supplierName, 0),
+                SupplierId = sId,
+                Supplier = supplierName, // Keep original name
                 HtsCode = row.Cell(5).GetString(),
                 Rate = rate
             };
@@ -146,6 +153,34 @@ public class PartExcelService : IPartExcelService
     public BulkUploadConfirmResponseDto ConfirmBulkUpload(List<PartDto> parts)
     {
         var result = new BulkUploadConfirmResponseDto();
+        var now = DateTime.Now;
+
+        // 1. Restore Auto-Create Suppliers with Deduplication (還原自動建立供應商與去重)
+        var newSupplierNames = parts
+            .Where(p => p.SupplierId == 0 && !string.IsNullOrEmpty(p.Supplier))
+            .Select(p => p.Supplier).Distinct().ToList();
+
+        foreach (var name in newSupplierNames)
+        {
+            var existing = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == name);
+            if (existing == null)
+            {
+                var newS = new CchSuppliers
+                {
+                    SupplierName = name,
+                    CustomerID = parts.FirstOrDefault(p => p.Supplier == name)?.CustomerId,
+                    Status = "Active",
+                    CreatedBy = "system",
+                    CreatedDate = now
+                };
+                _commonRepository.CreateSupplier(newS);
+                existing = newS;
+            }
+            // Update IDs for all parts referencing this supplier (更新所有引用此名稱的零件 ID)
+            foreach (var p in parts.Where(x => x.Supplier == name)) p.SupplierId = existing.ID;
+        }
+
+        // 2. Persist Parts
         foreach (var p in parts)
         {
             try
@@ -183,8 +218,6 @@ public class PartExcelService : IPartExcelService
                     result.Inserted++;
                 }
 
-                // INTERNAL-AI-20260423: Record snapshot after bulk upload confirmation.
-                // (繁體中文) 批次上傳確認後紀錄快照。
                 RecordSnapshot(target);
             }
             catch (Exception ex)
@@ -196,10 +229,6 @@ public class PartExcelService : IPartExcelService
         return result;
     }
 
-    /// <summary>
-    /// Simplified internal snapshot recorder for Excel service.
-    /// (繁體中文) Excel 服務專用的簡化快照紀錄方法。
-    /// </summary>
     private void RecordSnapshot(CchParts entity)
     {
         var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
