@@ -13,11 +13,11 @@ public interface ICommonRepository
     IEnumerable<SmCustomer> GetCustomers();
     IEnumerable<CountryEntity> GetCountries();
     IEnumerable<StatusEntity> GetStatuses();
-    IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null);
+    IEnumerable<CchSuppliers> GetSuppliers(int? customerId = null);
 
     /// <summary>
     /// Creates a new supplier.
     /// (繁體中文) 建立新供應商。
     /// </summary>
-    int CreateSupplier(SupplierEntity entity);
+    int CreateSupplier(CchSuppliers entity);
 }

@@ -25,8 +25,14 @@ public class PartRepositoryTests : IDisposable
             .Options;
         
         _context = new CspDbContext(options);
+        
+        var resmOptions = new DbContextOptionsBuilder<ReSmDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        var resmContext = new ReSmDbContext(resmOptions);
+
         SeedData();
-        _repository = new PartRepository(_context);
+        _repository = new PartRepository(_context, resmContext);
     }
 
     private void SeedData()

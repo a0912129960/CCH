@@ -8,65 +8,77 @@ using Xunit;
 
 namespace CCH.Tests;
 
-/// <summary>
-/// Tests for CommonService with CommonRepository.
-/// (繁體中文) 結合 CommonRepository 的 CommonService 測試。
-/// </summary>
 public class CommonServiceTests
 {
-    private readonly Mock<ICommonRepository> _mockRepo;
-    private readonly CommonService _service;
-
-    public CommonServiceTests()
-    {
-        _mockRepo = new Mock<ICommonRepository>();
-        _service = new CommonService(_mockRepo.Object);
-    }
-
     [Fact]
-    public void GetStatus_ReturnsMappedStatusesFromRepository()
+    public void GetCustomers_ReturnsMappedDtos()
     {
-        // Arrange
-        var mockStatuses = new List<StatusEntity>
+        var mockRepo = new Mock<ICommonRepository>();
+        mockRepo.Setup(r => r.GetCustomers()).Returns(new List<SmCustomer>
         {
-            new() { Code = "S01", Description = "New" },
-            new() { Code = "S02", Description = "Pending Dimerco Review" }
-        };
-        _mockRepo.Setup(r => r.GetStatuses()).Returns(mockStatuses);
+            new() { HQID = 1, CustomerName = "Customer A" },
+            new() { HQID = 2, CustomerName = "Customer B" }
+        });
+        var service = new CommonService(mockRepo.Object);
 
-        // Act
-        var result = _service.GetStatus();
+        var result = service.GetCustomers().ToList();
 
-        // Assert
-        Assert.Equal(2, result.Count());
-        Assert.Equal("S01", result.First().Key);
-        Assert.Equal("New", result.First().Value);
-        Assert.Equal("Pending Dimerco Review", result.Last().Value);
+        Assert.Equal(2, result.Count);
+        Assert.Equal("1", result[0].Key);
+        Assert.Equal("Customer A", result[0].Value);
     }
 
     [Fact]
-    public void GetCustomers_ReturnsMappedCustomersFromRepository()
+    public void GetCountries_ReturnsMappedDtos()
     {
-        // ... (previous code)
-    }
-
-    [Fact]
-    public void GetSuppliers_WithCustomerId_ReturnsFilteredSuppliers()
-    {
-        // Arrange
-        var mockSuppliers = new List<SupplierEntity>
+        var mockRepo = new Mock<ICommonRepository>();
+        mockRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity>
         {
-            new() { ID = 1, CustomerID = 101, Name = "Supplier A1" },
-            new() { ID = 2, CustomerID = 102, Name = "Supplier B1" }
+            new() { Code = "US", Name = "United States" },
+            new() { Code = "TW", Name = "Taiwan" }
+        });
+        var service = new CommonService(mockRepo.Object);
+
+        var result = service.GetCountries().ToList();
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("US", result[0].Key);
+        Assert.Equal("United States", result[0].Value);
+    }
+
+    [Fact]
+    public void GetSuppliers_ReturnsMappedDtos()
+    {
+        var mockRepo = new Mock<ICommonRepository>();
+        var mockSuppliers = new List<CchSuppliers>
+        {
+            new() { ID = 1, SupplierName = "Supplier A", CustomerID = 101 },
+            new() { ID = 2, SupplierName = "Supplier B", CustomerID = 101 }
         };
-        _mockRepo.Setup(r => r.GetSuppliers(101)).Returns(mockSuppliers.Where(s => s.CustomerID == 101));
+        mockRepo.Setup(r => r.GetSuppliers(101)).Returns(mockSuppliers);
+        var service = new CommonService(mockRepo.Object);
 
-        // Act
-        var result = _service.GetSuppliers("101");
+        var result = service.GetSuppliers("101").ToList();
 
-        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Equal("1", result[0].Key);
+        Assert.Equal("Supplier A", result[0].Value);
+    }
+
+    [Fact]
+    public void GetStatus_ReturnsMappedDtos()
+    {
+        var mockRepo = new Mock<ICommonRepository>();
+        mockRepo.Setup(r => r.GetStatuses()).Returns(new List<StatusEntity>
+        {
+            new() { Code = "S01", Description = "Draft" }
+        });
+        var service = new CommonService(mockRepo.Object);
+
+        var result = service.GetStatus().ToList();
+
         Assert.Single(result);
-        Assert.Equal("1", result.First().Key);
-        Assert.Equal("Supplier A1", result.First().Value);
+        Assert.Equal("S01", result[0].Key);
+        Assert.Equal("Draft", result[0].Value);
     }
 }

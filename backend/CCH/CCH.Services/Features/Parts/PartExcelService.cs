@@ -193,8 +193,8 @@ public class PartExcelService : IPartExcelService
             var exist = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == name);
             if (exist == null)
             {
-                var ent = new SupplierEntity { 
-                    Name = name, SupplierName = name, Status = "Active", 
+                var ent = new CchSuppliers { 
+                    SupplierName = name, Status = "Active", 
                     CustomerID = parts.First(p => p.Supplier == name).CustomerId,
                     CreatedBy = user, CreatedDate = now 
                 };
@@ -242,7 +242,7 @@ public class PartExcelService : IPartExcelService
     private PartDto MapToDto(PartEntity e)
     {
         var coMap = _commonRepository.GetCountries().ToDictionary(c => c.ID, c => c.Name);
-        var suMap = _commonRepository.GetSuppliers().ToDictionary(s => s.ID, s => s.SupplierName ?? s.Name);
+        var suMap = _commonRepository.GetSuppliers().ToDictionary(s => s.ID, s => s.SupplierName ?? "Unknown");
         return new PartDto {
             Id = e.ID, CustomerId = e.CustomerID, PartNo = e.PartNo ?? "",
             CountryId = e.CountryID, Country = coMap.TryGetValue(e.CountryID, out var c) ? c : "Unknown",

@@ -101,7 +101,7 @@ public class PartQueryService : IPartQueryService
     {
         var customerName = _commonRepository.GetCustomers().FirstOrDefault(c => c.HQID == entity.CustomerID)?.CustomerName ?? "Unknown";
         var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
-        var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.Name ?? "Unknown";
+        var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.SupplierName ?? "Unknown";
 
         // SLA Calculation Logic (SLA 計算邏輯)
         string slaStatus = "";

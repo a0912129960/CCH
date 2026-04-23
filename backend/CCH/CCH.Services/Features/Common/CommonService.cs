@@ -27,7 +27,7 @@ public class CommonService : ICommonService
         int? cId = null;
         if (int.TryParse(customerId, out int parsedId)) cId = parsedId;
 
-        return _repository.GetSuppliers(cId).Select(s => new KeyValuePairDto { Key = s.ID.ToString(), Value = s.Name });
+        return _repository.GetSuppliers(cId).Select(s => new KeyValuePairDto { Key = s.ID.ToString(), Value = s.SupplierName ?? "Unknown" });
     }
 
     public IEnumerable<KeyValuePairDto> GetStatus() => 

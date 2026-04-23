@@ -13,17 +13,22 @@ namespace CCH.Services.Repositories;
 public class PartRepository : IPartRepository
 {
     private readonly CspDbContext _context;
+    private readonly ReSmDbContext _resmContext;
     private readonly string _snapshotPath;
     private List<PartSnapshotEntity> _snapshots = new();
     private static readonly object _fileLock = new();
 
-    public PartRepository(CspDbContext context)
+    public PartRepository(CspDbContext context, ReSmDbContext resmContext)
     {
         _context = context;
+        _resmContext = resmContext;
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
         var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
         var dataDir = Path.Combine(projectRootDir, "Data");
         _snapshotPath = Path.Combine(dataDir, "part_snapshots.json");
+
+        DataSeeder.SeedPartSnapshots(_snapshotPath, _context, _resmContext);
+
         LoadJsonData();
     }
 

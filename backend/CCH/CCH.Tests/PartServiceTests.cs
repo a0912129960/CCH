@@ -32,15 +32,21 @@ public class PartServiceTests : IDisposable
             .Options;
         
         _context = new CspDbContext(options);
+
+        var resmOptions = new DbContextOptionsBuilder<ReSmDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        var resmContext = new ReSmDbContext(resmOptions);
+
         SeedData();
 
         var mockCommonRepo = new Mock<ICommonRepository>();
         mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<SmCustomer> { new() { HQID = 101, CustomerName = "Customer A" } });
         mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Taiwan" } });
-        mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<SupplierEntity> { new() { ID = 1, Name = "TechSupply Corp" } });
+        mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<CchSuppliers> { new() { ID = 1, SupplierName = "TechSupply Corp" } });
         mockCommonRepo.Setup(r => r.GetStatuses()).Returns(new List<StatusEntity> { new() { Code = "S01", Description = "Active" } });
 
-        _repository = new PartRepository(_context);
+        _repository = new PartRepository(_context, resmContext);
 
         _mockUserContext = new Mock<IUserContext>();
         _mockUserContext.Setup(u => u.Role).Returns("admin"); 

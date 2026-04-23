@@ -1,6 +1,7 @@
 using CCH.Core.Entities;
 using CCH.Core.Entities.CSP;
 using CCH.Core.Entities.ReSm;
+using CCH.Services.Repositories.Data;
 using System.Text.Json;
 
 namespace CCH.Services.Repositories;
@@ -36,30 +37,21 @@ public static class DataSeeder
     /* INTERNAL-AI-20260421: DefaultCustomers and SeedCustomers removed as data migrated to ReSm SQL Database. */
     /* INTERNAL-AI-20260421: DefaultCountries and SeedCountries removed as data migrated to ReSm SQL Database. */
     /* INTERNAL-AI-20260421: DefaultStatuses and SeedStatuses removed as data migrated to Code Constants (PartStatusConstants). */
-
-    private static readonly List<SupplierEntity> DefaultSuppliers = new() {
-        new() { ID = 1, CustomerID = 101, Name = "TechSupply Corp" },
-        new() { ID = 2, CustomerID = 101, Name = "SensorTech Solutions" },
-        new() { ID = 3, CustomerID = 101, Name = "AluFab Co" },
-        new() { ID = 4, CustomerID = 102, Name = "FluidDynamics Ltd" },
-        new() { ID = 5, CustomerID = 102, Name = "CableConnect" },
-        new() { ID = 6, CustomerID = 102, Name = "PowerGuard" },
-        new() { ID = 7, CustomerID = 103, Name = "IronWorks Inc" },
-        new() { ID = 8, CustomerID = 103, Name = "OpticView" },
-        new() { ID = 9, CustomerID = 103, Name = "FanTech" }
-    };
+    /* INTERNAL-AI-20260423: DefaultSuppliers and SeedSuppliers removed as data migrated to database-driven CCHSuppliers. */
 
     public static void SeedParts(string path) => EnsureInitialized(path, DefaultParts);
-    public static void SeedSuppliers(string path) => EnsureInitialized(path, DefaultSuppliers);
 
-    public static void SeedPartSnapshots(string path)
+    public static void SeedPartSnapshots(string path, CspDbContext cspContext, ReSmDbContext resmContext)
     {
         if (File.Exists(path)) return;
-        var supplierMap = DefaultSuppliers.ToDictionary(s => s.ID, s => s.Name);
+
+        var supplierMap = cspContext.CchSuppliers.ToDictionary(s => s.ID, s => s.SupplierName ?? "Unknown");
+        var countryMap = resmContext.SmCountry.ToDictionary(c => c.HQID, c => c.CountryName ?? "Unknown");
+
         var snapshots = DefaultParts.Select((p, idx) => new PartSnapshotEntity
         {
             ID = idx + 1, PartID = p.ID, PartNo = p.PartNo,
-            Country = "Unknown", // Country names resolved from DB at runtime
+            Country = countryMap.GetValueOrDefault(p.CountryID, "Unknown"),
             Division = p.Division, Supplier = supplierMap.GetValueOrDefault(p.SupplierID, "Unknown"),
             PartDesc = p.PartDescription, HtsCode = p.HTSCode, Rate = p.DutyRate,
             Remark = p.Remark, UpdatedBy = p.UpdatedBy, UpdatedDate = p.UpdatedDate
