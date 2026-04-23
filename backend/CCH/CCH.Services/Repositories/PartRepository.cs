@@ -1,8 +1,6 @@
-using CCH.Core.Entities;
 using CCH.Core.Entities.CSP;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Repositories.Data;
-using System.Text.Json;
 
 namespace CCH.Services.Repositories;
 
@@ -19,12 +17,10 @@ public class PartRepository : IPartRepository
     {
         _context = context;
         _resmContext = resmContext;
-
-        DataSeeder.SeedPartSnapshots(_context, _resmContext);
     }
 
     /// <inheritdoc/>
-    public IEnumerable<PartEntity> SearchParts(int? customerId, string? status, string? partNo, int? supplierId)
+    public IEnumerable<CchParts> SearchParts(int? customerId, string? status, string? partNo, int? supplierId)
     {
         var query = _context.CchParts.AsQueryable();
         if (customerId > 0) query = query.Where(p => p.CustomerID == customerId);
@@ -35,42 +31,39 @@ public class PartRepository : IPartRepository
             query = query.Where(p => p.PartNo!.Contains(partNo) || p.HTSCode!.Replace(".", "").Contains(norm));
         }
         if (supplierId > 0) query = query.Where(p => p.SupplierID == supplierId);
-        return query.AsEnumerable().Select(MapToDomain).ToList();
+        return query.ToList();
     }
 
     /// <inheritdoc/>
-    public PartEntity? GetPartByNo(int customerId, string partNo)
+    public CchParts? GetPartByNo(int customerId, string partNo)
     {
-        var entity = _context.CchParts.FirstOrDefault(p => p.CustomerID == customerId && p.PartNo == partNo);
-        return entity == null ? null : MapToDomain(entity);
+        return _context.CchParts.FirstOrDefault(p => p.CustomerID == customerId && p.PartNo == partNo);
     }
 
     /// <inheritdoc/>
-    public PartEntity? GetPartById(int partId)
+    public CchParts? GetPartById(int partId)
     {
-        var entity = _context.CchParts.FirstOrDefault(p => p.ID == partId);
-        return entity == null ? null : MapToDomain(entity);
+        return _context.CchParts.FirstOrDefault(p => p.ID == partId);
     }
 
     /// <inheritdoc/>
-    public int CreatePart(PartEntity domain)
+    public int CreatePart(CchParts entity)
     {
-        var dbEntity = new CchParts();
-        UpdateDbEntityFromDomain(domain, dbEntity);
-        dbEntity.CreatedDate = DateTime.Now;
-        dbEntity.UpdatedDate = DateTime.Now;
-        _context.CchParts.Add(dbEntity);
+        entity.CreatedDate = DateTime.Now;
+        entity.UpdatedDate = DateTime.Now;
+        _context.CchParts.Add(entity);
         _context.SaveChanges();
-        return dbEntity.ID;
+        return entity.ID;
     }
 
     /// <inheritdoc/>
-    public void UpdatePart(PartEntity domain)
+    public void UpdatePart(CchParts entity)
     {
-        var existing = _context.CchParts.FirstOrDefault(p => p.ID == domain.ID);
+        var existing = _context.CchParts.FirstOrDefault(p => p.ID == entity.ID);
         if (existing != null)
         {
-            UpdateDbEntityFromDomain(domain, existing);
+            // Sync fields (EF tracking) (同步欄位，利用 EF 追蹤)
+            _context.Entry(existing).CurrentValues.SetValues(entity);
             existing.UpdatedDate = DateTime.Now;
             _context.SaveChanges();
         }
@@ -100,35 +93,6 @@ public class PartRepository : IPartRepository
             entity.UpdatedDate = now;
         }
         _context.SaveChanges();
-    }
-
-    private PartEntity MapToDomain(CchParts e) => new()
-    {
-        ID = e.ID, CustomerID = e.CustomerID ?? 0, PartNo = e.PartNo ?? "",
-        CountryID = e.CountryID ?? 0, PartDescription = e.PartDescription ?? "",
-        Division = e.Division ?? "", SupplierID = e.SupplierID ?? 0,
-        HTSCode = e.HTSCode ?? "", DutyRate = e.DutyRate ?? 0,
-        AddHTSCode1 = e.AddHTSCode1, AddDutyRate1 = e.AddDutyRate1,
-        AddHTSCode2 = e.AddHTSCode2, AddDutyRate2 = e.AddDutyRate2,
-        AddHTSCode3 = e.AddHTSCode3, AddDutyRate3 = e.AddDutyRate3,
-        AddHTSCode4 = e.AddHTSCode4, AddDutyRate4 = e.AddDutyRate4,
-        Remark = e.Remark ?? "", Status = e.Status ?? "",
-        CreatedBy = e.CreatedBy ?? "", UpdatedBy = e.UpdatedBy ?? "",
-        CreatedDate = e.CreatedDate ?? DateTime.MinValue,
-        UpdatedDate = e.UpdatedDate ?? DateTime.MinValue
-    };
-
-    private void UpdateDbEntityFromDomain(PartEntity d, CchParts e)
-    {
-        e.CustomerID = d.CustomerID; e.PartNo = d.PartNo; e.CountryID = d.CountryID;
-        e.PartDescription = d.PartDescription; e.Division = d.Division;
-        e.SupplierID = d.SupplierID; e.HTSCode = d.HTSCode; e.DutyRate = d.DutyRate;
-        e.AddHTSCode1 = d.AddHTSCode1; e.AddDutyRate1 = d.AddDutyRate1;
-        e.AddHTSCode2 = d.AddHTSCode2; e.AddDutyRate2 = d.AddDutyRate2;
-        e.AddHTSCode3 = d.AddHTSCode3; e.AddDutyRate3 = d.AddDutyRate3;
-        e.AddHTSCode4 = d.AddHTSCode4; e.AddDutyRate4 = d.AddDutyRate4;
-        e.Remark = d.Remark; e.Status = d.Status; e.UpdatedBy = d.UpdatedBy;
-        e.CreatedBy = string.IsNullOrEmpty(e.CreatedBy) ? d.CreatedBy : e.CreatedBy;
     }
 
     /// <inheritdoc/>

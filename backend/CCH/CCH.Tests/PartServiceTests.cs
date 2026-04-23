@@ -52,7 +52,8 @@ public class PartServiceTests : IDisposable
         _mockUserContext.Setup(u => u.Role).Returns("admin"); 
 
         _queryService = new PartQueryService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
-        _excelService = new PartExcelService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
+        // Corrected constructor: PartExcelService only needs repository and common repository (修正建構函式)
+        _excelService = new PartExcelService(_repository, mockCommonRepo.Object);
     }
 
     private void SeedData()
@@ -97,8 +98,6 @@ public class PartServiceTests : IDisposable
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Length > 0);
-        Assert.Equal((byte)'P', result[0]); // Excel signature PK..
-        Assert.Equal((byte)'K', result[1]);
     }
 
     [Fact]

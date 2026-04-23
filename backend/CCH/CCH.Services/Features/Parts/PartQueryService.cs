@@ -97,7 +97,7 @@ public class PartQueryService : IPartQueryService
         };
     }
 
-    private PartListItemDto MapToListItemDto(PartEntity entity, string? role = null)
+    private PartListItemDto MapToListItemDto(CchParts entity, string? role = null)
     {
         var customerName = _commonRepository.GetCustomers().FirstOrDefault(c => c.HQID == entity.CustomerID)?.CustomerName ?? "Unknown";
         var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
@@ -105,7 +105,7 @@ public class PartQueryService : IPartQueryService
 
         // SLA Calculation Logic (SLA 計算邏輯)
         string slaStatus = "";
-        var hoursElapsed = (DateTime.Now - entity.UpdatedDate).TotalHours;
+        var hoursElapsed = (DateTime.Now - (entity.UpdatedDate ?? DateTime.MinValue)).TotalHours;
 
         if (role == "customer" && (entity.Status == "S02" || entity.Status == "S03"))
         {
@@ -126,15 +126,15 @@ public class PartQueryService : IPartQueryService
         {
             Id = entity.ID,
             Customer = customerName,
-            PartNo = entity.PartNo,
-            PartDesc = entity.PartDescription,
+            PartNo = entity.PartNo ?? "",
+            PartDesc = entity.PartDescription ?? "",
             Country = countryName,
             Supplier = supplierName,
-            HtsCode = entity.HTSCode,
-            Rate = entity.DutyRate,
-            Status = entity.Status,
-            UpdatedBy = entity.UpdatedBy,
-            UpdatedDate = entity.UpdatedDate,
+            HtsCode = entity.HTSCode ?? "",
+            Rate = entity.DutyRate ?? 0,
+            Status = entity.Status ?? "",
+            UpdatedBy = entity.UpdatedBy ?? "",
+            UpdatedDate = entity.UpdatedDate ?? DateTime.MinValue,
             SlaStatus = slaStatus,
             HtsCode1 = entity.AddHTSCode1,
             Rate1 = entity.AddDutyRate1,

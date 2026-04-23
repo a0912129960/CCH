@@ -1,6 +1,4 @@
-using CCH.Core.Entities;
 using CCH.Core.Entities.CSP;
-using CCH.Core.Entities.ReSm;
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Features.Parts.Interfaces;
 using CCH.Core.Interfaces;
@@ -28,7 +26,7 @@ public class PartLifecycleService : IPartLifecycleService
     /// <inheritdoc/>
     public object CreatePart(PartSaveRequest request, string status)
     {
-        var entity = new PartEntity { Status = status, CreatedBy = _userContext.UserName ?? "system" };
+        var entity = new CchParts { Status = status, CreatedBy = _userContext.UserName ?? "system" };
         MapRequestToEntity(request, entity);
         var id = _repository.CreatePart(entity);
         RecordHistory(id, "Created", null, status);
@@ -122,7 +120,7 @@ public class PartLifecycleService : IPartLifecycleService
         return new { failed };
     }
 
-    private PartEntity GetExistingPart(int id)
+    private CchParts GetExistingPart(int id)
     {
         var existing = _repository.GetPartById(id);
         if (existing == null) throw new Exception("Part not found.");
@@ -144,7 +142,7 @@ public class PartLifecycleService : IPartLifecycleService
         _repository.AddHistory(history);
     }
 
-    private void MapRequestToEntity(PartSaveRequest req, PartEntity e)
+    private void MapRequestToEntity(PartSaveRequest req, CchParts e)
     {
         e.PartNo = req.PartNo; e.CountryID = req.CountryId ?? 0; e.Division = req.Division;
         e.PartDescription = req.PartDesc; e.HTSCode = req.HtsCode;

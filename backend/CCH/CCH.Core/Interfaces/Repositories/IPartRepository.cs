@@ -19,13 +19,13 @@ public interface IPartRepository
     /// <param name="partNo">Part number. (零件編號)</param>
     /// <param name="supplierId">Supplier ID. (供應商 ID)</param>
     /// <returns>A collection of part entities. (零件實體集合)</returns>
-    IEnumerable<PartEntity> SearchParts(int? customerId, string? status, string? partNo, int? supplierId);
+    IEnumerable<CchParts> SearchParts(int? customerId, string? status, string? partNo, int? supplierId);
 
     /// <summary>
     /// Retrieves a specific part entity by Customer ID and Part No.
     /// (繁體中文) 根據客戶 ID 與零件編號取得特定零件實體。
     /// </summary>
-    PartEntity? GetPartByNo(int customerId, string partNo);
+    CchParts? GetPartByNo(int customerId, string partNo);
 
     /// <summary>
     /// Retrieves a specific part entity by ID.
@@ -33,7 +33,7 @@ public interface IPartRepository
     /// </summary>
     /// <param name="partId">Part ID. (零件 ID)</param>
     /// <returns>The part entity if found; otherwise, null. (若找到則為零件實體；否則為 null)</returns>
-    PartEntity? GetPartById(int partId);
+    CchParts? GetPartById(int partId);
 
     /// <summary>
     /// Creates a new part entity.
@@ -41,14 +41,14 @@ public interface IPartRepository
     /// </summary>
     /// <param name="entity">The part entity to create. (要建立的零件實體)</param>
     /// <returns>The ID of the newly created part. (新建立零件的 ID)</returns>
-    int CreatePart(PartEntity entity);
+    int CreatePart(CchParts entity);
 
     /// <summary>
     /// Updates an existing part entity.
     /// (繁體中文) 更新現有零件實體。
     /// </summary>
     /// <param name="entity">The part entity to update. (要更新的零件實體)</param>
-    void UpdatePart(PartEntity entity);
+    void UpdatePart(CchParts entity);
 
     /// <summary>
     /// Updates the status of a specific part.
