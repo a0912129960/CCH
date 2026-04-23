@@ -63,7 +63,6 @@ public class PartQueryService : IPartQueryService
         if (entity == null) return null;
 
         var listItem = MapToListItemDto(entity);
-        listItem.UpdatedBy = _commonRepository.GetUserName(entity.UpdatedBy ?? "");
 
         // INTERNAL-AI-20260421: Before = second-most-recent snapshot (state before last save).
         // (INTERNAL-AI-20260421: Before 改為倒數第二筆快照（上次存檔前的狀態）。)
