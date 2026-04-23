@@ -124,17 +124,20 @@ public class PartQueryService : IPartQueryService
         var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.SupplierName ?? "Unknown";
 
         // SLA Calculation Logic (SLA 計算邏輯)
+        // Customer role → S01 (draft) + S03 (returned): apply customer thresholds
+        // Employee role → S02 (pending review): apply employee thresholds
+        // All other combinations → no SLA indicator
         string slaStatus = "";
         var hoursElapsed = (DateTime.Now - (entity.UpdatedDate ?? DateTime.MinValue)).TotalHours;
 
-        if (role == "customer" && (entity.Status == "S02" || entity.Status == "S03"))
+        if (role == "customer" && (entity.Status == "S01" || entity.Status == "S03"))
         {
             if (hoursElapsed > 72) slaStatus = "red";
             else if (hoursElapsed > 48) slaStatus = "orange";
             else if (hoursElapsed > 36) slaStatus = "yellow";
             else slaStatus = "green";
         }
-        else if(entity.Status == "S02")
+        else if (role != "customer" && entity.Status == "S02")
         {
             if (hoursElapsed > 48) slaStatus = "red";
             else if (hoursElapsed > 36) slaStatus = "orange";
