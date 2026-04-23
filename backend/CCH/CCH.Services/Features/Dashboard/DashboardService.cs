@@ -1,4 +1,3 @@
-using CCH.Core.Entities;
 using CCH.Core.Features.Dashboard.DTOs;
 using CCH.Core.Features.Dashboard.Interfaces;
 using CCH.Core.Interfaces.Repositories;
@@ -24,7 +23,7 @@ public class DashboardService : IDashboardService
     public PartStatusSummaryDto GetStatusSummary(string? customerId)
     {
         var parsedId = TryParseCustomerId(customerId);
-        var all = _partRepository.SearchParts(parsedId, null, null, null);
+        var all = _partRepository.SearchParts(parsedId, null, null, null).ToList();
 
         return new PartStatusSummaryDto
         {
@@ -42,18 +41,15 @@ public class DashboardService : IDashboardService
         var parsedId = TryParseCustomerId(customerId);
 
         // Determine which statuses to query based on the caller's role.
-        // Customer → S01 (draft) + S03 (returned for customer action)
-        // Employee (Dimerco / DCB) → S02 (pending Dimerco review)
-        // (依角色決定查詢的狀態：客戶 → S01+S03；員工 → S02。)
         var statuses = string.Equals(role, "CUSTOMER", StringComparison.OrdinalIgnoreCase)
             ? new[] { "S01", "S03" }
             : new[] { "S02" };
 
-        // Build customer lookup map to avoid N+1 (建立客戶名稱對照表，避免 N+1)
+        // Build customer lookup map using SmCustomer properties (HQID, CustomerName)
         var customerMap = _commonRepository.GetCustomers()
-            .ToDictionary(c => c.ID, c => c.Name);
+            .ToDictionary(c => c.HQID, c => c.CustomerName ?? string.Empty);
 
-        // Query each status separately and merge (逐一查詢各狀態再合併)
+        // Query each status separately and merge
         var parts = statuses
             .SelectMany(s => _partRepository.SearchParts(parsedId, s, null, null))
             .ToList();
@@ -61,27 +57,26 @@ public class DashboardService : IDashboardService
         return parts.Select(p => new PendingReviewDto
         {
             Id          = p.ID,
-            Customer    = customerMap.GetValueOrDefault(p.CustomerID, string.Empty),
-            PartNo      = p.PartNo,
-            PartDesc    = p.PartDescription,
-            HtsCode     = p.HTSCode,
-            Status      = p.Status,
-            UpdatedBy   = p.UpdatedBy,
-            UpdatedDate = p.UpdatedDate,
+            Customer    = customerMap.GetValueOrDefault(p.CustomerID ?? 0, string.Empty),
+            PartNo      = p.PartNo ?? string.Empty,
+            PartDesc    = p.PartDescription ?? string.Empty,
+            HtsCode     = p.HTSCode ?? string.Empty,
+            Status      = p.Status ?? string.Empty,
+            UpdatedBy   = p.UpdatedBy ?? string.Empty,
+            UpdatedDate = p.UpdatedDate ?? DateTime.MinValue,
             SlaStatus   = CalculateSlaStatus(p.UpdatedDate)
         });
     }
 
     /// <summary>
     /// Derives SLA urgency from the number of days a part has been waiting.
-    /// green  = 0–2 days  (within normal SLA)
-    /// yellow = 3–6 days  (approaching deadline)
-    /// red    = 7+ days   (overdue)
     /// (依零件等待天數計算 SLA 緊急程度。)
     /// </summary>
-    private static string CalculateSlaStatus(DateTime updatedDate)
+    private static string CalculateSlaStatus(DateTime? updatedDate)
     {
-        var daysPending = (DateTime.Now - updatedDate).TotalDays;
+        if (!updatedDate.HasValue) return "green";
+        
+        var daysPending = (DateTime.Now - updatedDate.Value).TotalDays;
         return daysPending switch
         {
             < 3  => "green",

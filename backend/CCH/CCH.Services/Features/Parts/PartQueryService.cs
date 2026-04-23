@@ -61,12 +61,9 @@ public class PartQueryService : IPartQueryService
         var listItem = MapToListItemDto(entity);
 
         // INTERNAL-AI-20260421: Before = second-most-recent snapshot (state before last save).
-        //   Modified = current entity with all Additional Duty fields included.
-        //   Previously both Before and Modified pointed at the same current entity and were missing HtsCode1-4.
-        // (INTERNAL-AI-20260421: Before 改為倒數第二筆快照（上次存檔前的狀態）；
-        //   Modified 補上 Additional Duty 欄位；舊版兩者皆指向相同現在資料且缺少 HtsCode1-4。)
+        // (INTERNAL-AI-20260421: Before 改為倒數第二筆快照（上次存檔前的狀態）。)
         var snapshots = _repository.GetSnapshotsByPartId(partId)
-            .OrderByDescending(s => s.UpdatedDate)
+            .OrderByDescending(s => s.CreatedDate)
             .ToList();
 
         var beforeSnapshot = snapshots.Count > 1 ? snapshots[1] : null;
@@ -77,13 +74,13 @@ public class PartQueryService : IPartQueryService
             SlaStatus = listItem.SlaStatus,
             Before = beforeSnapshot != null ? new PartDetailDto
             {
-                PartNo    = beforeSnapshot.PartNo,
-                Country   = beforeSnapshot.Country,
-                Division  = beforeSnapshot.Division,
-                Supplier  = beforeSnapshot.Supplier,
-                PartDesc  = beforeSnapshot.PartDesc,
-                HtsCode   = beforeSnapshot.HtsCode,
-                Rate      = beforeSnapshot.Rate,
+                PartNo    = beforeSnapshot.PartNo ?? "",
+                Country   = beforeSnapshot.Country ?? "",
+                Division  = beforeSnapshot.Division ?? "",
+                Supplier  = beforeSnapshot.Supplier ?? "",
+                PartDesc  = beforeSnapshot.PartDesc ?? "",
+                HtsCode   = beforeSnapshot.HtsCode ?? "",
+                Rate      = beforeSnapshot.Rate ?? 0,
                 HtsCode1  = beforeSnapshot.HtsCode1,
                 Rate1     = beforeSnapshot.Rate1,
                 HtsCode2  = beforeSnapshot.HtsCode2,
@@ -92,15 +89,15 @@ public class PartQueryService : IPartQueryService
                 Rate3     = beforeSnapshot.Rate3,
                 HtsCode4  = beforeSnapshot.HtsCode4,
                 Rate4     = beforeSnapshot.Rate4,
-                Remark    = beforeSnapshot.Remark,
-                UpdatedBy   = beforeSnapshot.UpdatedBy,
-                UpdatedDate = beforeSnapshot.UpdatedDate
+                Remark    = beforeSnapshot.Remark ?? "",
+                UpdatedBy   = beforeSnapshot.CreatedBy ?? "",
+                UpdatedDate = beforeSnapshot.CreatedDate ?? DateTime.MinValue
             } : new PartDetailDto(),
             Modified = new PartDetailDto
             {
                 PartNo    = listItem.PartNo,
                 Country   = listItem.Country,
-                Division  = entity.Division,
+                Division  = entity.Division ?? "",
                 Supplier  = listItem.Supplier,
                 PartDesc  = listItem.PartDesc,
                 HtsCode   = listItem.HtsCode,
@@ -113,7 +110,7 @@ public class PartQueryService : IPartQueryService
                 Rate3     = listItem.Rate3,
                 HtsCode4  = listItem.HtsCode4,
                 Rate4     = listItem.Rate4,
-                Remark    = entity.Remark,
+                Remark    = entity.Remark ?? "",
                 UpdatedBy   = listItem.UpdatedBy,
                 UpdatedDate = listItem.UpdatedDate
             }
@@ -170,15 +167,6 @@ public class PartQueryService : IPartQueryService
         };
     }
 
-    // INTERNAL-AI-20260420: GetMilestones now reads real history from the repository instead of hardcoded data.
-    // (INTERNAL-AI-20260420: GetMilestones 改為從倉儲讀取真實歷程，不再使用硬編碼資料。)
-    /* public IEnumerable<MilestoneDto> GetMilestones(int partId) => new[]
-    {
-        new MilestoneDto { Action = "Unknown", ... },
-        ...
-    }; */
-    // INTERNAL-AI-20260420: Milestones sorted DESC per spec (依修改時間由近到遠排序).
-    // (INTERNAL-AI-20260420: 依規格將里程碑排序改為由近到遠 DESC。)
     /// <inheritdoc/>
     public IEnumerable<MilestoneDto> GetMilestones(int partId) =>
         _repository.GetHistoryByPartId(partId)
@@ -192,9 +180,6 @@ public class PartQueryService : IPartQueryService
             })
             .ToList();
 
-    // INTERNAL-AI-20260420: GetHistory now reads real snapshots instead of hardcoded mock data.
-    // Sorted DESC per spec (依修改時間由近到遠排序). (改為從倉儲讀取真實快照，並依規格排序。)
-    /* public IEnumerable<PartDetailDto> GetHistory(int partId) => new[] { ... }; */
     /// <inheritdoc/>
     public IEnumerable<PartDetailDto> GetHistory(int partId) =>
         _repository.GetSnapshotsByPartId(partId)
