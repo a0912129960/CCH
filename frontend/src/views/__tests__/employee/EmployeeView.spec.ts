@@ -78,13 +78,13 @@ describe('EmployeeView.vue', () => {
 
   it('displays pending review parts in a table', async () => {
     vi.spyOn(dashboardService, 'getPendingReviewParts').mockResolvedValue([
-      { id: '1', partNo: 'PN-TEST-001', customerName: 'Test Corp', htsCode: '1234.56.78', supplier: 'Supp A', lastUpdated: '2026-04-10 10:00' } as any
+      { id: 1, customer: 'Test Corp', partNo: 'PN-TEST-001', partDesc: 'Desc', htsCode: '1234.56.78', status: 'S02', updatedBy: 'user', updatedDate: '2026-04-10T10:00:00', slaStatus: 'green' } as any
     ]);
-    
+
     const wrapper = mount(EmployeeView, globalConfig);
     await flushPromises();
-    
-    expect(wrapper.find('tbody tr td').text()).toBe('PN-TEST-001');
-    expect(wrapper.find('tbody tr td:nth-child(2)').text()).toBe('Test Corp');
+
+    expect(wrapper.find('tbody tr td:nth-child(2)').text()).toBe('PN-TEST-001');
+    expect(wrapper.find('tbody tr td:first-child').text()).toBe('Test Corp');
   });
 });

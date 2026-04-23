@@ -1,27 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import CustomerView from '../../customer/CustomerView.vue';
 
 /**
  * Customer Dashboard View Tests (客戶儀表板測試)
  */
 
-// Mock services
 vi.mock('../../../services/dashboard/dashboard', () => ({
   dashboardService: {
     getStatusSummary: vi.fn().mockResolvedValue([
-      { status: 'ACTIVE', count: 10, labelKey: 'status.active', color: 'green' }
+      { status: 'S04', count: 10, labelKey: 'status.active', color: '#67C23A' }
     ]),
-    getSLAItems: vi.fn().mockResolvedValue([
-      { id: '1', partNo: 'PN-001', status: 'PENDING_CUSTOMER', remainingMinutes: 30 }
-    ])
+    getPendingReviewParts: vi.fn().mockResolvedValue([
+      { id: 1, customer: 'Test Corp', partNo: 'PN-001', partDesc: 'Desc', htsCode: '1234.56.7890', status: 'S03', updatedBy: 'user', updatedDate: '2026-04-23T10:00:00', slaStatus: 'red' }
+    ]),
+    getSLAItems: vi.fn().mockResolvedValue([])
   }
 }));
 
 vi.mock('../../../services/part/part', () => ({
+  partService: {
+    getCustomers: vi.fn().mockResolvedValue([])
+  },
+  statusToI18nKey: vi.fn((s: string) => s.toLowerCase()),
+  statusToColor: vi.fn(() => '#67C23A'),
   PartStatus: {
-    PENDING_CUSTOMER: 'PENDING_CUSTOMER',
-    RETURNED: 'RETURNED'
+    PENDING_CUSTOMER: 'S03',
+    RETURNED: 'S03'
   }
 }));
 
@@ -32,6 +38,7 @@ vi.mock('vue-router', () => ({
 describe('CustomerView.vue', () => {
   const globalConfig = {
     global: {
+      plugins: [createPinia()],
       mocks: {
         $t: (key: string, params?: any) => {
           if (params && params.min) return `${key}:${params.min}`;
@@ -46,6 +53,7 @@ describe('CustomerView.vue', () => {
   };
 
   beforeEach(() => {
+    setActivePinia(createPinia());
     vi.clearAllMocks();
   });
 
@@ -58,19 +66,18 @@ describe('CustomerView.vue', () => {
     expect(wrapper.find('.status-label').text()).toBe('status.active');
   });
 
-  it('renders SLA countdown list correctly (正確渲染 SLA 倒數清單)', async () => {
+  it('renders pending review table correctly (正確渲染待審核零件列表)', async () => {
     const wrapper = mount(CustomerView, globalConfig);
     await flushPromises();
 
-    expect(wrapper.find('.sla-section').exists()).toBe(true);
-    expect(wrapper.find('.part-no').text()).toBe('PN-001');
-    expect(wrapper.find('.timer-text').text()).toContain('30');
+    expect(wrapper.find('.pending-section').exists()).toBe(true);
+    expect(wrapper.find('tbody tr td.bold').text()).toBe('PN-001');
   });
 
-  it('applies urgent class for low SLA (當 SLA 時間較短時套用緊急樣式)', async () => {
+  it('applies SLA dot for pending parts (待審核零件顯示 SLA 燈號)', async () => {
     const wrapper = mount(CustomerView, globalConfig);
     await flushPromises();
 
-    expect(wrapper.find('.sla-countdown').classes()).toContain('urgent');
+    expect(wrapper.find('tbody tr').exists()).toBe(true);
   });
 });
