@@ -138,4 +138,9 @@ public class CchPartHistories
     /// (繁體中文) 建立日期（拍攝快照的時間）。
     /// </summary>
     public DateTime? CreatedDate { get; set; }
+
+    /// <summary>
+    /// Whether the HTS Code was found on hts.usitc.gov (null = not checked, true = found, false = not found).
+    /// </summary>
+    public bool? IsHTSExists { get; set; }
 }

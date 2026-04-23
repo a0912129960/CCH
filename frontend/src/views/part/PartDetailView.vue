@@ -6,6 +6,7 @@ import { authService, UserRole } from '@src/services/auth/auth';
 import {
   /* partService, PartStatus, */
   getPartDetail, updatePart, submitPart, getMilestones, getHistory, acceptPart, returnPart, inactivatePart, sendToCustomerReview,
+  getHtsRecommendation,
   statusToI18nKey,
   type PartDetailResponse, type PartDetailFields, type PartSavePayload, type Milestone
 } from '@src/services/part/part';
@@ -118,6 +119,49 @@ const handleHtsInput = (field: HtsField, event: Event) => {
   (form.value as any)[field] = formatted;
   input.value = formatted; // sync DOM to show formatted value immediately
   validateHts(formatted, htsErrMap[field]);
+  // US HTS Code changed — reset existence check until user re-validates
+  if (field === 'htsCode') htsExists.value = null;
+};
+
+// Tracks the stored/current USITC existence check result for the US HTS Code.
+// null = not checked, true = found, false = not found.
+const htsExists = ref<boolean | null>(null);
+
+// HTS recommendation lookup — fires on blur of US HTS Code only.
+// If fallback_used=true and general has a value, auto-fill General Duty Rate.
+const htsLookupLoading = ref(false);
+
+const handleHtsCodeBlur = async () => {
+  validateHtsField('htsCode', form.value.htsCode);
+  if (htsError.value || !form.value.htsCode) return;
+
+  htsLookupLoading.value = true;
+  try {
+    const result = await getHtsRecommendation(form.value.htsCode);
+    if (!result) return; // API error — silently skip
+
+    // Initial code returned [] (not found in USITC at all)
+    if (!result.fallback_used && result.message === 'No recommendation data') {
+      htsExists.value = false;
+      htsError.value = 'HTS Code not found on hts.usitc.gov';
+      ElMessage.warning('HTS Code not found on hts.usitc.gov');
+      return;
+    }
+
+    // Code found in USITC (with or without general rate)
+    htsExists.value = true;
+
+    // Fallback to 8-digit was used and general rate found → auto-fill
+    if (result.fallback_used && result.data?.general) {
+      const parsed = parseFloat(result.data.general.replace('%', '').trim());
+      if (!isNaN(parsed)) {
+        form.value.rate = parsed;
+        ElMessage.info('General Duty Rate auto-filled from HTS recommendation.');
+      }
+    }
+  } finally {
+    htsLookupLoading.value = false;
+  }
 };
 
 const form = ref<PartSavePayload>({
@@ -244,6 +288,7 @@ const initLoad = async (id: number) => {
     if (detailData) {
       partDetail.value = detailData;
       tabStore.updateTabTitle(route.path, detailData.modified.partNo);
+      htsExists.value = detailData.modified.isHTSExists ?? null;
       const m = detailData.modified;
       form.value = {
         partNo: m.partNo,
@@ -293,15 +338,16 @@ const toNullableString = (v: any) => (v === '' ? null : v || null);
 
 const buildPayload = (): PartSavePayload => ({
   ...form.value,
-  rate:     toNullableNumber(form.value.rate) ?? 0,
-  rate1:    toNullableNumber(form.value.rate1),
-  rate2:    toNullableNumber(form.value.rate2),
-  rate3:    toNullableNumber(form.value.rate3),
-  rate4:    toNullableNumber(form.value.rate4),
-  htsCode1: toNullableString(form.value.htsCode1),
-  htsCode2: toNullableString(form.value.htsCode2),
-  htsCode3: toNullableString(form.value.htsCode3),
-  htsCode4: toNullableString(form.value.htsCode4),
+  rate:        toNullableNumber(form.value.rate) ?? 0,
+  rate1:       toNullableNumber(form.value.rate1),
+  rate2:       toNullableNumber(form.value.rate2),
+  rate3:       toNullableNumber(form.value.rate3),
+  rate4:       toNullableNumber(form.value.rate4),
+  htsCode1:    toNullableString(form.value.htsCode1),
+  htsCode2:    toNullableString(form.value.htsCode2),
+  htsCode3:    toNullableString(form.value.htsCode3),
+  htsCode4:    toNullableString(form.value.htsCode4),
+  isHTSExists: htsExists.value,
 });
 
 // INTERNAL-AI-20260416: Save handler for Customer role — calls PUT /api/parts/{partId}.
@@ -543,7 +589,15 @@ const handleReturn = async () => {
                 <!-- (US HTS Code：必填，格式 XXXX.XX.XXXX，可在 S01/S03/S04 狀態編輯) -->
                 <tr>
                   <td class="field-label">{{ $t('part_detail.us_hts_code') }}<span v-if="canEditBasicFields" class="req">*</span></td>
-                  <td class="before-val mono">{{ before?.htsCode || '—' }}</td>
+                  <td class="before-val mono">
+                    {{ before?.htsCode || '—' }}
+                    <template v-if="before?.htsCode">
+                      <br />
+                      <span v-if="before?.isHTSExists === true" class="hts-badge hts-found">✓ Verified on USITC</span>
+                      <span v-else-if="before?.isHTSExists === false" class="hts-badge hts-not-found">✗ Not found on USITC</span>
+                      <span v-else class="hts-badge hts-unknown">— Not yet verified</span>
+                    </template>
+                  </td>
                   <td>
                     <template v-if="canEditBasicFields">
                       <input
@@ -552,12 +606,22 @@ const handleReturn = async () => {
                         :class="{ 'input-error': htsError }"
                         placeholder="XXXX.XX.XXXX"
                         inputmode="numeric"
-                        @blur="validateHtsField('htsCode', form.htsCode)"
+                        :disabled="htsLookupLoading"
+                        @blur="handleHtsCodeBlur"
                         @input="handleHtsInput('htsCode', $event)"
                       />
                       <div v-if="htsError" class="field-error">{{ htsError }}</div>
+                      <div v-if="htsLookupLoading" class="field-hint">Looking up rate...</div>
+                      <span v-else-if="htsExists === true" class="hts-badge hts-found">✓ Verified on USITC</span>
+                      <span v-else-if="htsExists === false" class="hts-badge hts-not-found">✗ Not found on USITC</span>
+                      <span v-else class="hts-badge hts-unknown">— Not yet verified</span>
                     </template>
-                    <span v-else class="cell-text mono">{{ modified.htsCode }}</span>
+                    <template v-else>
+                      <span class="cell-text mono">{{ modified.htsCode }}</span>
+                      <span v-if="htsExists === true" class="hts-badge hts-found">✓ Verified on USITC</span>
+                      <span v-else-if="htsExists === false" class="hts-badge hts-not-found">✗ Not found on USITC</span>
+                      <span v-else class="hts-badge hts-unknown">— Not yet verified</span>
+                    </template>
                   </td>
                 </tr>
                 <!-- General Duty Rate: numeric, editable when S01/S03/S04 (數字，可在 S01/S03/S04 狀態編輯) -->
@@ -1127,6 +1191,25 @@ h1 {
   color: #f56c6c;
   margin-top: 3px;
 }
+
+.field-hint {
+  font-size: 0.75rem;
+  color: #8898aa;
+  margin-top: 3px;
+}
+
+.hts-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.hts-found     { background: #f0faf0; color: #52c41a; border: 1px solid #b7eb8f; }
+.hts-not-found { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffa39e; }
+.hts-unknown   { background: #f5f5f5; color: #adb5bd; border: 1px solid #d9d9d9; }
 
 .cell-select {
   width: 100%;

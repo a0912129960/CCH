@@ -23,39 +23,50 @@ public class HtsRecommendationService : IHtsRecommendationService
 
     public async Task<HtsRecommendationResponseDto> GetRecommendationAsync(string htsCode)
     {
-        if (string.IsNullOrWhiteSpace(htsCode) || htsCode.Length < 8 || !Regex.IsMatch(htsCode, @"^\d+$"))
+        if (string.IsNullOrWhiteSpace(htsCode) || htsCode.Length != 10 || !Regex.IsMatch(htsCode, @"^\d+$"))
         {
-            throw new ArgumentException("HTS Code must be numeric and at least 8 digits");
+            throw new ArgumentException("HTS Code must be exactly 10 numeric digits");
         }
 
         _logger.LogInformation("Getting HTS recommendation for input code: {HtsCode}", htsCode);
 
-        // Step 1: query 10-digit (or original input)
+        // Step 1: query 10-digit input code
         var result = await FetchFromExternalApiAsync(htsCode);
 
+        // Empty [] means the code doesn't exist in USITC — don't attempt 8-digit fallback.
+        if (!IsNonEmptyResponse(result))
+        {
+            _logger.LogWarning("USITC returned empty [] for input code: {HtsCode}. No fallback attempted.", htsCode);
+            return new HtsRecommendationResponseDto
+            {
+                InputHtsCode = htsCode,
+                MatchedKeyword = null,
+                FallbackUsed = false,
+                Message = "No recommendation data"
+            };
+        }
+
+        // Initial code returned data — check if general is present.
         if (HasGeneralValue(result))
         {
             return BuildResponse(htsCode, htsCode, false, result.Value);
         }
 
-        // Step 2: fallback 8-digit
-        if (htsCode.Length >= 8)
+        // Step 2: initial has data but no valid general → try 8-digit fallback.
+        if (htsCode.Length > 8)
         {
             var code8 = htsCode.Substring(0, 8);
-            if (code8 != htsCode) // Only fallback if original was longer than 8
-            {
-                _logger.LogInformation("No valid data for {HtsCode}, falling back to 8 digits: {Code8}", htsCode, code8);
-                var fallbackResult = await FetchFromExternalApiAsync(code8);
+            _logger.LogInformation("No general value for {HtsCode}, falling back to 8 digits: {Code8}", htsCode, code8);
+            var fallbackResult = await FetchFromExternalApiAsync(code8);
 
-                if (HasGeneralValue(fallbackResult))
-                {
-                    return BuildResponse(htsCode, code8, true, fallbackResult.Value);
-                }
+            if (HasGeneralValue(fallbackResult))
+            {
+                return BuildResponse(htsCode, code8, true, fallbackResult.Value);
             }
         }
 
-        // Step 3: no data
-        _logger.LogWarning("No recommendation data found for input code: {HtsCode}", htsCode);
+        // Step 3: no usable general found
+        _logger.LogWarning("No general duty rate found for input code: {HtsCode}", htsCode);
         return new HtsRecommendationResponseDto
         {
             InputHtsCode = htsCode,
@@ -90,6 +101,14 @@ public class HtsRecommendationService : IHtsRecommendationService
             _logger.LogError(ex, "Failed to parse JSON response from USITC API for keyword: {Keyword}", keyword);
             throw new Exception("USITC API response parsing failed", ex);
         }
+    }
+
+    private static bool IsNonEmptyResponse(JsonElement? element)
+    {
+        if (!element.HasValue) return false;
+        var el = element.Value;
+        // USITC returns [] when the code has no match — treat as "no data".
+        return !(el.ValueKind == JsonValueKind.Array && el.GetArrayLength() == 0);
     }
 
     private bool HasGeneralValue(JsonElement? element)

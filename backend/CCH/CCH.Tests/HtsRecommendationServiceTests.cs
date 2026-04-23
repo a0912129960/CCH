@@ -21,8 +21,8 @@ public class HtsRecommendationServiceTests
         var service = new HtsRecommendationService(new HttpClient(), mockLogger.Object);
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => service.GetRecommendationAsync("1234567")); // Less than 8
-        await Assert.ThrowsAsync<ArgumentException>(() => service.GetRecommendationAsync("ABCDEFGH")); // Non-numeric
+        await Assert.ThrowsAsync<ArgumentException>(() => service.GetRecommendationAsync("123456789")); // Not 10 digits
+        await Assert.ThrowsAsync<ArgumentException>(() => service.GetRecommendationAsync("ABCDEFGHIJ")); // Non-numeric
     }
 
     [Fact]
