@@ -1,115 +1,79 @@
+using CCH.Core.Constants;
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces.Repositories;
-using System.Text.Json;
+using CCH.Services.Repositories.Data;
 
 namespace CCH.Services.Repositories;
 
 /// <summary>
-/// Implementation of Common repository using JSON file persistence and centralized seeding.
-/// (繁體中文) 使用 JSON 檔案持久化與集中式種子資料的共用倉儲實作。
+/// Implementation of Common repository using SQL Database for Countries (ReSm),
+/// Code Constants for Statuses, and Database for CCHSuppliers.
+/// (繁體中文) 共用倉儲實作：國家資料使用 SQL 資料庫 (ReSm)，狀態使用程式碼常數，供應商資料使用資料庫 (CCHSuppliers)。
 /// </summary>
 public class CommonRepository : ICommonRepository
 {
-    private readonly string _customersPath;
-    private readonly string _countriesPath;
-    private readonly string _statusesPath;
-    private readonly string _suppliersPath;
-
-    private List<CustomerEntity> _customers = new();
-    private List<CountryEntity> _countries = new();
-    private List<StatusEntity> _statuses = new();
-    private List<SupplierEntity> _suppliers = new();
-
-    private static readonly object _fileLock = new();
+    private readonly ReSmDbContext _resmContext;
+    private readonly CspDbContext _cspContext;
 
     /// <summary>
     /// Initializes a new instance of CommonRepository.
     /// (繁體中文) 初始化 CommonRepository 的新執行個體。
     /// </summary>
-    public CommonRepository()
+    public CommonRepository(ReSmDbContext resmContext, CspDbContext cspContext)
     {
-        // Path discovery relative to project root (相對於專案根目錄的路徑探索)
-        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
-        var dataDir = Path.Combine(projectRootDir, "Data");
-
-        _customersPath = Path.Combine(dataDir, "customers.json");
-        _countriesPath = Path.Combine(dataDir, "countries.json");
-        _statusesPath = Path.Combine(dataDir, "statuses.json");
-        _suppliersPath = Path.Combine(dataDir, "suppliers.json");
-
-        // Initialize only what this repository needs (僅初始化此倉儲需要的資料)
-        DataSeeder.SeedCustomers(_customersPath);
-        DataSeeder.SeedCountries(_countriesPath);
-        DataSeeder.SeedStatuses(_statusesPath);
-        DataSeeder.SeedSuppliers(_suppliersPath);
-
-        LoadAllData();
-    }
-
-    private void LoadAllData()
-    {
-        lock (_fileLock)
-        {
-            try
-            {
-                _customers = JsonSerializer.Deserialize<List<CustomerEntity>>(File.ReadAllText(_customersPath)) ?? new();
-                _countries = JsonSerializer.Deserialize<List<CountryEntity>>(File.ReadAllText(_countriesPath)) ?? new();
-                _statuses = JsonSerializer.Deserialize<List<StatusEntity>>(File.ReadAllText(_statusesPath)) ?? new();
-                _suppliers = JsonSerializer.Deserialize<List<SupplierEntity>>(File.ReadAllText(_suppliersPath)) ?? new();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading common data: {ex.Message}");
-                _customers = new();
-                _countries = new();
-                _statuses = new();
-                _suppliers = new();
-            }
-        }
+        _resmContext = resmContext;
+        _cspContext = cspContext;
     }
 
     /// <inheritdoc/>
-    public IEnumerable<CustomerEntity> GetCustomers() => _customers;
-
-    /// <inheritdoc/>
-    public IEnumerable<CountryEntity> GetCountries() => _countries;
-
-    /// <inheritdoc/>
-    public IEnumerable<StatusEntity> GetStatuses() => _statuses;
-
-    /// <inheritdoc/>
-    public IEnumerable<SupplierEntity> GetSuppliers(int? customerId = null)
+    public IEnumerable<SmCustomer> GetCustomers()
     {
-        if (customerId == null) return _suppliers;
-        return _suppliers.Where(s => s.CustomerID == customerId.Value);
+        // 1. Get all CustomerIDs from CchParts where Status is not null/whitespace.
+        // (繁體中文) 從 CchParts 取得所有 Status 非 null/空白的 CustomerID。
+        var usedCustomerIds = _cspContext.CchParts
+            .Where(p => !string.IsNullOrWhiteSpace(p.Status))
+            .Select(p => p.CustomerID)
+            .Distinct()
+            .ToList();
+
+        // 2. Join with active SmCustomers from ReSm database.
+        // (繁體中文) 與 ReSm 資料庫中 Active 的 SmCustomer 關聯。
+        return _resmContext.SmCustomer
+            .Where(c => c.Status == "Active" && usedCustomerIds.Contains(c.HQID))
+            .ToList();
     }
 
     /// <inheritdoc/>
-    public int CreateSupplier(SupplierEntity entity)
+    public IEnumerable<CountryEntity> GetCountries() => 
+        _resmContext.SmCountry.Where(x => x.Status == "Active").AsEnumerable().Select(MapToCountryDomain).ToList();
+
+    /// <inheritdoc/>
+    public IEnumerable<StatusEntity> GetStatuses() => PartStatusConstants.AllStatuses;
+
+    /// <inheritdoc/>
+    public IEnumerable<CchSuppliers> GetSuppliers(int? customerId = null) => 
+        customerId == null 
+            ? _cspContext.CchSuppliers.ToList() 
+            : _cspContext.CchSuppliers.Where(s => s.CustomerID == customerId.Value).ToList();
+
+    /// <inheritdoc/>
+    public int CreateSupplier(CchSuppliers entity)
     {
-        lock (_fileLock)
-        {
-            entity.ID = _suppliers.Any() ? _suppliers.Max(s => s.ID) + 1 : 1;
-            _suppliers.Add(entity);
-            SaveSuppliers();
-            return entity.ID;
-        }
+        _cspContext.CchSuppliers.Add(entity);
+        _cspContext.SaveChanges();
+        return entity.ID;
     }
 
-    private void SaveSuppliers()
+    /// <summary>
+    /// Maps an SmCountry to a CountryEntity domain model. (SSoT)
+    /// (繁體中文) 將 SmCountry 映射至 CountryEntity 領域模型 (單一事實來源)。
+    /// </summary>
+    private CountryEntity MapToCountryDomain(SmCountry e) => new()
     {
-        lock (_fileLock)
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                File.WriteAllText(_suppliersPath, JsonSerializer.Serialize(_suppliers, options));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving suppliers data: {ex.Message}");
-            }
-        }
-    }
+        ID = e.HQID,
+        Name = e.CountryName ?? "Unknown",
+        Code = e.CountryCode
+    };
 }

@@ -1,4 +1,6 @@
 using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using Microsoft.EntityFrameworkCore;
 
 namespace CCH.Services.Repositories.Data;
@@ -22,27 +24,47 @@ public class CspDbContext : DbContext
     /// <summary>
     /// Gets or sets parts. (繁體中文) 零件。
     /// </summary>
-    public virtual DbSet<CchParts> Parts { get; set; }
+    public virtual DbSet<CchParts> CchParts { get; set; }
 
     /// <summary>
     /// Gets or sets part milestones. (繁體中文) 零件里程碑。
     /// </summary>
-    public virtual DbSet<CchPartMilestones> PartMilestones { get; set; }
+    public virtual DbSet<CchPartMilestones> CchPartMilestones { get; set; }
+
+    /// <summary>
+    /// Gets or sets part snapshot histories. (繁體中文) 零件快照歷程。
+    /// </summary>
+    public virtual DbSet<CchPartHistories> CchPartHistories { get; set; }
 
     /// <summary>
     /// Gets or sets suppliers. (繁體中文) 供應商。
     /// </summary>
-    public virtual DbSet<CchSuppliers> Suppliers { get; set; }
+    public virtual DbSet<CchSuppliers> CchSuppliers { get; set; }
 
     /// <summary>
     /// Gets or sets logs. (繁體中文) 日誌。
     /// </summary>
-    public virtual DbSet<CchLog> Logs { get; set; }
+    public virtual DbSet<CchLog> CchLog { get; set; }
 
-    /// <inheritdoc/>
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-        // Add configurations for CSP_Y2023 entities here (在此加入 CSP_Y2023 實體的組態)
-    }
+    /// <summary>
+    /// Gets or sets projects. (繁體中文) 專案。
+    /// </summary>
+    public virtual DbSet<CpProject> CpProject { get; set; }
+
+    /// <summary>
+    /// Gets or sets project contactors. (繁體中文) 專案聯絡人。
+    /// </summary>
+    public virtual DbSet<CpprojectContactor> CpprojectContactor { get; set; }
+
+    /// <summary>
+    /// Gets or sets project contactor passwords. (繁體中文) 專案聯絡人密碼。
+    /// </summary>
+    public virtual DbSet<CpprojectContactorPassword> CpprojectContactorPassword { get; set; }
+
+    /// <summary>
+    /// Gets or sets project contactor rights. (繁體中文) 專案聯絡人權限。
+    /// </summary>
+    public virtual DbSet<CpprojectContactorRight> CpprojectContactorRight { get; set; }
+
+
 }

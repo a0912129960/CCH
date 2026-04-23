@@ -1,4 +1,4 @@
-using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Features.Parts.Interfaces;
 using CCH.Core.Interfaces;
@@ -120,15 +120,15 @@ public class PartQueryService : IPartQueryService
         };
     }
 
-    private PartListItemDto MapToListItemDto(PartEntity entity, string? role = null)
+    private PartListItemDto MapToListItemDto(CchParts entity, string? role = null)
     {
-        var customerName = _commonRepository.GetCustomers().FirstOrDefault(c => c.ID == entity.CustomerID)?.Name ?? "Unknown";
+        var customerName = _commonRepository.GetCustomers().FirstOrDefault(c => c.HQID == entity.CustomerID)?.CustomerName ?? "Unknown";
         var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
-        var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.Name ?? "Unknown";
+        var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.SupplierName ?? "Unknown";
 
         // SLA Calculation Logic (SLA 計算邏輯)
         string slaStatus = "";
-        var hoursElapsed = (DateTime.Now - entity.UpdatedDate).TotalHours;
+        var hoursElapsed = (DateTime.Now - (entity.UpdatedDate ?? DateTime.MinValue)).TotalHours;
 
         if (role == "customer" && (entity.Status == "S02" || entity.Status == "S03"))
         {
@@ -149,15 +149,15 @@ public class PartQueryService : IPartQueryService
         {
             Id = entity.ID,
             Customer = customerName,
-            PartNo = entity.PartNo,
-            PartDesc = entity.PartDescription,
+            PartNo = entity.PartNo ?? "",
+            PartDesc = entity.PartDescription ?? "",
             Country = countryName,
             Supplier = supplierName,
-            HtsCode = entity.HTSCode,
-            Rate = entity.DutyRate,
-            Status = entity.Status,
-            UpdatedBy = entity.UpdatedBy,
-            UpdatedDate = entity.UpdatedDate,
+            HtsCode = entity.HTSCode ?? "",
+            Rate = entity.DutyRate ?? 0,
+            Status = entity.Status ?? "",
+            UpdatedBy = entity.UpdatedBy ?? "",
+            UpdatedDate = entity.UpdatedDate ?? DateTime.MinValue,
             SlaStatus = slaStatus,
             HtsCode1 = entity.AddHTSCode1,
             Rate1 = entity.AddDutyRate1,
@@ -182,12 +182,12 @@ public class PartQueryService : IPartQueryService
     /// <inheritdoc/>
     public IEnumerable<MilestoneDto> GetMilestones(int partId) =>
         _repository.GetHistoryByPartId(partId)
-            .OrderByDescending(h => h.UpdatedDate)
+            .OrderByDescending(h => h.CreatedDate)
             .Select(h => new MilestoneDto
             {
                 Action = h.Action,
-                UpdatedBy = h.UpdatedBy,
-                UpdatedDate = h.UpdatedDate,
+                UpdatedBy = h.CreatedBy,
+                UpdatedDate = h.CreatedDate ?? DateTime.MinValue,
                 Remark = h.Remark
             })
             .ToList();
@@ -198,16 +198,16 @@ public class PartQueryService : IPartQueryService
     /// <inheritdoc/>
     public IEnumerable<PartDetailDto> GetHistory(int partId) =>
         _repository.GetSnapshotsByPartId(partId)
-            .OrderByDescending(s => s.UpdatedDate)
+            .OrderByDescending(s => s.CreatedDate)
             .Select(s => new PartDetailDto
             {
-                PartNo = s.PartNo,
-                Country = s.Country,
-                Division = s.Division,
-                Supplier = s.Supplier,
-                PartDesc = s.PartDesc,
-                HtsCode = s.HtsCode,
-                Rate = s.Rate,
+                PartNo = s.PartNo ?? "",
+                Country = s.Country ?? "",
+                Division = s.Division ?? "",
+                Supplier = s.Supplier ?? "",
+                PartDesc = s.PartDesc ?? "",
+                HtsCode = s.HtsCode ?? "",
+                Rate = s.Rate ?? 0,
                 HtsCode1 = s.HtsCode1,
                 Rate1 = s.Rate1,
                 HtsCode2 = s.HtsCode2,
@@ -216,9 +216,9 @@ public class PartQueryService : IPartQueryService
                 Rate3 = s.Rate3,
                 HtsCode4 = s.HtsCode4,
                 Rate4 = s.Rate4,
-                Remark = s.Remark,
-                UpdatedBy = s.UpdatedBy,
-                UpdatedDate = s.UpdatedDate
+                Remark = s.Remark ?? "",
+                UpdatedBy = s.CreatedBy ?? "",
+                UpdatedDate = s.CreatedDate ?? DateTime.MinValue
             })
             .ToList();
 }

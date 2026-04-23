@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace CCH.Core.Entities;
+namespace CCH.Core.Entities.CSP;
 
 /// <summary>
 /// Entity for CCHPartMilestones table.
-/// (繁體中文) CCHPartMilestones 資料表實體。
+/// (繁�?中�?) CCHPartMilestones 資�?表實體�?
 /// </summary>
 [Table("CCHPartMilestones")]
 public class CchPartMilestones

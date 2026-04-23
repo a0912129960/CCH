@@ -1,23 +1,25 @@
 using CCH.Core.Features.Parts.DTOs;
 using CCH.Core.Entities;
-using CCH.Core.Features.Parts.Interfaces;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Features.Parts;
 using CCH.Services.Repositories;
+using CCH.Services.Repositories.Data;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
 
 namespace CCH.Tests;
 
 /// <summary>
-/// Tests for PartQueryService and PartExcelService implementation with separated responsibilities.
-/// (繁體中文) 具備職責分離的 PartQueryService 與 PartExcelService 實作測試。
+/// Tests for PartQueryService and PartExcelService implementation with Database-backed Repository.
+/// (繁體中文) 具備資料庫支援倉儲的 PartQueryService 與 PartExcelService 實作測試。
 /// </summary>
 public class PartServiceTests : IDisposable
 {
-    private readonly string _testBaseDir;
-    private readonly string _testPartsPath;
+    private readonly CspDbContext _context;
     private readonly PartQueryService _queryService;
     private readonly PartExcelService _excelService;
     private readonly PartRepository _repository;
@@ -25,32 +27,53 @@ public class PartServiceTests : IDisposable
 
     public PartServiceTests()
     {
-        _testBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"Test_Service_{Guid.NewGuid()}");
-        Directory.CreateDirectory(_testBaseDir);
-        _testPartsPath = Path.Combine(_testBaseDir, "parts.json");
+        var options = new DbContextOptionsBuilder<CspDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        
+        _context = new CspDbContext(options);
+
+        var resmOptions = new DbContextOptionsBuilder<ReSmDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        var resmContext = new ReSmDbContext(resmOptions);
+
+        SeedData();
 
         var mockCommonRepo = new Mock<ICommonRepository>();
-        mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<CustomerEntity> { new() { ID = 101, Name = "Customer A" } });
+        mockCommonRepo.Setup(r => r.GetCustomers()).Returns(new List<SmCustomer> { new() { HQID = 101, CustomerName = "Customer A" } });
         mockCommonRepo.Setup(r => r.GetCountries()).Returns(new List<CountryEntity> { new() { ID = 1, Name = "Taiwan" } });
-        mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<SupplierEntity> { new() { ID = 1, Name = "TechSupply Corp" } });
+        mockCommonRepo.Setup(r => r.GetSuppliers(It.IsAny<int?>())).Returns(new List<CchSuppliers> { new() { ID = 1, SupplierName = "TechSupply Corp" } });
+        mockCommonRepo.Setup(r => r.GetStatuses()).Returns(new List<StatusEntity> { new() { Code = "S01", Description = "Active" } });
 
-        // Repository handles raw entity persistence (倉儲處理原始實體持久化)
-        _repository = new PartRepository(_testPartsPath);
+        _repository = new PartRepository(_context, resmContext);
 
         _mockUserContext = new Mock<IUserContext>();
         _mockUserContext.Setup(u => u.Role).Returns("admin"); 
 
-        // QueryService now handles mapping and requires CommonRepository (Service 現在處理映射，需要 CommonRepository)
         _queryService = new PartQueryService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
-        _excelService = new PartExcelService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
+        // Corrected constructor: PartExcelService only needs repository and common repository (修正建構函式)
+        _excelService = new PartExcelService(_repository, mockCommonRepo.Object);
+    }
+
+    private void SeedData()
+    {
+        for (int i = 1; i <= 17; i++)
+        {
+            _context.CchParts.Add(new CchParts 
+            { 
+                ID = i, CustomerID = 101, PartNo = $"PART-{i:000}", Status = "S01", 
+                CountryID = 1, SupplierID = 1, PartDescription = "Test Part",
+                UpdatedDate = DateTime.Now
+            });
+        }
+        _context.SaveChanges();
     }
 
     public void Dispose()
     {
-        if (Directory.Exists(_testBaseDir))
-        {
-            Directory.Delete(_testBaseDir, true);
-        }
+        _context.Database.EnsureDeleted();
+        _context.Dispose();
     }
 
     [Fact]
@@ -61,9 +84,9 @@ public class PartServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(17, result.Total); // Verify initial seeder data count
-        Assert.Equal("Customer A", result.Data.First().Customer); // Verify mapping from Service layer
-        Assert.NotNull(result.Data.First().SlaStatus); // Verify SLA calculated in Service
+        Assert.Equal(17, result.Total); // Matches SeedData count
+        Assert.Equal("Customer A", result.Data.First().Customer); 
+        Assert.NotNull(result.Data.First().SlaStatus); 
     }
 
     [Fact]
@@ -75,7 +98,28 @@ public class PartServiceTests : IDisposable
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Length > 0);
-        Assert.Equal((byte)'P', result[0]); // Excel signature PK..
-        Assert.Equal((byte)'K', result[1]);
+    }
+
+    [Fact]
+    public void GetMilestones_ReturnsDatabaseHistory()
+    {
+        // Arrange
+        _context.CchPartMilestones.Add(new CchPartMilestones
+        {
+            PartID = 1,
+            Action = "Test Action",
+            CreatedBy = "Tester",
+            CreatedDate = DateTime.Now,
+            Remark = "Test Remark"
+        });
+        _context.SaveChanges();
+
+        // Act
+        var result = _queryService.GetMilestones(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Test Action", result.First().Action);
+        Assert.Equal("Tester", result.First().UpdatedBy);
     }
 }

@@ -1,3 +1,6 @@
+using CCH.Core.Entities;
+using CCH.Core.Entities.CSP;
+using CCH.Core.Entities.ReSm;
 using Microsoft.EntityFrameworkCore;
 
 namespace CCH.Services.Repositories.Data;
@@ -17,6 +20,41 @@ public class ReSmDbContext : DbContext
         : base(options)
     {
     }
+
+    /// <summary>
+    /// Gets or sets SMCountries. (繁體中文) 國家主檔。
+    /// </summary>
+    public virtual DbSet<SmCountry> SmCountry { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMCustomers. (繁體中文) 客戶主檔。
+    /// </summary>
+    public virtual DbSet<SmCustomer> SmCustomer { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMCustomerContacts. (繁體中文) 客戶聯絡人。
+    /// </summary>
+    public virtual DbSet<SmCustomerContact> SmCustomerContact { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMUsers. (繁體中文) 使用者主檔。
+    /// </summary>
+    public virtual DbSet<SmUser> SmUser { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMStations. (繁體中文) 站點主檔。
+    /// </summary>
+    public virtual DbSet<SmStation> SmStation { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMBusinessEntities. (繁體中文) 業務實體。
+    /// </summary>
+    public virtual DbSet<SmBusinessEntity> SmBusinessEntity { get; set; }
+
+    /// <summary>
+    /// Gets or sets SMGroupRoleSettings. (繁體中文) 群組角色設定。
+    /// </summary>
+    public virtual DbSet<SmgroupRoleSetting> SmgroupRoleSetting { get; set; }
 
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
