@@ -92,11 +92,11 @@ public interface IPartRepository
     /// Appends a full-data snapshot of a part at a given point in time.
     /// (繁體中文) 為零件在特定時間點附加一筆完整資料快照。
     /// </summary>
-    void AddSnapshot(PartSnapshotEntity entity);
+    void AddSnapshot(CchPartHistories entity);
 
     /// <summary>
     /// Returns all snapshots for a part, stored in insertion order (caller sorts as needed).
     /// (繁體中文) 回傳零件的所有快照（依插入順序，由呼叫方決定排序）。
     /// </summary>
-    IEnumerable<PartSnapshotEntity> GetSnapshotsByPartId(int partId);
+    IEnumerable<CchPartHistories> GetSnapshotsByPartId(int partId);
 }

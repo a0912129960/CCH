@@ -32,6 +32,11 @@ public class CspDbContext : DbContext
     public virtual DbSet<CchPartMilestones> CchPartMilestones { get; set; }
 
     /// <summary>
+    /// Gets or sets part snapshot histories. (繁體中文) 零件快照歷程。
+    /// </summary>
+    public virtual DbSet<CchPartHistories> CchPartHistories { get; set; }
+
+    /// <summary>
     /// Gets or sets suppliers. (繁體中文) 供應商。
     /// </summary>
     public virtual DbSet<CchSuppliers> CchSuppliers { get; set; }

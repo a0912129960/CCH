@@ -175,16 +175,16 @@ public class PartQueryService : IPartQueryService
     /// <inheritdoc/>
     public IEnumerable<PartDetailDto> GetHistory(int partId) =>
         _repository.GetSnapshotsByPartId(partId)
-            .OrderByDescending(s => s.UpdatedDate)
+            .OrderByDescending(s => s.CreatedDate)
             .Select(s => new PartDetailDto
             {
-                PartNo = s.PartNo,
-                Country = s.Country,
-                Division = s.Division,
-                Supplier = s.Supplier,
-                PartDesc = s.PartDesc,
-                HtsCode = s.HtsCode,
-                Rate = s.Rate,
+                PartNo = s.PartNo ?? "",
+                Country = s.Country ?? "",
+                Division = s.Division ?? "",
+                Supplier = s.Supplier ?? "",
+                PartDesc = s.PartDesc ?? "",
+                HtsCode = s.HtsCode ?? "",
+                Rate = s.Rate ?? 0,
                 HtsCode1 = s.HtsCode1,
                 Rate1 = s.Rate1,
                 HtsCode2 = s.HtsCode2,
@@ -193,9 +193,9 @@ public class PartQueryService : IPartQueryService
                 Rate3 = s.Rate3,
                 HtsCode4 = s.HtsCode4,
                 Rate4 = s.Rate4,
-                Remark = s.Remark,
-                UpdatedBy = s.UpdatedBy,
-                UpdatedDate = s.UpdatedDate
+                Remark = s.Remark ?? "",
+                UpdatedBy = s.CreatedBy ?? "",
+                UpdatedDate = s.CreatedDate ?? DateTime.MinValue
             })
             .ToList();
 }

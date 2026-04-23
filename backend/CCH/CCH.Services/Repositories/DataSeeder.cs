@@ -41,22 +41,34 @@ public static class DataSeeder
 
     public static void SeedParts(string path) => EnsureInitialized(path, DefaultParts);
 
-    public static void SeedPartSnapshots(string path, CspDbContext cspContext, ReSmDbContext resmContext)
+    /// <summary>
+    /// Seeds part snapshots into the database if empty.
+    /// (繁體中文) 若資料庫為空，則初始化零件快照。
+    /// </summary>
+    public static void SeedPartSnapshots(CspDbContext cspContext, ReSmDbContext resmContext)
     {
-        if (File.Exists(path)) return;
+        if (cspContext.CchPartHistories.Any()) return;
 
         var supplierMap = cspContext.CchSuppliers.ToDictionary(s => s.ID, s => s.SupplierName ?? "Unknown");
         var countryMap = resmContext.SmCountry.ToDictionary(c => c.HQID, c => c.CountryName ?? "Unknown");
 
-        var snapshots = DefaultParts.Select((p, idx) => new PartSnapshotEntity
+        var snapshots = DefaultParts.Select((p, idx) => new CchPartHistories
         {
-            ID = idx + 1, PartID = p.ID, PartNo = p.PartNo,
+            PartID = p.ID, 
+            PartNo = p.PartNo,
             Country = countryMap.GetValueOrDefault(p.CountryID, "Unknown"),
-            Division = p.Division, Supplier = supplierMap.GetValueOrDefault(p.SupplierID, "Unknown"),
-            PartDesc = p.PartDescription, HtsCode = p.HTSCode, Rate = p.DutyRate,
-            Remark = p.Remark, UpdatedBy = p.UpdatedBy, UpdatedDate = p.UpdatedDate
+            Division = p.Division, 
+            Supplier = supplierMap.GetValueOrDefault(p.SupplierID, "Unknown"),
+            PartDesc = p.PartDescription, 
+            HtsCode = p.HTSCode, 
+            Rate = p.DutyRate,
+            Remark = p.Remark, 
+            CreatedBy = p.UpdatedBy, 
+            CreatedDate = p.UpdatedDate
         }).ToList();
-        EnsureInitialized(path, snapshots);
+
+        cspContext.CchPartHistories.AddRange(snapshots);
+        cspContext.SaveChanges();
     }
 
     /* INTERNAL-AI-20260421: SeedPartHistory removed as PartHistoryEntity is replaced by database-driven CchPartMilestones. */

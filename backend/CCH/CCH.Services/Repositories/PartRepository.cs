@@ -14,31 +14,13 @@ public class PartRepository : IPartRepository
 {
     private readonly CspDbContext _context;
     private readonly ReSmDbContext _resmContext;
-    private readonly string _snapshotPath;
-    private List<PartSnapshotEntity> _snapshots = new();
-    private static readonly object _fileLock = new();
 
     public PartRepository(CspDbContext context, ReSmDbContext resmContext)
     {
         _context = context;
         _resmContext = resmContext;
-        var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        var projectRootDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
-        var dataDir = Path.Combine(projectRootDir, "Data");
-        _snapshotPath = Path.Combine(dataDir, "part_snapshots.json");
 
-        DataSeeder.SeedPartSnapshots(_snapshotPath, _context, _resmContext);
-
-        LoadJsonData();
-    }
-
-    private void LoadJsonData()
-    {
-        lock (_fileLock)
-        {
-            if (File.Exists(_snapshotPath))
-                _snapshots = JsonSerializer.Deserialize<List<PartSnapshotEntity>>(File.ReadAllText(_snapshotPath)) ?? new();
-        }
+        DataSeeder.SeedPartSnapshots(_context, _resmContext);
     }
 
     /// <inheritdoc/>
@@ -168,17 +150,13 @@ public class PartRepository : IPartRepository
         _context.CchPartMilestones.Where(h => h.PartID == partId).OrderBy(h => h.CreatedDate).ToList();
 
     /// <inheritdoc/>
-    public void AddSnapshot(PartSnapshotEntity entity)
+    public void AddSnapshot(CchPartHistories entity)
     {
-        lock (_fileLock)
-        {
-            entity.ID = _snapshots.Any() ? _snapshots.Max(s => s.ID) + 1 : 1;
-            _snapshots.Add(entity);
-            File.WriteAllText(_snapshotPath, JsonSerializer.Serialize(_snapshots, new JsonSerializerOptions { WriteIndented = true }));
-        }
+        _context.CchPartHistories.Add(entity);
+        _context.SaveChanges();
     }
 
     /// <inheritdoc/>
-    public IEnumerable<PartSnapshotEntity> GetSnapshotsByPartId(int partId) =>
-        _snapshots.Where(s => s.PartID == partId).OrderBy(s => s.UpdatedDate).ToList();
+    public IEnumerable<CchPartHistories> GetSnapshotsByPartId(int partId) =>
+        _context.CchPartHistories.Where(s => s.PartID == partId).ToList();
 }
