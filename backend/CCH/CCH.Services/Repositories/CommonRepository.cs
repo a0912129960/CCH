@@ -71,18 +71,26 @@ public class CommonRepository : ICommonRepository
     {
         if (string.IsNullOrEmpty(userId)) return string.Empty;
 
-        // 1. Try SmUser by UserID (Internal)
-        var smUser = _resmContext.SmUser.FirstOrDefault(u => u.UserID == userId);
-        if (smUser != null) return smUser.FullName;
+        // 1. Try SmUser by UserID (Internal) - Use Select to avoid loading all columns (使用 Select 避免載入所有欄位)
+        var smUserName = _resmContext.SmUser
+            .Where(u => u.UserID == userId)
+            .Select(u => u.FullName)
+            .FirstOrDefault();
+        
+        if (smUserName != null) return smUserName;
 
         // 2. Try SmCustomerContact by HQID (External)
         if (int.TryParse(userId, out int hqid))
         {
-            var contact = _resmContext.SmCustomerContact.FirstOrDefault(c => c.Hqid == hqid);
-            if (contact != null) return contact.FullName ?? "Unknown";
+            var contactName = _resmContext.SmCustomerContact
+                .Where(c => c.Hqid == hqid)
+                .Select(c => c.FullName)
+                .FirstOrDefault();
+            
+            if (contactName != null) return contactName;
         }
 
-        return userId; // Fallback to original value for legacy data (Admin, etc.)
+        return userId; // Fallback
     }
 
     /// <inheritdoc/>
@@ -93,12 +101,14 @@ public class CommonRepository : ICommonRepository
 
         var result = new Dictionary<string, string>();
 
-        // Fetch all matching internal users
+        // Fetch only ID and FullName for matching internal users (僅抓取必要欄位)
         var smUsers = _resmContext.SmUser
             .Where(u => distinctIds.Contains(u.UserID))
-            .ToDictionary(u => u.UserID, u => u.FullName);
+            .Select(u => new { u.UserID, u.FullName })
+            .ToList()
+            .ToDictionary(u => u.UserID, u => u.FullName ?? "Unknown");
 
-        // Fetch all matching external customers (HQIDs)
+        // Fetch only HQID and FullName for matching external customers (僅抓取必要欄位)
         var hqids = distinctIds
             .Select(id => int.TryParse(id, out int hqid) ? (int?)hqid : null)
             .Where(h => h.HasValue)
@@ -107,6 +117,8 @@ public class CommonRepository : ICommonRepository
 
         var contacts = _resmContext.SmCustomerContact
             .Where(c => hqids.Contains(c.Hqid))
+            .Select(c => new { c.Hqid, c.FullName })
+            .ToList()
             .ToDictionary(c => c.Hqid.ToString(), c => c.FullName ?? "Unknown");
 
         foreach (var id in distinctIds)
