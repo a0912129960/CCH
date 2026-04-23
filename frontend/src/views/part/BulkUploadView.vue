@@ -52,17 +52,15 @@ const projects = ref<{ id: string; name: string }[]>([]);
 const selectedProjectId = ref(isEmployee ? '' : userProjectId || '');
 
 onMounted(async () => {
-  if (isEmployee) {
-    try {
-      projects.value = await partService.getProjects();
-    } catch (error) {
-      console.error('Failed to load projects:', error);
-    }
+  try {
+    projects.value = await partService.getProjects();
+  } catch (error) {
+    console.error('Failed to load projects:', error);
   }
 });
 
 const handlePreview = async () => {
-  if (isEmployee && !selectedProjectId.value) {
+  if (!selectedProjectId.value) {
     ElMessage.warning(t('employee.project_select'));
     return;
   }
@@ -154,7 +152,7 @@ const handleDownloadTemplate = async () => {
               </Button>
             </div>
 
-            <div v-if="isEmployee" class="customer-selection-row mb-6">
+            <div class="customer-selection-row mb-6">
               <label class="block text-sm text-gray-600 mb-2">{{ $t('employee.project_select') }} <span class="text-red-500">*</span></label>
               <el-select 
                 v-model="selectedProjectId" 
