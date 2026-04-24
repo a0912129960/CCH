@@ -2,7 +2,7 @@
 import { authService } from '@src/services/auth/auth';
 import Card from '@src/components/common/Card.vue';
 import Button from '@src/components/common/Button.vue';
-import { partService, type CreatePartRequest, type SubmitPartRequest } from '@src/services/part/part';
+import { partService, getHtsRecommendation, type CreatePartRequest, type SubmitPartRequest } from '@src/services/part/part';
 import { commonService, type CountryOption, type ProjectOption } from '@src/services/common/common';
 import { ElMessage } from 'element-plus';
 
@@ -112,12 +112,49 @@ const formatHtsCode = (raw: string): string => {
   return `${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6)}`;
 };
 
+// Tracks USITC existence check result for US HTS Code only.
+// null = not checked, true = found, false = not found.
+const htsExists = ref<boolean | null>(null);
+const htsLookupLoading = ref(false);
+
 const handleHtsInput = (field: HtsField, errRef: any, event: Event) => {
   const input = event.target as HTMLInputElement;
   const formatted = formatHtsCode(input.value);
   (form.value as any)[field] = formatted;
   input.value = formatted;
   validateHts(formatted, errRef);
+  if (field === 'usHtsCode') htsExists.value = null;
+};
+
+const handleHtsCodeBlur = async () => {
+  validateHts(form.value.usHtsCode, htsError);
+  if (htsError.value || !form.value.usHtsCode) return;
+
+  htsLookupLoading.value = true;
+  try {
+    const result = await getHtsRecommendation(form.value.usHtsCode);
+    if (!result) return;
+
+    if (!result.fallback_used && result.message === 'No recommendation data') {
+      htsExists.value = false;
+      htsError.value = 'HTS Code not found on hts.usitc.gov';
+      ElMessage.warning('HTS Code not found on hts.usitc.gov');
+      return;
+    }
+
+    htsExists.value = true;
+
+    if (result.fallback_used && result.data?.general) {
+      const raw = result.data.general.replace('%', '').trim();
+      const rate = raw.toLowerCase() === 'free' ? 0 : parseFloat(raw);
+      if (!isNaN(rate)) {
+        form.value.generalDutyRate = String(rate);
+        ElMessage.info('General Duty Rate auto-filled from HTS recommendation.');
+      }
+    }
+  } finally {
+    htsLookupLoading.value = false;
+  }
 };
 
 const errors = ref({
@@ -246,7 +283,8 @@ const handleSubmit = async () => {
       rate3:       toNum(form.value.rate232Aluminum),
       htsCode4:    form.value.htsCodeReciprocalTariff || undefined,
       rate4:       toNum(form.value.rateReciprocalTariff),
-      remark:      form.value.remark      || undefined
+      remark:      form.value.remark      || undefined,
+      isHTSExists: htsExists.value
     };
 
     const result = await partService.createPartApi(body);
@@ -282,7 +320,8 @@ const handleSaveAndSubmit = async () => {
       rate3:       toNum(form.value.rate232Aluminum),
       htsCode4:    form.value.htsCodeReciprocalTariff || undefined,
       rate4:       toNum(form.value.rateReciprocalTariff),
-      remark:      form.value.remark      || undefined
+      remark:      form.value.remark      || undefined,
+      isHTSExists: htsExists.value
     };
 
     const result = await partService.submitPartApi(body);
@@ -398,9 +437,15 @@ const handleSaveAndSubmit = async () => {
                   {{ $t('part_create.us_hts_code') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
                 </div>
                 <div class="info-table__value">
-                  <input :value="form.usHtsCode" type="text" :placeholder="$t('part_create.us_hts_code_placeholder')" class="form-input" :class="{ 'is-invalid': errors.usHtsCode || htsError }" data-test="us-hts-code-input" inputmode="numeric" @input="handleHtsInput('usHtsCode', htsError, $event)" @blur="validateHts(form.usHtsCode, htsError)" />
+                  <input :value="form.usHtsCode" type="text" :placeholder="$t('part_create.us_hts_code_placeholder')" class="form-input" :class="{ 'is-invalid': errors.usHtsCode || htsError }" data-test="us-hts-code-input" inputmode="numeric" :disabled="htsLookupLoading" @input="handleHtsInput('usHtsCode', htsError, $event)" @blur="handleHtsCodeBlur" />
                   <span v-if="errors.usHtsCode" class="error-text">{{ $t(errors.usHtsCode) }}</span>
                   <div v-if="htsError" class="error-text">{{ htsError }}</div>
+                  <div v-if="htsLookupLoading" class="field-hint">Looking up rate...</div>
+                  <template v-else-if="form.usHtsCode">
+                    <span v-if="htsExists === true"  class="hts-badge hts-found">✓ Verified on USITC</span>
+                    <span v-else-if="htsExists === false" class="hts-badge hts-not-found">✗ Not found on USITC</span>
+                    <span v-else class="hts-badge hts-unknown">— Not yet verified</span>
+                  </template>
                 </div>
               </div>
 
@@ -535,4 +580,9 @@ h1 { font-size: 2rem; color: var(--sidebar-color); margin: 0; }
 .error-text { display: block; color: #F56C6C; font-size: 0.8rem; margin-top: 0.25rem; }
 .immutable-hint { display: block; color: #E6A23C; font-size: 0.78rem; margin-top: 0.25rem; }
 .form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+.field-hint { font-size: 0.75rem; color: #8898aa; margin-top: 3px; }
+.hts-badge { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
+.hts-found     { background: #f0faf0; color: #52c41a; border: 1px solid #b7eb8f; }
+.hts-not-found { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffa39e; }
+.hts-unknown   { background: #f5f5f5; color: #adb5bd; border: 1px solid #d9d9d9; }
 </style>

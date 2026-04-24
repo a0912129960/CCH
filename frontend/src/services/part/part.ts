@@ -488,6 +488,7 @@ export interface CreatePartRequest {
   htsCode4?: string;
   rate4?: number;
   remark?: string;
+  isHTSExists?: boolean | null;
 }
 
 /**
@@ -513,6 +514,7 @@ export interface SubmitPartRequest {
   htsCode4?: string;
   rate4?: number;
   remark?: string;
+  isHTSExists?: boolean | null;
 }
 
 /**
