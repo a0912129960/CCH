@@ -290,7 +290,7 @@ watch([currentPage, pageSize], fetchParts);
             </div>
 
             <div class="action-row">
-              <Button @click="router.push({ name: 'part-create' })">
+              <Button @click="router.push({ name: 'part-create', query: customerFilter ? { customerId: customerFilter } : {} })">
                 {{ $t('part_list.add_new') }}
               </Button>
               <Button class="ml-4" @click="router.push({ name: 'part-upload' })">

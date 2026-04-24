@@ -220,4 +220,9 @@ public class PartQueryService : IPartQueryService
                 UpdatedDate = s.CreatedDate ?? DateTime.MinValue
             })
             .ToList();
+//}
+
+    /// <inheritdoc/>
+    public bool CheckDuplicate(int customerId, string partNo, int countryId) =>
+        _repository.ExistsByPartNoAndCountry(customerId, partNo, countryId);
 }

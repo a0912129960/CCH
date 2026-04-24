@@ -14,9 +14,14 @@ import { ElMessage } from 'element-plus';
  */
 
 const router = useRouter();
+const route = useRoute();
 const { t } = useI18n();
 
 const { customerId: userCustomerId } = authService.state;
+
+// Prefer customerId from route query (passed from PartListView's customer filter),
+// fall back to the logged-in user's own customerId (客戶使用者自己的 ID).
+const resolvedCustomerId = (route.query.customerId as string) || userCustomerId || '';
 
 const countries = ref<CountryOption[]>([]);
 
@@ -37,7 +42,7 @@ const form = ref({
   htsCodeReciprocalTariff: '',
   rateReciprocalTariff: '',
   remark: '',
-  customerId: userCustomerId || ''
+  customerId: resolvedCustomerId
 });
 
 onMounted(async () => {
@@ -52,6 +57,22 @@ onMounted(async () => {
     ElMessage.error(t('part_create.countries_load_failed'));
   }
 });
+
+// Rate field input — only allow digits and a single decimal point (只允許數字和一個小數點)
+type RateField = 'generalDutyRate' | 'rate301' | 'rateIeepa' | 'rate232Aluminum' | 'rateReciprocalTariff';
+
+const handleRateInput = (field: RateField, event: Event) => {
+  const input = event.target as HTMLInputElement;
+  // Remove anything that is not a digit or a dot
+  let cleaned = input.value.replace(/[^\d.]/g, '');
+  // Allow only the first decimal point
+  const dotIndex = cleaned.indexOf('.');
+  if (dotIndex !== -1) {
+    cleaned = cleaned.slice(0, dotIndex + 1) + cleaned.slice(dotIndex + 1).replace(/\./g, '');
+  }
+  (form.value as any)[field] = cleaned;
+  input.value = cleaned; // sync DOM immediately
+};
 
 // HTS Code auto-format — same logic as PartDetailView (與 PartDetailView 共用相同邏輯)
 // Strip non-digits, insert dots at XXXX.XX.XXXX positions on every keystroke.
@@ -162,9 +183,35 @@ const toCountryId = (val: string | number | ''): string | number | undefined => 
   return Number.isNaN(n) ? val : n;  // numeric string → number; code string → keep as-is
 };
 
+/**
+ * Shared duplicate check — called before both Save and Save & Submit.
+ * Returns true if a duplicate exists (caller should abort); false if safe to proceed.
+ * (共用查重邏輯，在 Save 與 Save & Submit 前調用。重複時返回 true，可繼續時返回 false。)
+ */
+const checkDuplicateBeforeSave = async (): Promise<boolean> => {
+  const countryId = toCountryId(form.value.countryOfOrigin);
+  const customerId = form.value.customerId;
+
+  // Need both fields to perform the check (兩個欄位都需要才能查重)
+  if (!form.value.partNo || !countryId || !customerId) return false;
+
+  const isDuplicate = await partService.checkDuplicate(customerId, form.value.partNo, countryId);
+  if (isDuplicate) {
+    await ElMessageBox.alert(
+      t('part_create.duplicate_error') ||
+        'A record with the same Part No and Country of Origin already exists. Part No and Country of Origin must be unique.\n（相同的零件編號與原產地組合已存在，Part No 與 Country of Origin 必須唯一，不可重複。）',
+      t('part_create.duplicate_error_title') || 'Duplicate Entry',
+      { type: 'error', confirmButtonText: t('common.ok') || 'OK' }
+    );
+    return true;
+  }
+  return false;
+};
+
 // [Save] → PartCreateRequest: only partNo + countryId required
 const handleSubmit = async () => {
   if (!validateSave()) return;
+  if (await checkDuplicateBeforeSave()) return;
 
   try {
     const body: CreatePartRequest = {
@@ -201,6 +248,7 @@ const handleSubmit = async () => {
 // [Save & Submit] → SubmitPartRequest: partNo + countryId + division + supplier + partDesc + htsCode all required
 const handleSaveAndSubmit = async () => {
   if (!validateSaveAndSubmit()) return;
+  if (await checkDuplicateBeforeSave()) return;
 
   try {
     const body: SubmitPartRequest = {
@@ -336,7 +384,7 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__row">
                 <div class="info-table__field">{{ $t('part_create.general_duty_rate') }}</div>
                 <div class="info-table__value">
-                  <input v-model="form.generalDutyRate" type="text" :placeholder="$t('part_create.general_duty_rate_placeholder')" class="form-input" data-test="general-duty-rate-input" />
+                  <input :value="form.generalDutyRate" type="text" inputmode="decimal" :placeholder="$t('part_create.general_duty_rate_placeholder')" class="form-input" data-test="general-duty-rate-input" @input="handleRateInput('generalDutyRate', $event)" />
                 </div>
               </div>
 
@@ -358,7 +406,7 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__row">
                 <div class="info-table__field">{{ $t('part_create.rate_301') }}</div>
                 <div class="info-table__value">
-                  <input v-model="form.rate301" type="text" :placeholder="$t('part_create.rate_301_placeholder')" class="form-input" data-test="rate-301-input" />
+                  <input :value="form.rate301" type="text" inputmode="decimal" :placeholder="$t('part_create.rate_301_placeholder')" class="form-input" data-test="rate-301-input" @input="handleRateInput('rate301', $event)" />
                 </div>
               </div>
 
@@ -375,7 +423,7 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__row">
                 <div class="info-table__field">{{ $t('part_create.rate_ieepa') }}</div>
                 <div class="info-table__value">
-                  <input v-model="form.rateIeepa" type="text" :placeholder="$t('part_create.rate_ieepa_placeholder')" class="form-input" data-test="rate-ieepa-input" />
+                  <input :value="form.rateIeepa" type="text" inputmode="decimal" :placeholder="$t('part_create.rate_ieepa_placeholder')" class="form-input" data-test="rate-ieepa-input" @input="handleRateInput('rateIeepa', $event)" />
                 </div>
               </div>
 
@@ -392,7 +440,7 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__row">
                 <div class="info-table__field">{{ $t('part_create.rate_232_aluminum') }}</div>
                 <div class="info-table__value">
-                  <input v-model="form.rate232Aluminum" type="text" :placeholder="$t('part_create.rate_232_aluminum_placeholder')" class="form-input" data-test="rate-232-aluminum-input" />
+                  <input :value="form.rate232Aluminum" type="text" inputmode="decimal" :placeholder="$t('part_create.rate_232_aluminum_placeholder')" class="form-input" data-test="rate-232-aluminum-input" @input="handleRateInput('rate232Aluminum', $event)" />
                 </div>
               </div>
 
@@ -409,7 +457,7 @@ const handleSaveAndSubmit = async () => {
               <div class="info-table__row">
                 <div class="info-table__field">{{ $t('part_create.rate_reciprocal_tariff') }}</div>
                 <div class="info-table__value">
-                  <input v-model="form.rateReciprocalTariff" type="text" :placeholder="$t('part_create.rate_reciprocal_tariff_placeholder')" class="form-input" data-test="rate-reciprocal-tariff-input" />
+                  <input :value="form.rateReciprocalTariff" type="text" inputmode="decimal" :placeholder="$t('part_create.rate_reciprocal_tariff_placeholder')" class="form-input" data-test="rate-reciprocal-tariff-input" @input="handleRateInput('rateReciprocalTariff', $event)" />
                 </div>
               </div>
 

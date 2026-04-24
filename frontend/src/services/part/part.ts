@@ -425,6 +425,24 @@ export const partService = {
   /**
    * Create Part via real API  POST /api/parts
    */
+  /**
+   * Check whether a PartNo + CountryId combination already exists for the given customer.
+   * Calls GET /api/parts/check-duplicate
+   * (檢查指定客戶下 PartNo + CountryId 組合是否重複)
+   */
+  async checkDuplicate(customerId: string | number, partNo: string, countryId: string | number): Promise<boolean> {
+    try {
+      const response = await api.get<{ success: boolean; data: { isDuplicate: boolean } }>(
+        '/parts/check-duplicate',
+        { params: { customerId, partNo, countryId } }
+      );
+      return response.data?.data?.isDuplicate === true;
+    } catch {
+      // On error, allow the save to proceed — the backend will reject it anyway.
+      return false;
+    }
+  },
+
   async createPartApi(body: CreatePartRequest): Promise<CreatePartResponse> {
     const response = await api.post<CreatePartResponse>('/parts', body);
     return response.data;
