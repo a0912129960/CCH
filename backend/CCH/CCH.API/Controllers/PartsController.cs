@@ -136,23 +136,7 @@ public class PartsController : ControllerBase
                 .Select(e => e.ErrorMessage);
             return BadRequest(ApiResponse<object>.FailureResponse(string.Join(" | ", errors)));
         }
-        return Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreatePart(
-            new PartCreateRequest
-            {
-                ProjectId  = request.ProjectId,
-                PartNo      = request.PartNo,
-                CountryId   = request.CountryId,
-                Division    = request.Division,
-                Supplier    = request.Supplier,
-                PartDesc    = request.PartDesc,
-                HtsCode     = request.HtsCode,
-                Rate        = request.Rate,
-                HtsCode1    = request.HtsCode1, Rate1 = request.Rate1,
-                HtsCode2    = request.HtsCode2, Rate2 = request.Rate2,
-                HtsCode3    = request.HtsCode3, Rate3 = request.Rate3,
-                HtsCode4    = request.HtsCode4, Rate4 = request.Rate4,
-                Remark      = request.Remark
-            }, "S02")));
+        return Created($"/api/parts/{request.PartNo}", ApiResponse<object>.SuccessResponse(_lifecycleService.CreateAndSubmitPart(request)));
     }
 
     // INTERNAL-AI-20260416: Added 404 handling when part is not found.
