@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { authService } from '@src/services/auth/auth';
 import Card from '@src/components/common/Card.vue';
-import Button from '@src/components/common/Button.vue';
 import { partService, getHtsRecommendation, type CreatePartRequest, type SubmitPartRequest } from '@src/services/part/part';
 import { commonService, type CountryOption, type ProjectOption } from '@src/services/common/common';
 import { ElMessage } from 'element-plus';
@@ -446,15 +445,13 @@ const handleSaveAndSubmit = async () => {
                   {{ $t('part_create.us_hts_code') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
                 </div>
                 <div class="info-table__value">
-                  <input :value="form.usHtsCode" type="text" :placeholder="$t('part_create.us_hts_code_placeholder')" class="form-input" :class="{ 'is-invalid': errors.usHtsCode || htsError }" data-test="us-hts-code-input" inputmode="numeric" :disabled="htsLookupLoading" @input="handleHtsInput('usHtsCode', htsError, $event)" @blur="handleHtsCodeBlur" />
+                  <input :value="form.usHtsCode" type="text" :placeholder="$t('part_create.us_hts_code_placeholder')" class="form-input mono" :class="{ 'is-invalid': errors.usHtsCode || htsError }" data-test="us-hts-code-input" inputmode="numeric" :disabled="htsLookupLoading" @input="handleHtsInput('usHtsCode', htsError, $event)" @blur="handleHtsCodeBlur" />
                   <span v-if="errors.usHtsCode" class="error-text">{{ $t(errors.usHtsCode) }}</span>
                   <div v-if="htsError" class="error-text">{{ htsError }}</div>
                   <div v-if="htsLookupLoading" class="field-hint">Looking up rate...</div>
-                  <template v-else-if="form.usHtsCode">
-                    <span v-if="htsExists === true"  class="hts-badge hts-found">✓ Verified on USITC</span>
-                    <span v-else-if="htsExists === false" class="hts-badge hts-not-found">✗ Not found on USITC</span>
-                    <span v-else class="hts-badge hts-unknown">— Not yet verified</span>
-                  </template>
+                  <span v-else-if="htsExists === true" class="hts-badge hts-found">✓ Verified on USITC</span>
+                  <span v-else-if="htsExists === false" class="hts-badge hts-not-found">✗ Not found on USITC</span>
+                  <span v-else class="hts-badge hts-unknown">— Not yet verified</span>
                 </div>
               </div>
 
@@ -548,10 +545,10 @@ const handleSaveAndSubmit = async () => {
             </div>
 
             <div class="form-actions">
-              <Button type="submit">{{ $t('common.save') }}</Button>
-              <Button type="button" @click="handleSaveAndSubmit" data-test="save-submit-btn">
+              <button type="submit" class="btn-cch btn-save">{{ $t('common.save') }}</button>
+              <button type="button" class="btn-cch btn-submit" data-test="save-submit-btn" @click="handleSaveAndSubmit">
                 {{ $t('part_create.save_and_submit') }}
-              </Button>
+              </button>
             </div>
           </form>
         </Card>
@@ -590,4 +587,12 @@ h1 { font-size: 2rem; color: var(--sidebar-color); margin: 0; }
 .immutable-hint { display: block; color: #E6A23C; font-size: 0.78rem; margin-top: 0.25rem; }
 .form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
 .readonly-value { display: inline-block; padding: 0.6rem 0.8rem; font-size: 0.9rem; color: #525f7f; font-weight: 600; }
+.mono { font-family: monospace; }
+.btn-cch { padding: 9px 22px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.18s; border: none; display: inline-flex; align-items: center; font-family: inherit; }
+.btn-save { background-color: var(--primary-color); color: #fff; }
+.btn-save:hover:not(:disabled) { background-color: #337ecc; }
+.btn-save:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-submit { background-color: #ff9800; color: #fff; }
+.btn-submit:hover:not(:disabled) { background-color: #f57c00; }
+.btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
 </style>

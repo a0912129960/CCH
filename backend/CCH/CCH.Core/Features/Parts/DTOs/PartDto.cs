@@ -140,6 +140,7 @@ public class PartCreateRequest
     public decimal? Rate4 { get; set; }
 
     public string? Remark { get; set; }
+    public bool? IsHTSExists { get; set; }
 }
 
 /// <summary>
