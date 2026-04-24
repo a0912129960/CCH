@@ -49,6 +49,7 @@ public class PartLifecycleService : IPartLifecycleService
             AddDutyRate4 = request.Rate4,
             Remark = request.Remark ?? string.Empty,
             Status = status,
+            IsHTSExists = request.IsHTSExists,
             CreatedBy = CurrentUser,
             UpdatedBy = CurrentUser
         };
@@ -84,6 +85,7 @@ public class PartLifecycleService : IPartLifecycleService
             AddDutyRate4     = request.Rate4,
             Remark           = request.Remark ?? string.Empty,
             Status           = "S02",
+            IsHTSExists      = request.IsHTSExists,
             CreatedBy        = CurrentUser,
             UpdatedBy        = CurrentUser
         };
