@@ -12,21 +12,21 @@ public partial class SmUser
 {
     [Key]
     public int HQID { get; set; }
-    public string UserID { get; set; }
+    public string? UserID { get; set; }
 
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
-    public string FullName { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? FullName { get; set; }
 
-    public string StationID { get; set; }
+    public string? StationID { get; set; }
     public DateTime? HireDate { get; set; }
     public DateTime? Birthday { get; set; }
 
-    public string Password { get; set; }
-    public string Email { get; set; }
+    public string? Password { get; set; }
+    public string? Email { get; set; }
 
-    public string Title { get; set; }
-    public string Status { get; set; }
+    public string? Title { get; set; }
+    public string? Status { get; set; }
 
-    public string Admin { get; set; }
+    public string? Admin { get; set; }
 }

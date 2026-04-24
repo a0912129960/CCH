@@ -11,11 +11,12 @@ import BulkUploadPreviewTable from '@src/components/features/part/BulkUploadPrev
  * Bulk Upload View (批量上傳頁面)
  * Updated by Gemini AI on 2026-04-21 per Supreme Quality Mandate.
  * (INTERNAL-AI-20260421: 依最高品質授權重構：1. 使用 shallowRef 2. 邏輯解耦 3. UI 原子化。)
+ * Update on 2026-04-23: Refactored from Customer to Project focus.
  */
 
 const { t } = useI18n();
 const router = useRouter();
-const { role, customerId: userCustomerId } = authService.state;
+const { role, projectId: userProjectId } = authService.state;
 const isEmployee = role && role !== UserRole.CUSTOMER;
 
 const uploadFile = ref<File | null>(null);
@@ -47,29 +48,27 @@ const handleFilter = (status: string | null) => {
   }
 };
 
-const customers = ref<{ id: string; name: string }[]>([]);
-const selectedCustomerId = ref(isEmployee ? '' : userCustomerId || '');
+const projects = ref<{ id: string; name: string }[]>([]);
+const selectedProjectId = ref(isEmployee ? '' : userProjectId || '');
 
 onMounted(async () => {
-  if (isEmployee) {
-    try {
-      customers.value = await partService.getCustomers();
-    } catch (error) {
-      console.error('Failed to load customers:', error);
-    }
+  try {
+    projects.value = await partService.getProjects();
+  } catch (error) {
+    console.error('Failed to load projects:', error);
   }
 });
 
 const handlePreview = async () => {
-  if (isEmployee && !selectedCustomerId.value) {
-    ElMessage.warning(t('employee.customer_select'));
+  if (!selectedProjectId.value) {
+    ElMessage.warning(t('employee.project_select'));
     return;
   }
   if (!uploadFile.value) return;
 
   previewing.value = true;
   try {
-    const result = await partService.previewBulkUpload(uploadFile.value, Number(selectedCustomerId.value));
+    const result = await partService.previewBulkUpload(uploadFile.value, Number(selectedProjectId.value));
     previewData.value = result;
     ElMessage.success('Preview loaded.');
   } catch (error: any) {
@@ -119,7 +118,7 @@ const handleReset = () => {
   previewData.value = null;
   uploadFile.value = null;
   filterStatus.value = null;
-  if (isEmployee) selectedCustomerId.value = '';
+  if (isEmployee) selectedProjectId.value = '';
 };
 
 const handleDownloadTemplate = async () => {
@@ -153,16 +152,16 @@ const handleDownloadTemplate = async () => {
               </Button>
             </div>
 
-            <div v-if="isEmployee" class="customer-selection-row mb-6">
-              <label class="block text-sm text-gray-600 mb-2">{{ $t('employee.customer_select') }} <span class="text-red-500">*</span></label>
+            <div class="customer-selection-row mb-6">
+              <label class="block text-sm text-gray-600 mb-2">{{ $t('employee.project_select') }} <span class="text-red-500">*</span></label>
               <el-select 
-                v-model="selectedCustomerId" 
-                :placeholder="$t('employee.customer_select')"
+                v-model="selectedProjectId" 
+                :placeholder="$t('employee.project_select')"
                 class="w-full max-w-md"
                 filterable
                 :disabled="!!previewData || previewing"
               >
-                <el-option v-for="c in customers" :key="c.id" :label="c.name" :value="c.id" />
+                <el-option v-for="p in projects" :key="p.id" :label="p.name" :value="p.id" />
               </el-select>
             </div>
 

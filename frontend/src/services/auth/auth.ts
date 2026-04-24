@@ -27,7 +27,7 @@ export const authService = {
       isLoggedIn: authStore.isAuthenticated,
       role: authStore.userRole,
       username: authStore.user?.name || '',
-      customerId: authStore.user?.role === UserRole.CUSTOMER ? authStore.user.id : undefined
+      projectId: authStore.user?.role === UserRole.CUSTOMER ? authStore.user.id : undefined
     };
   },
 

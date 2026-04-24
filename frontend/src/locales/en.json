@@ -19,6 +19,7 @@
     "last_updated": "Last Updated",
     "supplier": "Supplier",
     "customer": "Customer",
+    "project": "Project",
     "menu": {
       "dashboard": "Dashboard",
       "parts": "Parts List"
@@ -42,15 +43,15 @@
     "password_placeholder": "Please enter password",
     "error_invalid": "Invalid account or password.",
     "error_network": "Network is unstable, please try again later.",
-    "hint_customer": "Customer: customer001 / 888888",
+    "hint_customer": "Customer: toXXXXXXXXXXXXXXXXXXm / Bit@202605",
     "hint_dcb": "DCB: dcb001 / 888888",
     "hint_dimerco": "Dimerco: dimerco001 / 888888"
   },
   "employee": {
     "title": "Dashboard",
     "role_name": "Dimerco Employee",
-    "customer_select": "Select Customer",
-    "all_customers": "All Customers",
+    "project_select": "Select Project",
+    "all_projects": "All Projects",
     "status_summary": "Part Status Summary",
     "pending_audit": "Pending Review Parts",
     "no_pending": "No parts pending review",

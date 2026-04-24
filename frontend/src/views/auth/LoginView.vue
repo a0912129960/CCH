@@ -89,8 +89,6 @@ const handleLogin = async () => {
         <div class="hint-section">
           <p class="hint-title">{{ $t('common.search') }} Quick Access (測試帳號):</p>
           <p>{{ $t('login.hint_customer') }}</p>
-          <p>{{ $t('login.hint_dcb') }}</p>
-          <p>{{ $t('login.hint_dimerco') }}</p>
         </div>
       </div>
     </div>
@@ -127,8 +125,8 @@ const handleLogin = async () => {
 
 .login-container {
   z-index: 1;
-  width: 100%;
-  max-width: 500px;
+  width: auto; /* Changed to auto to allow stretching (改為 auto 以允許撐開) */
+  max-width: 95vw; /* Increased max-width for flexibility (增加最大寬度以提供彈性) */
   padding: 20px;
 }
 
@@ -138,11 +136,17 @@ const handleLogin = async () => {
   border-radius: 12px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
+  width: fit-content; /* Stretch to fit title width (撐開以符合標題寬度) */
+  min-width: 450px; /* Set a reasonable minimum width (設定合理的最小寬度) */
+  margin: 0 auto;
 }
 
 .logo-section {
   text-align: center;
   margin-bottom: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
   .brand-logo {
     width: 180px;
@@ -151,11 +155,12 @@ const handleLogin = async () => {
   }
 
   .app-title {
-    font-size: 1.4rem;
+    font-size: 1.4rem; /* Restored fixed size (恢復固定字級) */
     color: #333;
     font-weight: 600;
     margin: 0.5rem 0 0.2rem;
-    white-space: nowrap;
+    white-space: nowrap; /* Prevent folding (防止摺行) */
+    width: max-content; /* Ensure width fits the text (確保寬度符合文字) */
   }
 }
 
@@ -232,14 +237,15 @@ h2 {
   margin-top: 2.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #eee;
-  font-size: 0.75rem;
-  color: #888;
+  font-size: 0.85rem; /* Increased font size slightly for better readability (略微增加字號以提高可讀性) */
+  color: #666; /* Darkened color for better contrast (加深顏色以提高對比度) */
   line-height: 1.6;
+  text-align: center; /* Center the hint message (將提示訊息置中) */
 
   .hint-title {
     font-weight: 600;
-    color: #666;
-    margin-bottom: 0.4rem;
+    color: #444;
+    margin-bottom: 0.5rem;
   }
 }
 

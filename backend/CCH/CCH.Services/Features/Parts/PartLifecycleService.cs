@@ -31,7 +31,7 @@ public class PartLifecycleService : IPartLifecycleService
     {
         var entity = new CchParts
         {
-            CustomerID = request.CustomerId ?? 101,
+            ProjectID = request.ProjectId ?? 101,
             PartNo = request.PartNo,
             CountryID = request.CountryId ?? 1,
             PartDescription = request.PartDesc,
@@ -221,8 +221,10 @@ public class PartLifecycleService : IPartLifecycleService
             Rate4 = entity.AddDutyRate4,
             Remark = entity.Remark,
             CreatedBy = CurrentUser,
-            CreatedDate = DateTime.Now
+            CreatedDate = DateTime.UtcNow,
+            IsHTSExists = entity.IsHTSExists
         };
+
         _repository.AddSnapshot(snapshot);
     }
 
@@ -234,6 +236,7 @@ public class PartLifecycleService : IPartLifecycleService
         e.AddHTSCode2 = req.HtsCode2; e.AddDutyRate2 = req.Rate2; e.AddHTSCode3 = req.HtsCode3;
         e.AddDutyRate3 = req.Rate3; e.AddHTSCode4 = req.HtsCode4; e.AddDutyRate4 = req.Rate4;
         e.Remark = req.Remark; e.UpdatedBy = CurrentUser;
+        e.IsHTSExists = req.IsHTSExists;
 
         // Map Supplier Name string to SupplierID FK (SSoT from Common Repository)
         var supplier = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == req.Supplier);

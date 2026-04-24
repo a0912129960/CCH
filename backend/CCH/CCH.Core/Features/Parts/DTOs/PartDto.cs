@@ -9,7 +9,7 @@ namespace CCH.Core.Features.Parts.DTOs;
 public class PartListItemDto
 {
     public int Id { get; set; }
-    public string Customer { get; set; } = string.Empty;
+    public string Project { get; set; } = string.Empty;
     public string PartNo { get; set; } = string.Empty;
     public string PartDesc { get; set; } = string.Empty;
     public string Country { get; set; } = string.Empty;
@@ -96,6 +96,7 @@ public class PartDetailDto
     public string Remark { get; set; } = string.Empty;
     public string UpdatedBy { get; set; } = string.Empty;
     public DateTime UpdatedDate { get; set; }
+    public bool? IsHTSExists { get; set; }
 }
 
 /// <summary>
@@ -105,7 +106,7 @@ public class PartDetailDto
 /// </summary>
 public class PartCreateRequest
 {
-    public int? CustomerId { get; set; }
+    public int? ProjectId { get; set; }
 
     [Required(ErrorMessage = "PartNo is required. / 零件編號為必填。")]
     public string PartNo { get; set; } = string.Empty;
@@ -149,7 +150,7 @@ public class PartCreateRequest
 // (INTERNAL-AI-20260416: 依 API 規格加入必填驗證與 HTS Code 格式驗證。)
 public class PartSaveRequest
 {
-    public int? CustomerId { get; set; }
+    public int? ProjectId { get; set; }
 
     // PartNo is required (零件編號為必填)
     [Required(ErrorMessage = "PartNo is required. / 零件編號為必填。")]
@@ -198,6 +199,7 @@ public class PartSaveRequest
     public decimal? Rate4 { get; set; }
 
     public string Remark { get; set; } = string.Empty;
+    public bool? IsHTSExists { get; set; }
 }
 
 /// <summary>
@@ -229,7 +231,7 @@ public class MilestoneDto
 public class PartDto
 {
     public int? Id { get; set; }
-    public int? CustomerId { get; set; }
+    public int? ProjectId { get; set; }
     public string PartNo { get; set; } = string.Empty;
     public int? CountryId { get; set; }
     public string Country { get; set; } = string.Empty;

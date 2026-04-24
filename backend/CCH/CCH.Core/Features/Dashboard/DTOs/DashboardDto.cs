@@ -21,7 +21,7 @@ public class PendingReviewDto
 {
     /// <summary>Part primary key — used by the frontend to navigate to the detail page.</summary>
     public int Id { get; set; }
-    public string Customer { get; set; } = string.Empty;
+    public string Project { get; set; } = string.Empty;
     public string PartNo { get; set; } = string.Empty;
     public string PartDesc { get; set; } = string.Empty;
     public string HtsCode { get; set; } = string.Empty;

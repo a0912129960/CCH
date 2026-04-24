@@ -28,15 +28,20 @@ public class PartQueryService : IPartQueryService
     }
 
     /// <inheritdoc/>
-    public PartListResponseDto SearchParts(int? customerId, string? status, string? partNo, int? supplierId, int page, int pageSize)
+    public PartListResponseDto SearchParts(int? projectId, string? status, string? partNo, int? supplierId, int page, int pageSize)
     {
         var role = _userContext.Role?.ToLower();
         
         // Fetch all matching entities from repository (從倉儲取得所有相符實體)
-        var entities = _repository.SearchParts(customerId, status, partNo, supplierId).ToList();
+        var entities = _repository.SearchParts(projectId, status, partNo, supplierId).ToList();
 
         var total = entities.Count;
         
+        // Pre-fetch lookups to avoid N+1 queries in MapToListItemDto (預先擷取對照資料以避免 N+1 查詢)
+        var projectMap = _commonRepository.GetProjects().ToDictionary(p => p.Id, p => p.ProjectName ?? "Unknown");
+        var countryMap = _commonRepository.GetCountries().ToDictionary(c => c.ID, c => c.Name);
+        var supplierMap = _commonRepository.GetSuppliers().ToDictionary(s => s.ID, s => s.SupplierName ?? "Unknown");
+
         // Batch resolve UserNames (批次解析使用者名稱)
         var userIds = entities.Select(e => e.UpdatedBy).Where(id => !string.IsNullOrEmpty(id)).Distinct()!;
         var userNames = _commonRepository.GetUserNames(userIds!);
@@ -45,7 +50,7 @@ public class PartQueryService : IPartQueryService
         var data = entities
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(e => MapToListItemDto(e, role, userNames))
+            .Select(e => MapToListItemDto(e, role, userNames, projectMap, countryMap, supplierMap))
             .ToList();
 
         return new PartListResponseDto
@@ -62,8 +67,15 @@ public class PartQueryService : IPartQueryService
         var entity = _repository.GetPartById(partId);
         if (entity == null) return null;
 
-        var listItem = MapToListItemDto(entity);
-        listItem.UpdatedBy = _commonRepository.GetUserName(entity.UpdatedBy ?? "");
+        // Fetch individual lookups for detail view (取得詳細檢視的個別對照資料)
+        var projectName = _commonRepository.GetProjects().FirstOrDefault(p => p.Id == entity.ProjectID)?.ProjectName ?? "Unknown";
+        var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
+        var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.SupplierName ?? "Unknown";
+
+        var listItem = MapToListItemDto(entity, null, null, 
+            new Dictionary<int, string> { { entity.ProjectID ?? 0, projectName } },
+            new Dictionary<int, string> { { entity.CountryID ?? 0, countryName } },
+            new Dictionary<int, string> { { entity.SupplierID ?? 0, supplierName } });
 
         // INTERNAL-AI-20260421: Before = second-most-recent snapshot (state before last save).
         // (INTERNAL-AI-20260421: Before 改為倒數第二筆快照（上次存檔前的狀態）。)
@@ -96,7 +108,8 @@ public class PartQueryService : IPartQueryService
                 Rate4     = beforeSnapshot.Rate4,
                 Remark    = beforeSnapshot.Remark ?? "",
                 UpdatedBy   = _commonRepository.GetUserName(beforeSnapshot.CreatedBy ?? ""),
-                UpdatedDate = beforeSnapshot.CreatedDate ?? DateTime.MinValue
+                UpdatedDate = beforeSnapshot.CreatedDate ?? DateTime.MinValue,
+                IsHTSExists = beforeSnapshot.IsHTSExists
             } : new PartDetailDto(),
             Modified = new PartDetailDto
             {
@@ -116,18 +129,20 @@ public class PartQueryService : IPartQueryService
                 Rate3     = listItem.Rate3,
                 HtsCode4  = listItem.HtsCode4,
                 Rate4     = listItem.Rate4,
-                Remark    = entity.Remark ?? "",
+                Remark      = entity.Remark ?? "",
                 UpdatedBy   = listItem.UpdatedBy,
-                UpdatedDate = listItem.UpdatedDate
+                UpdatedDate = listItem.UpdatedDate,
+                IsHTSExists = entity.IsHTSExists
             }
         };
     }
 
-    private PartListItemDto MapToListItemDto(CchParts entity, string? role = null, Dictionary<string, string>? userNames = null)
+    private PartListItemDto MapToListItemDto(CchParts entity, string? role, Dictionary<string, string>? userNames, 
+        Dictionary<int, string> projectMap, Dictionary<int, string> countryMap, Dictionary<int, string> supplierMap)
     {
-        var customerName = _commonRepository.GetCustomers().FirstOrDefault(c => c.HQID == entity.CustomerID)?.CustomerName ?? "Unknown";
-        var countryName = _commonRepository.GetCountries().FirstOrDefault(c => c.ID == entity.CountryID)?.Name ?? "Unknown";
-        var supplierName = _commonRepository.GetSuppliers().FirstOrDefault(s => s.ID == entity.SupplierID)?.SupplierName ?? "Unknown";
+        var projectName = projectMap.GetValueOrDefault(entity.ProjectID ?? 0, "Unknown");
+        var countryName = countryMap.GetValueOrDefault(entity.CountryID ?? 0, "Unknown");
+        var supplierName = supplierMap.GetValueOrDefault(entity.SupplierID ?? 0, "Unknown");
 
         // Resolve UpdatedBy name (解析 UpdatedBy 名稱)
         string updatedByName = entity.UpdatedBy ?? "";
@@ -159,7 +174,7 @@ public class PartQueryService : IPartQueryService
         return new PartListItemDto
         {
             Id = entity.ID,
-            Customer = customerName,
+            Project = projectName,
             PartNo = entity.PartNo ?? "",
             PartDesc = entity.PartDescription ?? "",
             Country = countryName,
@@ -217,7 +232,8 @@ public class PartQueryService : IPartQueryService
                 Rate4 = s.Rate4,
                 Remark = s.Remark ?? "",
                 UpdatedBy = _commonRepository.GetUserName(s.CreatedBy ?? ""),
-                UpdatedDate = s.CreatedDate ?? DateTime.MinValue
+                UpdatedDate = s.CreatedDate ?? DateTime.MinValue,
+                IsHTSExists = s.IsHTSExists
             })
             .ToList();
 //}

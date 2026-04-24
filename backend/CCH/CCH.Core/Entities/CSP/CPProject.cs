@@ -7,13 +7,13 @@ namespace CCH.Core.Entities.CSP;
 public partial class CpProject
 {
     public int Id { get; set; }
-    public string ProjectName { get; set; }
-    public string ProjectDesc { get; set; }
-    public string AdminMail { get; set; }
-    public string Status { get; set; }
-    public string CreatedBy { get; set; }
+    public string? ProjectName { get; set; }
+    public string? ProjectDesc { get; set; }
+    public string? AdminMail { get; set; }
+    public string? Status { get; set; }
+    public string? CreatedBy { get; set; }
     public DateTime? CreatedDt { get; set; }
-    public string UpdatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
     public DateTime? UpdatedDt { get; set; }
     public int? NeedDetailMilestone { get; set; }
     public int? DetailContainer { get; set; }
@@ -26,7 +26,7 @@ public partial class CpProject
     public bool? hasTruck { get; set; }
     public bool? hasCourier { get; set; }
     public bool? hasCustomsClearance { get; set; }
-    public string courierStationID { get; set; }
+    public string? courierStationID { get; set; }
     public bool? hasLoadPOBySetting { get; set; }
     public bool? IsAgent { get; set; }
 }

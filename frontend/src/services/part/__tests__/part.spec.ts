@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { partService } from '../part';
+import { partService, type BulkUploadPartData } from '../part';
 import api from '../../api';
 
 // Mock api (模擬 api)
@@ -17,8 +17,7 @@ vi.mock('../../api', () => ({
 
 /**
  * Part Service Unit Tests (零件服務單元測試)
- * 
- * Created by Gemini AI on 2026-04-20 (INTERNAL-AI-20260420)
+ * Update on 2026-04-23: Refactored from Customer to Project focus.
  */
 describe('Part Service (零件服務)', () => {
   beforeEach(() => {
@@ -84,9 +83,9 @@ describe('Part Service (零件服務)', () => {
   });
 
   describe('previewBulkUpload (批量上傳預覽)', () => {
-    it('should call the correct endpoint with multipart/form-data and customerId (應以 multipart/form-data 及 customerId 呼叫正確端點)', async () => {
+    it('should call the correct endpoint with multipart/form-data and projectId (應以 multipart/form-data 及 projectId 呼叫正確端點)', async () => {
       const mockFile = new File(['mock-content'], 'test.xlsx');
-      const mockReport: BulkUploadPreviewReport = {
+      const mockReport: any = {
         summary: { totalRows: 1, newCount: 1, modifiedCount: 0, errorCount: 0, noChangeCount: 0 },
         rows: []
       };
@@ -102,9 +101,9 @@ describe('Part Service (零件服務)', () => {
   describe('confirmBulkUpload (批量上傳確認)', () => {
     it('should call the correct endpoint with the provided data array (應以提供的資料陣列呼叫正確端點)', async () => {
       const mockData: BulkUploadPartData[] = [
-        { customerId: 123, partNo: 'PN01' }
+        { projectId: 123, partNo: 'PN01' }
       ];
-      const mockResponse: BulkUploadConfirmResponse = {
+      const mockResponse: any = {
         inserted: 1, updated: 0, failed: 0, errors: []
       };
       (api.post as any).mockResolvedValue({ data: { success: true, data: mockResponse } });

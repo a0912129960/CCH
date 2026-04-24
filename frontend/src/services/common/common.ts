@@ -10,9 +10,9 @@ export interface CommonOption {
 }
 
 /**
- * Customer Interface (客戶介面) - Alias for CommonOption
+ * Project Interface (專案介面) - Alias for CommonOption
  */
-export type CustomerOption = CommonOption;
+export type ProjectOption = CommonOption;
 
 /**
  * Status Interface (狀態介面) - Alias for CommonOption
@@ -27,13 +27,13 @@ export type SupplierOption = CommonOption;
 export type CountryOption = CommonOption;
 
 /**
- * Mock data for Customers (客戶模擬資料)
+ * Mock data for Projects (專案模擬資料)
  */
 /*
-export const MOCK_CUSTOMERS: CustomerOption[] = [
-  { key: 'customer001', value: 'Dimerco Electronics' },
-  { key: 'customer002', value: 'Global Tech Solutions' },
-  { key: 'customer003', value: 'Alpha Systems Corp' }
+export const MOCK_PROJECTS: ProjectOption[] = [
+  { key: 'project001', value: 'Dimerco Electronics' },
+  { key: 'project002', value: 'Global Tech Solutions' },
+  { key: 'project003', value: 'Alpha Systems Corp' }
 ];
 */
 
@@ -66,12 +66,12 @@ export const commonService = {
   /**
    * Get Suppliers from Common API (從通用 API 獲取供應商)
    * (繁體中文) 從 /api/common/suppliers 獲取供應商清單。
-   * @param {string} customerId - Filter by customer (按客戶篩選)
+   * @param {string} projectId - Filter by project (按專案篩選)
    */
-  async getSuppliers(customerId: string = 'all'): Promise<SupplierOption[]> {
+  async getSuppliers(projectId: string = 'all'): Promise<SupplierOption[]> {
     try {
       const response = await api.get<{ success: boolean; message: string; data: SupplierOption[] }>('/common/suppliers', {
-        params: { customerId }
+        params: { projectId }
       });
       if (response.data.success) {
         return response.data.data;
@@ -84,18 +84,18 @@ export const commonService = {
   },
 
   /**
-   * Get Customers from Common API (從通用 API 獲取客戶)
-   * (繁體中文) 從 /api/common/customers 獲取客戶清單。
+   * Get Projects from Common API (從通用 API 獲取專案)
+   * (繁體中文) 從 /api/common/projects 獲取專案清單。
    */
-  async getCustomers(): Promise<CustomerOption[]> {
+  async getProjects(): Promise<ProjectOption[]> {
     try {
-      const response = await api.get<{ success: boolean; message: string; data: CustomerOption[] }>('/common/customers');
+      const response = await api.get<{ success: boolean; message: string; data: ProjectOption[] }>('/common/projects');
       if (response.data.success) {
         return response.data.data;
       }
       return []; // Removed mock fallback
     } catch (error) {
-      console.error('API /common/customers failed. (API 失敗。)', error);
+      console.error('API /common/projects failed. (API 失敗。)', error);
       return [];
     }
   },

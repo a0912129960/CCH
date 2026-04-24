@@ -14,18 +14,18 @@ public interface IPartRepository
     /// Searches for part entities based on various criteria.
     /// (繁體中文) 根據多種條件搜尋零件實體。
     /// </summary>
-    /// <param name="customerId">Customer ID. (客戶 ID)</param>
+    /// <param name="projectId">Customer ID. (客戶 ID)</param>
     /// <param name="status">Part status. (零件狀態)</param>
     /// <param name="partNo">Part number. (零件編號)</param>
     /// <param name="supplierId">Supplier ID. (供應商 ID)</param>
     /// <returns>A collection of part entities. (零件實體集合)</returns>
-    IEnumerable<CchParts> SearchParts(int? customerId, string? status, string? partNo, int? supplierId);
+    IEnumerable<CchParts> SearchParts(int? projectId, string? status, string? partNo, int? supplierId);
 
     /// <summary>
     /// Retrieves a specific part entity by Customer ID and Part No.
     /// (繁體中文) 根據客戶 ID 與零件編號取得特定零件實體。
     /// </summary>
-    CchParts? GetPartByNo(int customerId, string partNo);
+    CchParts? GetPartByNo(int projectId, string partNo);
 
     /// <summary>
     /// Checks whether a part with the same PartNo + CountryId already exists under the given customer.

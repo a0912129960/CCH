@@ -3,27 +3,27 @@ import { authService } from '@src/services/auth/auth';
 import Card from '@src/components/common/Card.vue';
 import Button from '@src/components/common/Button.vue';
 import { partService, type CreatePartRequest, type SubmitPartRequest } from '@src/services/part/part';
-import { commonService, type CountryOption } from '@src/services/common/common';
+import { commonService, type CountryOption, type ProjectOption } from '@src/services/common/common';
 import { ElMessage } from 'element-plus';
 
 /**
  * Part No Creation View (新增零件編號頁面)
  * BR-08: HTS Format Validation | BR-21: Description Quality Scoring
- * Updated: Mandatory Customer ID for Employees and Auto-Activation logic.
- * Update by Gemini AI on 2026-04-18: Global import cleanup and path alias refactor.
+ * Update by Gemini AI on 2026-04-23: Enable Project Selection for all users (including Customers).
  */
 
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
 
-const { customerId: userCustomerId } = authService.state;
+const { projectId: userProjectId } = authService.state;
 
-// Prefer customerId from route query (passed from PartListView's customer filter),
-// fall back to the logged-in user's own customerId (客戶使用者自己的 ID).
-const resolvedCustomerId = (route.query.customerId as string) || userCustomerId || '';
+// Prefer projectId from route query (passed from PartListView's customer filter),
+// fall back to the logged-in user's own projectId (客戶使用者自己的 ID).
+const resolvedprojectId = (route.query.projectId as string) || userprojectId || '';
 
 const countries = ref<CountryOption[]>([]);
+const projects = ref<ProjectOption[]>([]);
 
 const form = ref({
   partNo: '',
@@ -42,19 +42,25 @@ const form = ref({
   htsCodeReciprocalTariff: '',
   rateReciprocalTariff: '',
   remark: '',
-  customerId: resolvedCustomerId
+  projectId: resolvedprojectId
 });
 
 onMounted(async () => {
   try {
-    const data = await commonService.getCountries();
-    countries.value = data;
-    if (!data.length) {
+    const [countriesData, projectsData] = await Promise.all([
+      commonService.getCountries(),
+      commonService.getProjects()
+    ]);
+    
+    countries.value = countriesData;
+    projects.value = projectsData;
+
+    if (!countriesData.length) {
       ElMessage.warning(t('part_create.countries_load_failed'));
     }
   } catch (error) {
-    console.error('Failed to load countries:', error);
-    ElMessage.error(t('part_create.countries_load_failed'));
+    console.error('Failed to load initial data:', error);
+    ElMessage.error(t('part_create.initial_load_failed'));
   }
 });
 
@@ -83,13 +89,17 @@ const htsCode2Error = ref('');
 const htsCode3Error = ref('');
 const htsCode4Error = ref('');
 
-const validateHts = (val: string | null | undefined, errRef: typeof htsError): boolean => {
-  if (!val) { errRef.value = ''; return true; }
+const validateHts = (val: string | null | undefined, errRef: any): boolean => {
+  if (!val) { 
+    if (errRef && typeof errRef === 'object' && 'value' in errRef) errRef.value = '';
+    return true; 
+  }
   if (!HTS_PATTERN.test(val)) {
-    errRef.value = 'Format must be XXXX.XX.XXXX';
+    const msg = 'Format must be XXXX.XX.XXXX';
+    if (errRef && typeof errRef === 'object' && 'value' in errRef) errRef.value = msg;
     return false;
   }
-  errRef.value = '';
+  if (errRef && typeof errRef === 'object' && 'value' in errRef) errRef.value = '';
   return true;
 };
 
@@ -102,15 +112,16 @@ const formatHtsCode = (raw: string): string => {
   return `${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6)}`;
 };
 
-const handleHtsInput = (field: HtsField, errRef: typeof htsError, event: Event) => {
+const handleHtsInput = (field: HtsField, errRef: any, event: Event) => {
   const input = event.target as HTMLInputElement;
   const formatted = formatHtsCode(input.value);
   (form.value as any)[field] = formatted;
-  input.value = formatted; // sync DOM to show formatted value immediately
+  input.value = formatted;
   validateHts(formatted, errRef);
 };
 
 const errors = ref({
+  projectId: '',
   partNo: '',
   countryOfOrigin: '',
   division: '',
@@ -119,11 +130,15 @@ const errors = ref({
   usHtsCode: ''
 });
 
-// Save：只檢查 Part No & Country of Origin
+// Save validation
 const validateSave = () => {
   let valid = true;
-  errors.value = { partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
+  errors.value = { projectId: '', partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
 
+  if (!form.value.projectId) {
+    errors.value.projectId = 'part_create.validation.required';
+    valid = false;
+  }
   if (!form.value.partNo) {
     errors.value.partNo = 'part_create.validation.required';
     valid = false;
@@ -136,11 +151,15 @@ const validateSave = () => {
   return valid;
 };
 
-// Save & Submit：檢查所有必填欄位
+// Save & Submit validation
 const validateSaveAndSubmit = () => {
   let valid = true;
-  errors.value = { partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
+  errors.value = { projectId: '', partNo: '', countryOfOrigin: '', division: '', supplier: '', partDescription: '', usHtsCode: '' };
 
+  if (!form.value.projectId) {
+    errors.value.projectId = 'part_create.validation.required';
+    valid = false;
+  }
   if (!form.value.partNo) {
     errors.value.partNo = 'part_create.validation.required';
     valid = false;
@@ -172,15 +191,11 @@ const validateSaveAndSubmit = () => {
 const toNum = (val: string): number | undefined =>
   val !== '' ? Number(val) : undefined;
 
-// Convert the selected country key to the correct type for POST body.
-// If the key is already a number (numeric id) → use as-is.
-// If it's a numeric string like "158" → parse to number.
-// If it's a string code like "USA" → keep as string (backend may accept both).
 const toCountryId = (val: string | number | ''): string | number | undefined => {
   if (val === '') return undefined;
   if (typeof val === 'number') return val;
   const n = Number(val);
-  return Number.isNaN(n) ? val : n;  // numeric string → number; code string → keep as-is
+  return Number.isNaN(n) ? val : n;
 };
 
 /**
@@ -190,12 +205,12 @@ const toCountryId = (val: string | number | ''): string | number | undefined => 
  */
 const checkDuplicateBeforeSave = async (): Promise<boolean> => {
   const countryId = toCountryId(form.value.countryOfOrigin);
-  const customerId = form.value.customerId;
+  const projectId = form.value.projectId;
 
   // Need both fields to perform the check (兩個欄位都需要才能查重)
-  if (!form.value.partNo || !countryId || !customerId) return false;
+  if (!form.value.partNo || !countryId || !projectId) return false;
 
-  const isDuplicate = await partService.checkDuplicate(customerId, form.value.partNo, countryId);
+  const isDuplicate = await partService.checkDuplicate(projectId, form.value.partNo, countryId);
   if (isDuplicate) {
     await ElMessageBox.alert(
       t('part_create.duplicate_error') ||
@@ -215,7 +230,7 @@ const handleSubmit = async () => {
 
   try {
     const body: CreatePartRequest = {
-      customerId:  form.value.customerId  || undefined,
+      projectId:   form.value.projectId  || undefined,
       partNo:      form.value.partNo,
       countryId:   toCountryId(form.value.countryOfOrigin)!,
       division:    form.value.division    || undefined,
@@ -245,14 +260,13 @@ const handleSubmit = async () => {
   }
 };
 
-// [Save & Submit] → SubmitPartRequest: partNo + countryId + division + supplier + partDesc + htsCode all required
 const handleSaveAndSubmit = async () => {
   if (!validateSaveAndSubmit()) return;
   if (await checkDuplicateBeforeSave()) return;
 
   try {
     const body: SubmitPartRequest = {
-      customerId:  form.value.customerId  || undefined,
+      projectId:   form.value.projectId  || undefined,
       partNo:      form.value.partNo,
       countryId:   toCountryId(form.value.countryOfOrigin) as number,
       division:    form.value.division,
@@ -286,7 +300,6 @@ const handleSaveAndSubmit = async () => {
 <template>
   <div class="page-wrapper">
     <div class="page-container">
-      <!-- Breadcrumb Navigation -->
       <nav class="breadcrumb">
         <a href="#" @click.prevent="router.back()">{{ $t('common.menu.parts') }}</a>
         <span class="separator">/</span>
@@ -300,13 +313,24 @@ const handleSaveAndSubmit = async () => {
       <div class="form-layout">
         <Card class="form-card">
           <form @submit.prevent="handleSubmit">
-
-            <!-- ── Part Information Table ── -->
             <div class="info-table">
               <div class="info-table__title">{{ $t('part_create.part_information') }}</div>
               <div class="info-table__header">
                 <span>{{ $t('part_create.col_field') }}</span>
                 <span>{{ $t('part_create.col_value') }}</span>
+              </div>
+
+              <!-- Project -->
+              <div class="info-table__row">
+                <div class="info-table__field">
+                  {{ $t('common.project') }} <span class="required-asterisk">*</span>
+                </div>
+                <div class="info-table__value">
+                  <el-select v-model="form.projectId" :placeholder="$t('employee.project_select')" class="form-select-el" :class="{ 'is-invalid': errors.projectId }" data-test="project-select" filterable>
+                    <el-option v-for="p in projects" :key="p.key" :label="p.value" :value="p.key" />
+                  </el-select>
+                  <span v-if="errors.projectId" class="error-text">{{ $t(errors.projectId) }}</span>
+                </div>
               </div>
 
               <!-- Part No -->
@@ -335,7 +359,7 @@ const handleSaveAndSubmit = async () => {
                 </div>
               </div>
 
-              <!-- Division (required for Save & Submit only) -->
+              <!-- Division -->
               <div class="info-table__row">
                 <div class="info-table__field">
                   {{ $t('part_create.division') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
@@ -346,7 +370,7 @@ const handleSaveAndSubmit = async () => {
                 </div>
               </div>
 
-              <!-- Supplier (required for Save & Submit only) -->
+              <!-- Supplier -->
               <div class="info-table__row">
                 <div class="info-table__field">
                   {{ $t('common.supplier') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
@@ -357,7 +381,7 @@ const handleSaveAndSubmit = async () => {
                 </div>
               </div>
 
-              <!-- Part Description (required for Save & Submit only) -->
+              <!-- Part Description -->
               <div class="info-table__row">
                 <div class="info-table__field">
                   {{ $t('part_create.part_description') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
@@ -368,7 +392,7 @@ const handleSaveAndSubmit = async () => {
                 </div>
               </div>
 
-              <!-- US HTS Code (required for Save & Submit only) -->
+              <!-- US HTS Code -->
               <div class="info-table__row">
                 <div class="info-table__field">
                   {{ $t('part_create.us_hts_code') }} <span class="required-asterisk submit-only-asterisk" :title="$t('part_create.required_for_submit')">*</span>
@@ -388,7 +412,6 @@ const handleSaveAndSubmit = async () => {
                 </div>
               </div>
 
-              <!-- Section: Additional Duty -->
               <div class="info-table__section-header">
                 <span>{{ $t('part_create.additional_duty') }}</span>
               </div>
@@ -468,14 +491,10 @@ const handleSaveAndSubmit = async () => {
                   <textarea v-model="form.remark" :placeholder="$t('part_create.remark_placeholder')" class="form-textarea" data-test="remark-input"></textarea>
                 </div>
               </div>
-
             </div>
-            <!-- ── End Part Information Table ── -->
 
             <div class="form-actions">
-              <Button type="submit">
-                {{ $t('common.save') }}
-              </Button>
+              <Button type="submit">{{ $t('common.save') }}</Button>
               <Button type="button" @click="handleSaveAndSubmit" data-test="save-submit-btn">
                 {{ $t('part_create.save_and_submit') }}
               </Button>
@@ -488,192 +507,32 @@ const handleSaveAndSubmit = async () => {
 </template>
 
 <style scoped>
-.page-wrapper {
-  background-color: var(--dashboard-bg);
-  min-height: 100vh;
-}
-
-.page-container {
-  padding: 2.5rem 3rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  font-family: "MyDimerco-WorkSansBold", sans-serif;
-}
-
-/* Breadcrumb */
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-  font-size: 0.9rem;
-}
-
-.breadcrumb a {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
-.breadcrumb .separator {
-  color: #adb5bd;
-}
-
-.breadcrumb .current {
-  color: #6c757d;
-}
-
-.page-header {
-  margin-bottom: 2.5rem;
-}
-
-h1 {
-  font-size: 2rem;
-  color: var(--sidebar-color);
-  margin: 0;
-}
-
-.form-layout {
-  margin: 0 auto;
-}
-
-.form-card {
-  padding: 0;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-/* ── Info Table ── */
-.info-table {
-  width: 100%;
-  border: 1px solid #e4e7ed;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.info-table__title {
-  padding: 1rem 1.5rem;
-  font-size: 1rem;
-  font-weight: bold;
-  color: #525f7f;
-  background-color: #fff;
-  border-bottom: 1px solid #e4e7ed;
-}
-
-.info-table__header {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  background-color: #f5f7fa;
-  border-bottom: 1px solid #e4e7ed;
-  padding: 0.6rem 1.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #8492a6;
-}
-
-.info-table__row {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  border-bottom: 1px solid #ebeef5;
-  align-items: center;
-  min-height: 56px;
-}
-
-.info-table__row:last-child {
-  border-bottom: none;
-}
-
-.info-table__field {
-  padding: 0.75rem 1.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #525f7f;
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-}
-
-.info-table__value {
-  padding: 0.6rem 1.5rem;
-}
-
-.info-table__section-header {
-  grid-column: 1 / -1;
-  background-color: #f0f2f5;
-  border-top: 1px solid #e4e7ed;
-  border-bottom: 1px solid #e4e7ed;
-  padding: 0.65rem 1.5rem;
-  font-size: 0.9rem;
-  font-weight: bold;
-  color: #525f7f;
-  text-align: center;
-}
-
-/* ── Inputs ── */
-.required-asterisk {
-  color: #F56C6C;
-  font-weight: bold;
-  margin-left: 2px;
-}
-
-/* Fields required only for [Save & Submit] — shown in amber to distinguish from always-required (*) */
-.submit-only-asterisk {
-  color: #E6A23C;
-  cursor: help;
-}
-
-.form-input, .form-textarea, .form-select-el {
-  width: 100%;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.form-select-el {
-  border: none !important;
-  padding: 0 !important;
-}
-
-.form-input, .form-textarea {
-  padding: 0.6rem 0.8rem;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  background-color: white;
-  font-size: 0.9rem;
-}
-
-.form-select-el :deep(.el-input__wrapper) {
-  padding: 6px 12px;
-  border-radius: 6px;
-  box-shadow: 0 0 0 1px #dee2e6 inset !important;
-}
-
-.form-textarea {
-  height: 120px;
-  resize: vertical;
-}
-
-.is-invalid {
-  border-color: #F56C6C;
-}
-
-.error-text {
-  display: block;
-  color: #F56C6C;
-  font-size: 0.8rem;
-  margin-top: 0.25rem;
-}
-
-.immutable-hint {
-  display: block;
-  color: #E6A23C;
-  font-size: 0.78rem;
-  margin-top: 0.25rem;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
+.page-wrapper { background-color: var(--dashboard-bg); min-height: 100vh; }
+.page-container { padding: 2.5rem 3rem; max-width: 1200px; margin: 0 auto; font-family: "MyDimerco-WorkSansBold", sans-serif; }
+.breadcrumb { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; font-size: 0.9rem; }
+.breadcrumb a { color: var(--primary-color); text-decoration: none; }
+.breadcrumb .separator { color: #adb5bd; }
+.breadcrumb .current { color: #6c757d; }
+.page-header { margin-bottom: 2.5rem; }
+h1 { font-size: 2rem; color: var(--sidebar-color); margin: 0; }
+.form-card { padding: 0; border-radius: 12px; overflow: hidden; }
+.info-table { width: 100%; border: 1px solid #e4e7ed; border-radius: 10px; overflow: hidden; }
+.info-table__title { padding: 1rem 1.5rem; font-size: 1rem; font-weight: bold; color: #525f7f; background-color: #fff; border-bottom: 1px solid #e4e7ed; }
+.info-table__header { display: grid; grid-template-columns: 280px 1fr; background-color: #f5f7fa; border-bottom: 1px solid #e4e7ed; padding: 0.6rem 1.5rem; font-size: 0.85rem; font-weight: 600; color: #8492a6; }
+.info-table__row { display: grid; grid-template-columns: 280px 1fr; border-bottom: 1px solid #ebeef5; align-items: center; min-height: 56px; }
+.info-table__row:last-child { border-bottom: none; }
+.info-table__field { padding: 0.75rem 1.5rem; font-size: 0.9rem; font-weight: 600; color: #525f7f; align-self: stretch; display: flex; align-items: center; }
+.info-table__value { padding: 0.6rem 1.5rem; }
+.info-table__section-header { grid-column: 1 / -1; background-color: #f0f2f5; border-top: 1px solid #e4e7ed; border-bottom: 1px solid #e4e7ed; padding: 0.65rem 1.5rem; font-size: 0.9rem; font-weight: bold; color: #525f7f; text-align: center; }
+.required-asterisk { color: #F56C6C; font-weight: bold; margin-left: 2px; }
+.submit-only-asterisk { color: #E6A23C; cursor: help; }
+.form-input, .form-textarea, .form-select-el { width: 100%; font-family: inherit; outline: none; transition: border-color 0.2s; }
+.form-select-el { border: none !important; padding: 0 !important; }
+.form-input, .form-textarea { padding: 0.6rem 0.8rem; border: 1px solid #dee2e6; border-radius: 6px; background-color: white; font-size: 0.9rem; }
+.form-select-el :deep(.el-input__wrapper) { padding: 6px 12px; border-radius: 6px; box-shadow: 0 0 0 1px #dee2e6 inset !important; }
+.form-textarea { height: 120px; resize: vertical; }
+.is-invalid { border-color: #F56C6C; }
+.error-text { display: block; color: #F56C6C; font-size: 0.8rem; margin-top: 0.25rem; }
+.immutable-hint { display: block; color: #E6A23C; font-size: 0.78rem; margin-top: 0.25rem; }
+.form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
 </style>

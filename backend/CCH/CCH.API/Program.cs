@@ -3,6 +3,7 @@ using CCH.Core.Features.Parts.Interfaces;
 using CCH.Core.Features.Auth.Interfaces;
 using CCH.Core.Features.Common.Interfaces;
 using CCH.Core.Features.Dashboard.Interfaces;
+using CCH.Core.Features.Hts.Interfaces;
 using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Core.Shared;
@@ -11,6 +12,7 @@ using CCH.Services.Features.Parts;
 using CCH.Services.Features.Auth;
 using CCH.Services.Features.Common;
 using CCH.Services.Features.Dashboard;
+using CCH.Services.Features.Hts;
 using CCH.Services.Infrastructure;
 using CCH.Services.Repositories.Data;
 using CCH.API.Middlewares;
@@ -41,6 +43,12 @@ builder.Services.AddScoped<IPartQueryService, PartQueryService>();
 builder.Services.AddScoped<IPartLifecycleService, PartLifecycleService>();
 builder.Services.AddScoped<IPartExcelService, PartExcelService>();
 
+// Register HTS Recommendation Service / 註冊 HTS 推薦服務
+builder.Services.AddHttpClient<IHtsRecommendationService, HtsRecommendationService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
+
 // INTERNAL-AI-20260416: Override default [ApiController] 400 response to use ApiResponse format.
 // (INTERNAL-AI-20260416: 覆寫 [ApiController] 預設 400 回應，改用 ApiResponse 格式。)
 builder.Services.AddControllers()
@@ -56,9 +64,10 @@ builder.Services.AddControllers()
         };
     });
 
-// Add HttpContextAccessor and UserContext / 新增 HttpContextAccessor 與 UserContext
+// Add HttpContextAccessor, UserContext, and MemoryCache / 新增 HttpContextAccessor、UserContext 與 MemoryCache
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserContext, UserContext>();
+builder.Services.AddMemoryCache();
 
 // Add CORS configuration / 新增 CORS 配置
 builder.Services.AddCors(options =>
