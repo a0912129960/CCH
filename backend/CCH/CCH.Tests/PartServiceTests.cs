@@ -4,6 +4,7 @@ using CCH.Core.Entities.CSP;
 using CCH.Core.Entities.ReSm;
 using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
+using CCH.Core.Features.Parts.Interfaces;
 using CCH.Services.Features.Parts;
 using CCH.Services.Repositories;
 using CCH.Services.Repositories.Data;
@@ -54,9 +55,13 @@ public class PartServiceTests : IDisposable
         _mockUserContext = new Mock<IUserContext>();
         _mockUserContext.Setup(u => u.Role).Returns("admin"); 
 
+        var mockValidationService = new Mock<IPartValidationService>();
+        mockValidationService.Setup(s => s.ValidateExcelRowAsync(It.IsAny<PartDto>(), It.IsAny<PartDto>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(new ValidationResult());
+
         _queryService = new PartQueryService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
         // Corrected constructor: PartExcelService needs userContext as well (修正建構函式)
-        _excelService = new PartExcelService(_repository, mockCommonRepo.Object, _mockUserContext.Object);
+        _excelService = new PartExcelService(_repository, mockCommonRepo.Object, _mockUserContext.Object, mockValidationService.Object);
     }
 
     private void SeedData()

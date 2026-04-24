@@ -153,9 +153,10 @@ const handleHtsCodeBlur = async () => {
 
     // Fallback to 8-digit was used and general rate found → auto-fill
     if (result.fallback_used && result.data?.general) {
-      const parsed = parseFloat(result.data.general.replace('%', '').trim());
-      if (!isNaN(parsed)) {
-        form.value.rate = parsed;
+      const raw = result.data.general.replace('%', '').trim();
+      const rate = raw.toLowerCase() === 'free' ? 0 : parseFloat(raw);
+      if (!isNaN(rate)) {
+        form.value.rate = rate;
         ElMessage.info('General Duty Rate auto-filled from HTS recommendation.');
       }
     }
@@ -207,10 +208,12 @@ const statusBadgeBg = computed(() => {
   return '#67C23A'; // green (default)
 });
 
-// Field editability is status-based, not role-based. (欄位可編輯性依狀態決定，非角色。)
-// Basic fields (Division/Supplier/PartDesc/HTS/Rate): editable when S01/S03/S04.
-// (基本欄位在 S01/S03/S04 狀態下可編輯。)
-const canEditBasicFields = computed(() => ['S01', 'S03', 'S04'].includes(currentStatus.value));
+// Basic fields editable when S01/S03, or S04 for non-DCB roles only.
+// DCB in S04 can only edit Additional Rate fields.
+const canEditBasicFields = computed(() =>
+  ['S01', 'S03'].includes(currentStatus.value) ||
+  (currentStatus.value === 'S04' && !isDcb.value)
+);
 // Additional duty fields + Remark: editable when S02/S04.
 // (附加關稅欄位及備註在 S02/S04 狀態下可編輯。)
 const canEditAdditionalFields = computed(() => ['S02', 'S04'].includes(currentStatus.value));
@@ -276,6 +279,11 @@ const milestoneColor = (action: string): string => {
  */
 const initLoad = async (id: number) => {
   loading.value = true;
+  htsError.value = '';
+  htsCode1Error.value = '';
+  htsCode2Error.value = '';
+  htsCode3Error.value = '';
+  htsCode4Error.value = '';
   try {
     // INTERNAL-AI-20260420: Supplier is free-text; only need detail + milestones.
     // (INTERNAL-AI-20260420: 供應商改為自由輸入，只需載入詳情與里程碑。)
@@ -790,12 +798,9 @@ const handleReturn = async () => {
                   {{ inactivating ? '...' : 'Inactive' }}
                 </button>
               </template>
-              <!-- DCB: Save + Accept + Return to Customer; only when status is S02 (Pending Dimerco Review) -->
-              <!-- (DCB：Save + 接受 + 退回給客戶；僅在狀態為 S02 時顯示) -->
+              <!-- DCB: Accept + Return to Customer only; no Save when status is S02 (Pending Dimerco Review) -->
+              <!-- (DCB：僅顯示接受 + 退回給客戶；S02 狀態下不提供 Save) -->
               <template v-else-if="showDcbReview">
-                <button class="btn-cch btn-save" :disabled="saving" @click="handleSave">
-                  {{ saving ? '...' : $t('common.save') }}
-                </button>
                 <button class="btn-cch btn-accept" @click="handleAccept">
                   {{ $t('part_detail.btn_accept') }}
                 </button>

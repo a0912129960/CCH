@@ -16,7 +16,7 @@ const router = useRouter();
 const username = computed(() => authService.state.username);
 
 const projects = ref<{ id: string; name: string }[]>([]);
-const selectedProjectId = ref('all');
+const selectedProjectId = ref('');
 const statusSummary = ref<StatusCount[]>([]);
 const pendingParts = ref<PendingReviewItem[]>([]);
 const loading = ref(true);
@@ -37,6 +37,9 @@ const fetchData = async () => {
 
 onMounted(async () => {
   projects.value = await partService.getProjects();
+  if (projects.value.length > 0) {
+    selectedProjectId.value = projects.value[0].id;
+  }
   await fetchData();
 });
 
@@ -47,7 +50,7 @@ watch(selectedProjectId, async () => {
 const goToPartList = (status?: string) => {
   const query: any = {};
   if (status) query.status = status;
-  if (selectedProjectId.value !== 'all') query.projectId = selectedProjectId.value;
+  if (selectedProjectId.value) query.projectId = selectedProjectId.value;
   router.push({ name: 'parts', query });
 };
 
@@ -102,7 +105,6 @@ const formatDate = (dateStr: string) => {
           <div class="customer-selector">
             <label>{{ $t('employee.project_select') }}</label>
             <select v-model="selectedProjectId" class="app-select">
-              <option value="all">{{ $t('employee.all_projects') }}</option>
               <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
             </select>
           </div>

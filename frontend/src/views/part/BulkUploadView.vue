@@ -19,16 +19,55 @@ const router = useRouter();
 const { role, projectId: userProjectId } = authService.state;
 const isEmployee = role && role !== UserRole.CUSTOMER;
 
+const isCompleted = ref(false);
+const confirming = ref(false);
+const uploadRef = ref();
 const uploadFile = ref<File | null>(null);
 const previewing = ref(false);
-const confirming = ref(false);
-const isCompleted = ref(false);
 
 /**
  * MANDATORY: Using shallowRef for massive array data to optimize performance (Rule 1.2).
  * (針對巨量陣列資料使用 shallowRef 以優化效能。)
  */
 const previewData = shallowRef<BulkUploadPreviewReport | null>(null);
+
+const handlePreview = async () => {
+  if (!selectedProjectId.value) {
+    ElMessage.warning(t('employee.project_select'));
+    // INTERNAL-AI-20260424: Clear the file list even on validation failure to release the 'limit="1"' quota.
+    // (INTERNAL-AI-20260424: 即使驗證失敗也要清空檔案列表，以釋放 limit="1" 的配額。)
+    if (uploadRef.value) {
+      uploadRef.value.clearFiles();
+    }
+    uploadFile.value = null;
+    return;
+  }
+  
+  if (!uploadFile.value) {
+    // If handlePreview is somehow called without a file, ensure state is clean.
+    if (uploadRef.value) {
+      uploadRef.value.clearFiles();
+    }
+    return;
+  }
+
+  previewing.value = true;
+  try {
+    const result = await partService.previewBulkUpload(uploadFile.value, Number(selectedProjectId.value));
+    previewData.value = result;
+    ElMessage.success('Preview loaded.');
+  } catch (error: any) {
+    ElMessage.error(error.message || 'Preview failed.');
+    // INTERNAL-AI-20260424: Clear the upload file list on error so the user can try again.
+    if (uploadRef.value) {
+      uploadRef.value.clearFiles();
+    }
+    uploadFile.value = null;
+  } finally {
+    previewing.value = false;
+  }
+};
+
 const filterStatus = ref<string | null>(null); // 'NEW', 'MODIFIED', 'ERROR', 'NOCHANGE' or null
 
 const filteredRows = computed(() => {
@@ -53,30 +92,21 @@ const selectedProjectId = ref(isEmployee ? '' : userProjectId || '');
 
 onMounted(async () => {
   try {
-    projects.value = await partService.getProjects();
+    const rawData = await partService.getProjects();
+    // INTERNAL-AI-20260424: Filter out any "All" or empty options if they exist in the raw data.
+    // (INTERNAL-AI-20260424: 從原始資料中過濾掉任何「全部」或空白的選項。)
+    const data = rawData.filter(p => p.id && p.id !== 'all' && p.name && p.name.toLowerCase() !== 'all');
+    projects.value = data;
+    
+    // INTERNAL-AI-20260424: Always default to the first project in Bulk Upload to avoid empty selection.
+    // (INTERNAL-AI-20260424: 在批量上傳中始終預設選取第一個專案，以避免空白選取。)
+    if (data.length > 0) {
+      selectedProjectId.value = data[0].id;
+    }
   } catch (error) {
     console.error('Failed to load projects:', error);
   }
 });
-
-const handlePreview = async () => {
-  if (!selectedProjectId.value) {
-    ElMessage.warning(t('employee.project_select'));
-    return;
-  }
-  if (!uploadFile.value) return;
-
-  previewing.value = true;
-  try {
-    const result = await partService.previewBulkUpload(uploadFile.value, Number(selectedProjectId.value));
-    previewData.value = result;
-    ElMessage.success('Preview loaded.');
-  } catch (error: any) {
-    ElMessage.error(error.message || 'Preview failed.');
-  } finally {
-    previewing.value = false;
-  }
-};
 
 const handleFileChange = (file: UploadFile) => {
   if (file.raw) {
@@ -89,8 +119,10 @@ const handleFileChange = (file: UploadFile) => {
 const handleConfirm = async () => {
   if (!previewData.value || !previewData.value.rows.length) return;
 
+  // INTERNAL-AI-20260424: Only allow sending "NEW" status parts for bulk upload.
+  // (INTERNAL-AI-20260424: 批量上傳僅允許發送狀態為「NEW」的零件。)
   const validData = previewData.value.rows
-    .filter(row => row.rowStatus?.toUpperCase() !== 'ERROR')
+    .filter(row => row.rowStatus?.toUpperCase() === 'NEW')
     .map(row => row.newData);
 
   if (validData.length === 0) {
@@ -101,7 +133,7 @@ const handleConfirm = async () => {
   confirming.value = true;
   try {
     const result = await partService.confirmBulkUpload(validData);
-    ElMessage.success(`${t('part_upload.confirm_success')} (Inserted: ${result.inserted}, Updated: ${result.updated}, Failed: ${result.failed})`);
+    ElMessage.success(`${t('part_upload.confirm_success')} (Inserted: ${result.inserted}, Failed: ${result.failed})`);
 
     if (result.failed === 0) {
       isCompleted.value = true;
@@ -118,7 +150,19 @@ const handleReset = () => {
   previewData.value = null;
   uploadFile.value = null;
   filterStatus.value = null;
-  if (isEmployee) selectedProjectId.value = '';
+  
+  // INTERNAL-AI-20260424: Maintain the "default first project" rule when resetting.
+  // (INTERNAL-AI-20260424: 重設時維持「預設選取第一個專案」的規則。)
+  if (projects.value.length > 0) {
+    selectedProjectId.value = projects.value[0].id;
+  } else if (isEmployee) {
+    selectedProjectId.value = '';
+  }
+  
+  // Clear the upload component internal state
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles();
+  }
 };
 
 const handleDownloadTemplate = async () => {
@@ -167,6 +211,7 @@ const handleDownloadTemplate = async () => {
 
             <div v-loading="previewing">
               <el-upload
+                ref="uploadRef"
                 class="upload-dragger"
                 drag
                 action="#"
@@ -181,10 +226,16 @@ const handleDownloadTemplate = async () => {
               </el-upload>
             </div>
 
-            <div v-if="previewData" class="action-footer mt-6 flex justify-center">
+            <div v-if="previewData" class="action-footer mt-6 flex justify-center gap-4">
+              <Button 
+                type="secondary"
+                @click="handleReset"
+              >
+                {{ $t('part_upload.re_upload') }}
+              </Button>
               <Button 
                 :loading="confirming" 
-                :disabled="previewData.summary.errorCount === previewData.summary.totalRows"
+                :disabled="!previewData.rows.some(r => r.rowStatus?.toUpperCase() === 'NEW')"
                 @click="handleConfirm"
               >
                 {{ $t('part_upload.confirm_button') }}
@@ -207,12 +258,14 @@ const handleDownloadTemplate = async () => {
       <!-- Preview Section (預覽區塊) -->
       <div v-if="previewData" class="report-section mt-6">
         <div class="summary-banner mb-4">
-          <div v-for="s in ['TOTAL', 'NEW', 'MODIFIED', 'ERROR', 'NOCHANGE']" 
+          <!-- INTERNAL-AI-20260424: Removed MODIFIED and NOCHANGE stats to focus on ADD NEW only. -->
+          <!-- (INTERNAL-AI-20260424: 移除 MODIFIED 與 NOCHANGE 統計，專注於新增。) -->
+          <div v-for="s in ['TOTAL', 'NEW', 'ERROR']" 
             :key="s"
             class="summary-item cursor-pointer transition-all"
             :class="[
               { 'is-active': filterStatus === (s === 'TOTAL' ? null : s) },
-              s === 'NEW' ? 'text-success' : s === 'MODIFIED' ? 'text-warning' : s === 'ERROR' ? 'text-danger' : s === 'NOCHANGE' ? 'text-info' : ''
+              s === 'NEW' ? 'text-success' : s === 'ERROR' ? 'text-danger' : ''
             ]"
             @click="handleFilter(s === 'TOTAL' ? null : s)"
           >
@@ -220,8 +273,7 @@ const handleDownloadTemplate = async () => {
             <span class="value">
               {{ s === 'TOTAL' ? previewData.summary.totalRows : 
                  s === 'NEW' ? previewData.summary.newCount : 
-                 s === 'MODIFIED' ? previewData.summary.modifiedCount : 
-                 s === 'ERROR' ? previewData.summary.errorCount : previewData.summary.noChangeCount }}
+                 previewData.summary.errorCount }}
             </span>
           </div>
         </div>
@@ -278,4 +330,5 @@ h1 { font-size: 2rem; color: var(--sidebar-color); margin: 0; }
 .text-red-500 { color: #ef4444; }
 .text-center { text-center: center; }
 .py-10 { padding: 2.5rem 0; }
+.action-footer { display: flex; justify-content: center; gap: 1.5rem; }
 </style>

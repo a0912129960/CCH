@@ -126,7 +126,7 @@ public class PartLifecycleService : IPartLifecycleService
         _repository.UpdatePart(existing);
         _repository.UpdateStatus(partId, "S02", CurrentUser);
         
-        RecordHistory(partId, "Submitted", oldStatus, "S02");
+        RecordHistory(partId, "Submitted to Dimerco", oldStatus, "S02");
         RecordSnapshot(existing); // Restore Snapshot call (還原快照呼叫)
         
         return new { partId, status = "S02" };
