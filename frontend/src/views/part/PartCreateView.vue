@@ -300,6 +300,7 @@ const handleSubmit = async () => {
     if (result.success) {
       ElMessage.success(result.message || t('part_create.success'));
       tabStore.refreshTab('/parts');
+      tabStore.removeTab('/parts/new');
       router.push({ name: 'parts', query: form.value.projectId ? { projectId: form.value.projectId } : {} });
     }
   } catch (error) {
@@ -338,6 +339,7 @@ const handleSaveAndSubmit = async () => {
     if (result.success) {
       ElMessage.success(result.message || t('part_create.save_and_submit_success'));
       tabStore.refreshTab('/parts');
+      tabStore.removeTab('/parts/new');
       router.push({ name: 'parts', query: form.value.projectId ? { projectId: form.value.projectId } : {} });
     }
   } catch (error) {
