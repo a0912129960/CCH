@@ -16,12 +16,14 @@ public class PartExcelService : IPartExcelService
     private readonly IPartRepository _repository;
     private readonly ICommonRepository _commonRepository;
     private readonly IUserContext _userContext;
+    private readonly IPartValidationService _validationService;
 
-    public PartExcelService(IPartRepository repository, ICommonRepository commonRepository, IUserContext userContext)
+    public PartExcelService(IPartRepository repository, ICommonRepository commonRepository, IUserContext userContext, IPartValidationService validationService)
     {
         _repository = repository;
         _commonRepository = commonRepository;
         _userContext = userContext;
+        _validationService = validationService;
     }
 
     // Use UserId (short login ID) for DB fields that have MaxLength(10). (使用簡短的登入 ID 寫入有長度限制的 DB 欄位。)
@@ -61,7 +63,7 @@ public class PartExcelService : IPartExcelService
     }
 
     /// <inheritdoc/>
-    public BulkUploadPreviewDto PreviewBulkUpload(int projectId, Stream fileStream)
+    public async Task<BulkUploadPreviewDto> PreviewBulkUpload(int projectId, Stream fileStream)
     {
         using var workbook = new XLWorkbook(fileStream);
         var worksheet = workbook.Worksheet(1);
@@ -69,6 +71,7 @@ public class PartExcelService : IPartExcelService
 
         var previewRows = new List<PartPreviewRowDto>();
         var summary = new BulkUploadSummaryDto();
+        var role = _userContext.Role ?? "Unknown";
 
         // Handle duplicates by taking the first entry for each name
         var countries = _commonRepository.GetCountries()
@@ -89,7 +92,8 @@ public class PartExcelService : IPartExcelService
             var countryName = row.Cell(2).GetString().ToLower(); // Target Column B
             var supplierName = row.Cell(4).GetString(); 
 
-            if (!countries.ContainsKey(countryName)) errors.Add($"Country '{countryName}' not found.");
+            var countryId = countries.GetValueOrDefault(countryName, 0);
+            if (countryId == 0) errors.Add($"Country: '{countryName}' not found.");
             
             var sId = suppliers.GetValueOrDefault(supplierName.ToLower(), 0);
 
@@ -112,7 +116,7 @@ public class PartExcelService : IPartExcelService
                 HtsCode4 = row.Cell(14).GetString(),
                 Rate4 = GetDecimalValue(row.Cell(15)),
                 Remark = row.Cell(16).GetString(),
-                CountryId = countries.GetValueOrDefault(countryName, 0),
+                CountryId = countryId,
                 SupplierId = sId
             };
 
@@ -142,13 +146,30 @@ public class PartExcelService : IPartExcelService
                     Rate3 = existing.AddDutyRate3,
                     HtsCode4 = existing.AddHTSCode4,
                     Rate4 = existing.AddDutyRate4,
-                    Remark = existing.Remark ?? ""
+                    Remark = existing.Remark ?? "",
+                    Status = existing.Status
                 };
 
+                newData.Status = existing.Status;
                 rowStatus = IsModified(originalData, newData) ? "Modified" : "NoChange";
             }
 
-            if (errors.Any()) rowStatus = "Error";
+            // Perform Rule-based validation (套用業務規則驗證)
+            var validationResult = await _validationService.ValidateExcelRowAsync(newData, originalData, role, existing == null);
+            foreach (var ve in validationResult.Errors) errors.Add($"{ve.Field}: {ve.Message}");
+            foreach (var vw in validationResult.Warnings) errors.Add($"Hint: {vw}");
+
+            // 2. Uniqueness Constraint (Rule 2)
+            if (existing == null && countryId != 0)
+            {
+                if (_repository.ExistsByPartNoAndCountry(projectId, partNo, countryId))
+                {
+                    errors.Add("Part No: This (Customer, Part No, Country) combination already exists.");
+                }
+            }
+
+            if (validationResult.Errors.Any() || (existing == null && errors.Any())) rowStatus = "Error";
+            else if (rowStatus != "Error" && errors.Any(e => e.StartsWith("Country:") || e.StartsWith("Part No:"))) rowStatus = "Error";
 
             switch (rowStatus)
             {
@@ -191,98 +212,133 @@ public class PartExcelService : IPartExcelService
     }
 
     /// <inheritdoc/>
-    public BulkUploadConfirmResponseDto ConfirmBulkUpload(List<PartDto> parts)
+    public async Task<BulkUploadConfirmResponseDto> ConfirmBulkUpload(List<PartDto> parts)
     {
         var result = new BulkUploadConfirmResponseDto();
         var now = DateTime.Now;
+        var role = _userContext.Role ?? "Unknown";
 
-        // 1. Restore Auto-Create Suppliers with Deduplication
-        var newSupplierNames = parts
-            .Where(p => p.SupplierId == 0 && !string.IsNullOrEmpty(p.Supplier))
-            .Select(p => p.Supplier).Distinct().ToList();
-
-        foreach (var name in newSupplierNames)
+        // 2. Persist Parts with final validation gate
+        foreach (var p in parts)
         {
-            var existing = _commonRepository.GetSuppliers().FirstOrDefault(s => s.SupplierName == name);
-            if (existing == null)
-            {
-            var newS = new CchSuppliers
-            {
-                SupplierName = name,
-                ProjectID = parts.FirstOrDefault(p => p.Supplier == name)?.ProjectId,
-                Status = "Active",
-                CreatedBy = CurrentUser,
-                CreatedDate = now
-            };
-            _commonRepository.CreateSupplier(newS);
-            existing = newS;
-            }
-            foreach (var p in parts.Where(x => x.Supplier == name)) p.SupplierId = existing.ID;
-            }
-
-            // 2. Persist Parts
-            foreach (var p in parts)
-            {
             try
             {
-            var projectId = p.ProjectId ?? 0;
-            var existing = _repository.GetPartByNo(projectId, p.PartNo);
-            CchParts target;
-
-            if (existing != null)
-            {
-                existing.PartDescription = p.PartDesc;
-                existing.CountryID = p.CountryId;
-                existing.Division = p.Division;
-                existing.SupplierID = p.SupplierId;
-                existing.HTSCode = p.HtsCode;
-                existing.DutyRate = p.Rate;
-                existing.AddHTSCode1 = p.HtsCode1;
-                existing.AddDutyRate1 = p.Rate1;
-                existing.AddHTSCode2 = p.HtsCode2;
-                existing.AddDutyRate2 = p.Rate2;
-                existing.AddHTSCode3 = p.HtsCode3;
-                existing.AddDutyRate3 = p.Rate3;
-                existing.AddHTSCode4 = p.HtsCode4;
-                existing.AddDutyRate4 = p.Rate4;
-                existing.Remark = p.Remark;
-                existing.Status = "S01";
-                existing.UpdatedBy = CurrentUser;
-                _repository.UpdatePart(existing);
-                target = existing;
-                result.Updated++;
-            }
-            else
-            {
-                target = new CchParts
+                var projectId = p.ProjectId ?? 0;
+                var existing = _repository.GetPartByNo(projectId, p.PartNo);
+                PartDto? originalData = null;
+                if (existing != null)
                 {
-                    ProjectID = p.ProjectId,
-                    PartNo = p.PartNo,
-                    PartDescription = p.PartDesc,
-                    CountryID = p.CountryId,
-                    Division = p.Division,
-                    SupplierID = p.SupplierId,
-                    HTSCode = p.HtsCode,
-                    DutyRate = p.Rate,
-                    AddHTSCode1 = p.HtsCode1,
-                    AddDutyRate1 = p.Rate1,
-                    AddHTSCode2 = p.HtsCode2,
-                    AddDutyRate2 = p.Rate2,
-                    AddHTSCode3 = p.HtsCode3,
-                    AddDutyRate3 = p.Rate3,
-                    AddHTSCode4 = p.HtsCode4,
-                    AddDutyRate4 = p.Rate4,
-                    Remark = p.Remark,
-                    Status = "S01",
-                    CreatedBy = CurrentUser,
-                    UpdatedBy = CurrentUser
-                };
-                _repository.CreatePart(target);
-                result.Inserted++;
-            }
+                    originalData = new PartDto
+                    {
+                        ProjectId = existing.ProjectID ?? 0,
+                        PartNo = existing.PartNo ?? "",
+                        CountryId = existing.CountryID ?? 0,
+                        Division = existing.Division ?? "",
+                        Supplier = _commonRepository.GetSuppliers().FirstOrDefault(x => x.ID == existing.SupplierID)?.SupplierName ?? "Unknown",
+                        PartDesc = existing.PartDescription ?? "",
+                        HtsCode = existing.HTSCode ?? "",
+                        Rate = existing.DutyRate ?? 0,
+                        HtsCode1 = existing.AddHTSCode1,
+                        Rate1 = existing.AddDutyRate1,
+                        HtsCode2 = existing.AddHTSCode2,
+                        Rate2 = existing.AddDutyRate2,
+                        HtsCode3 = existing.AddHTSCode3,
+                        Rate3 = existing.AddDutyRate3,
+                        HtsCode4 = existing.AddHTSCode4,
+                        Rate4 = existing.AddDutyRate4,
+                        Remark = existing.Remark ?? "",
+                        Status = existing.Status
+                    };
+                    p.Status = existing.Status;
+                }
 
-            RecordSnapshot(target);
-            }            catch (Exception ex)
+                var validationResult = await _validationService.ValidateExcelRowAsync(p, originalData, role, existing == null);
+                if (validationResult.Errors.Any())
+                {
+                    result.Failed++;
+                    result.Errors.Add($"{p.PartNo}: {string.Join(" | ", validationResult.Errors.Select(ve => ve.Message))}");
+                    continue;
+                }
+
+                // Rule 2 Uniqueness check for new records
+                if (existing == null && _repository.ExistsByPartNoAndCountry(projectId, p.PartNo, p.CountryId ?? 0))
+                {
+                    result.Failed++;
+                    result.Errors.Add($"{p.PartNo}: This (Customer, Part No, Country) combination already exists.");
+                    continue;
+                }
+
+                CchParts target;
+                // Auto-resolve or create supplier if valid
+                var sId = p.SupplierId ?? 0;
+                if (sId == 0 && !string.IsNullOrEmpty(p.Supplier))
+                {
+                    var s = _commonRepository.GetSuppliers().FirstOrDefault(x => x.SupplierName == p.Supplier);
+                    if (s == null)
+                    {
+                        var newS = new CchSuppliers { SupplierName = p.Supplier, ProjectID = projectId, Status = "Active", CreatedBy = CurrentUser, CreatedDate = now };
+                        _commonRepository.CreateSupplier(newS);
+                        sId = newS.ID;
+                    }
+                    else sId = s.ID;
+                }
+
+                if (existing != null)
+                {
+                    existing.PartDescription = p.PartDesc;
+                    existing.CountryID = p.CountryId;
+                    existing.Division = p.Division;
+                    existing.SupplierID = sId;
+                    existing.HTSCode = p.HtsCode;
+                    existing.DutyRate = p.Rate;
+                    existing.AddHTSCode1 = p.HtsCode1;
+                    existing.AddDutyRate1 = p.Rate1;
+                    existing.AddHTSCode2 = p.HtsCode2;
+                    existing.AddDutyRate2 = p.Rate2;
+                    existing.AddHTSCode3 = p.HtsCode3;
+                    existing.AddDutyRate3 = p.Rate3;
+                    existing.AddHTSCode4 = p.HtsCode4;
+                    existing.AddDutyRate4 = p.Rate4;
+                    existing.Remark = p.Remark;
+                    existing.Status = "S01";
+                    existing.UpdatedBy = CurrentUser;
+                    existing.IsHTSExists = validationResult.IsHTSExists ?? false;
+                    _repository.UpdatePart(existing);
+                    target = existing;
+                    result.Updated++;
+                }
+                else
+                {
+                    target = new CchParts
+                    {
+                        ProjectID = p.ProjectId,
+                        PartNo = p.PartNo,
+                        PartDescription = p.PartDesc,
+                        CountryID = p.CountryId,
+                        Division = p.Division,
+                        SupplierID = sId,
+                        HTSCode = p.HtsCode,
+                        DutyRate = p.Rate,
+                        AddHTSCode1 = p.HtsCode1,
+                        AddDutyRate1 = p.Rate1,
+                        AddHTSCode2 = p.HtsCode2,
+                        AddDutyRate2 = p.Rate2,
+                        AddHTSCode3 = p.HtsCode3,
+                        AddDutyRate3 = p.Rate3,
+                        AddHTSCode4 = p.HtsCode4,
+                        AddDutyRate4 = p.Rate4,
+                        Remark = p.Remark,
+                        Status = "S01",
+                        CreatedBy = CurrentUser,
+                        UpdatedBy = CurrentUser,
+                        IsHTSExists = validationResult.IsHTSExists ?? false
+                    };
+                    _repository.CreatePart(target);
+                    result.Inserted++;
+                }
+                RecordSnapshot(target);
+            }
+            catch (Exception ex)
             {
                 result.Failed++;
                 result.Errors.Add($"{p.PartNo}: {ex.Message}");
@@ -316,7 +372,8 @@ public class PartExcelService : IPartExcelService
             Rate4 = entity.AddDutyRate4,
             Remark = entity.Remark,
             CreatedBy = entity.UpdatedBy ?? "system",
-            CreatedDate = DateTime.Now
+            CreatedDate = DateTime.Now,
+            IsHTSExists = entity.IsHTSExists
         });
     }
 
@@ -369,6 +426,25 @@ public class PartExcelService : IPartExcelService
         validation.ShowErrorMessage = true;
         validation.ErrorTitle = "Invalid Selection";
         validation.ErrorMessage = "Please select a country from the dropdown list.";
+
+        // 4. Add Format Validation for HTS Columns
+        // All HTS Columns (F, H, J, L, N): Strict 10 digits
+        var htsColumns = new[] { "F", "H", "J", "L", "N" };
+        foreach (var col in htsColumns)
+        {
+            var range = templateSheet.Range($"{col}2:{col}1000");
+            var val = range.CreateDataValidation();
+            val.AllowedValues = XLAllowedValues.Custom;
+            // Formula: OR(ISBLANK(cell), AND(LEN(SUBSTITUTE(cell,".",""))=10, ISNUMBER(--SUBSTITUTE(cell,".",""))))
+            val.List($"=OR(ISBLANK({col}2), AND(LEN(SUBSTITUTE({col}2,\".\",\"\"))=10, ISNUMBER(--SUBSTITUTE({col}2,\".\",\"\"))))");
+            val.IgnoreBlanks = true;
+            val.ShowInputMessage = true;
+            val.InputTitle = "HTS Code Format";
+            val.InputMessage = "Must be 10 digits. Format: 1234.56.7890 or 1234567890";
+            val.ShowErrorMessage = true;
+            val.ErrorTitle = "Invalid Format";
+            val.ErrorMessage = "Invalid HTS Code. Must be exactly 10 digits.";
+        }
 
         templateSheet.Columns().AdjustToContents();
 

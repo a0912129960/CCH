@@ -76,10 +76,11 @@ public class PartsController : ControllerBase
     /// (繁體中文) 從 Excel 檔案預覽批次上傳零件。
     /// </summary>
     [HttpPost("bulk-upload/preview")]
-    public ActionResult<ApiResponse<BulkUploadPreviewDto>> PreviewBulkUpload([FromForm] int projectId, IFormFile file)
+    public async Task<ActionResult<ApiResponse<BulkUploadPreviewDto>>> PreviewBulkUpload([FromForm] int projectId, IFormFile file)
     {
+        if (file == null || file.Length == 0) return BadRequest(ApiResponse<BulkUploadPreviewDto>.FailureResponse("File is empty."));
         using var stream = file.OpenReadStream();
-        return Ok(ApiResponse<BulkUploadPreviewDto>.SuccessResponse(_excelService.PreviewBulkUpload(projectId, stream)));
+        return Ok(ApiResponse<BulkUploadPreviewDto>.SuccessResponse(await _excelService.PreviewBulkUpload(projectId, stream)));
     }
 
     /// <summary>
@@ -87,9 +88,9 @@ public class PartsController : ControllerBase
     /// (繁體中文) 確認並持久化上傳的零件。
     /// </summary>
     [HttpPost("bulk-upload/confirm")]
-    public ActionResult<ApiResponse<BulkUploadConfirmResponseDto>> ConfirmBulkUpload([FromBody] List<PartDto> parts)
+    public async Task<ActionResult<ApiResponse<BulkUploadConfirmResponseDto>>> ConfirmBulkUpload([FromBody] List<PartDto> parts)
     {
-        return Ok(ApiResponse<BulkUploadConfirmResponseDto>.SuccessResponse(_excelService.ConfirmBulkUpload(parts)));
+        return Ok(ApiResponse<BulkUploadConfirmResponseDto>.SuccessResponse(await _excelService.ConfirmBulkUpload(parts)));
     }
 
     /// <summary>

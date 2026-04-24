@@ -42,6 +42,7 @@ builder.Services.AddScoped<ICommonRepository, CommonRepository>();
 builder.Services.AddScoped<IPartQueryService, PartQueryService>();
 builder.Services.AddScoped<IPartLifecycleService, PartLifecycleService>();
 builder.Services.AddScoped<IPartExcelService, PartExcelService>();
+builder.Services.AddScoped<IPartValidationService, PartValidationService>();
 
 // Register HTS Recommendation Service / 註冊 HTS 推薦服務
 builder.Services.AddHttpClient<IHtsRecommendationService, HtsRecommendationService>(client =>

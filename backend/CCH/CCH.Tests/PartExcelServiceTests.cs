@@ -2,6 +2,7 @@ using CCH.Core.Entities;
 using CCH.Core.Entities.CSP;
 using CCH.Core.Entities.ReSm;
 using CCH.Core.Features.Parts.DTOs;
+using CCH.Core.Features.Parts.Interfaces;
 using CCH.Core.Interfaces;
 using CCH.Core.Interfaces.Repositories;
 using CCH.Services.Features.Parts;
@@ -15,6 +16,7 @@ public class PartExcelServiceTests
     private readonly Mock<IPartRepository> _mockRepo;
     private readonly Mock<ICommonRepository> _mockCommonRepo;
     private readonly Mock<IUserContext> _mockUserContext;
+    private readonly Mock<IPartValidationService> _mockValidationService;
     private readonly PartExcelService _service;
 
     public PartExcelServiceTests()
@@ -22,7 +24,13 @@ public class PartExcelServiceTests
         _mockRepo = new Mock<IPartRepository>();
         _mockCommonRepo = new Mock<ICommonRepository>();
         _mockUserContext = new Mock<IUserContext>();
-        _service = new PartExcelService(_mockRepo.Object, _mockCommonRepo.Object, _mockUserContext.Object);
+        _mockValidationService = new Mock<IPartValidationService>();
+
+        // Default: no validation errors
+        _mockValidationService.Setup(s => s.ValidateExcelRowAsync(It.IsAny<PartDto>(), It.IsAny<PartDto>(), It.IsAny<string>(), It.IsAny<bool>()))
+            .ReturnsAsync(new ValidationResult());
+
+        _service = new PartExcelService(_mockRepo.Object, _mockCommonRepo.Object, _mockUserContext.Object, _mockValidationService.Object);
     }
 
     [Fact]
@@ -46,7 +54,7 @@ public class PartExcelServiceTests
     }
 
     [Fact]
-    public void ConfirmBulkUpload_ShouldCreateAndUpdateParts()
+    public async Task ConfirmBulkUpload_ShouldCreateAndUpdateParts()
     {
         // Arrange
         var parts = new List<PartDto>
@@ -59,7 +67,7 @@ public class PartExcelServiceTests
         _mockRepo.Setup(r => r.GetPartByNo(1, "EXIST-1")).Returns(new CchParts { ID = 99, PartNo = "EXIST-1" });
 
         // Act
-        var result = _service.ConfirmBulkUpload(parts);
+        var result = await _service.ConfirmBulkUpload(parts);
 
         // Assert
         result.Inserted.Should().Be(1);
