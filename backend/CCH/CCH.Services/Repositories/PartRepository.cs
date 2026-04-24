@@ -41,10 +41,10 @@ public class PartRepository : IPartRepository
     }
 
     /// <inheritdoc/>
-    public bool ExistsByPartNoAndCountry(int customerId, string partNo, int countryId, int? excludePartId = null)
+    public bool ExistsByPartNoAndCountry(int projectId, string partNo, int countryId, int? excludePartId = null)
     {
         return _context.CchParts.Any(p =>
-            p.CustomerID == customerId &&
+            p.ProjectID == projectId &&
             p.PartNo == partNo &&
             p.CountryID == countryId &&
             (excludePartId == null || p.ID != excludePartId));
