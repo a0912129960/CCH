@@ -38,27 +38,17 @@ const { t } = useI18n();
           <div class="comparison-container">
             <div class="comparison-grid-header">
               <div class="grid-col-label">{{ t('part_upload.comparison.field') }}</div>
-              <div class="grid-col-old">{{ t('part_upload.comparison.original') }}</div>
-              <div class="grid-col-new">{{ t('part_upload.comparison.new') }}</div>
+              <div class="grid-col-new">{{ t('part_upload.comparison.value') }}</div>
             </div>
 
             <div 
               v-for="field in comparisonFields" 
               :key="field.key" 
-              class="comparison-row" 
-              :class="{ 'is-changed': isFieldChanged(scope.row.newData, scope.row.originalData, field.key) }"
+              class="comparison-row"
             >
               <div class="grid-col-label">{{ field.label }}</div>
-              <div class="grid-col-old">
-                {{ scope.row.originalData ? (scope.row.originalData[field.key] ?? '-') : '-' }}
-              </div>
               <div class="grid-col-new">
-                <span :class="{ 'highlight-change': isFieldChanged(scope.row.newData, scope.row.originalData, field.key) }">
-                  {{ scope.row.newData[field.key] ?? '-' }}
-                </span>
-                <el-icon v-if="isFieldChanged(scope.row.newData, scope.row.originalData, field.key)" class="ml-2 text-warning">
-                  <Edit />
-                </el-icon>
+                <span>{{ scope.row.newData[field.key] ?? '-' }}</span>
               </div>
             </div>
           </div>
@@ -100,7 +90,7 @@ const { t } = useI18n();
 
 .comparison-grid-header {
   display: grid;
-  grid-template-columns: 240px 1fr 1fr;
+  grid-template-columns: 240px 1fr;
   background: #f5f7fa;
   padding: 12px 20px;
   font-weight: 700;
@@ -111,7 +101,7 @@ const { t } = useI18n();
 
 .comparison-row {
   display: grid;
-  grid-template-columns: 240px 1fr 1fr;
+  grid-template-columns: 240px 1fr;
   padding: 12px 20px;
   border-bottom: 1px solid #f1f3f5;
   font-size: 0.9rem;

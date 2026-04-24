@@ -118,8 +118,10 @@ const handleFileChange = (file: UploadFile) => {
 const handleConfirm = async () => {
   if (!previewData.value || !previewData.value.rows.length) return;
 
+  // INTERNAL-AI-20260424: Only allow sending "NEW" status parts for bulk upload.
+  // (INTERNAL-AI-20260424: 批量上傳僅允許發送狀態為「NEW」的零件。)
   const validData = previewData.value.rows
-    .filter(row => row.rowStatus?.toUpperCase() !== 'ERROR')
+    .filter(row => row.rowStatus?.toUpperCase() === 'NEW')
     .map(row => row.newData);
 
   if (validData.length === 0) {
@@ -130,7 +132,7 @@ const handleConfirm = async () => {
   confirming.value = true;
   try {
     const result = await partService.confirmBulkUpload(validData);
-    ElMessage.success(`${t('part_upload.confirm_success')} (Inserted: ${result.inserted}, Updated: ${result.updated}, Failed: ${result.failed})`);
+    ElMessage.success(`${t('part_upload.confirm_success')} (Inserted: ${result.inserted}, Failed: ${result.failed})`);
 
     if (result.failed === 0) {
       isCompleted.value = true;
@@ -214,7 +216,7 @@ const handleDownloadTemplate = async () => {
             <div v-if="previewData" class="action-footer mt-6 flex justify-center">
               <Button 
                 :loading="confirming" 
-                :disabled="previewData.summary.errorCount === previewData.summary.totalRows"
+                :disabled="!previewData.rows.some(r => r.rowStatus === 'NEW')"
                 @click="handleConfirm"
               >
                 {{ $t('part_upload.confirm_button') }}
@@ -237,12 +239,14 @@ const handleDownloadTemplate = async () => {
       <!-- Preview Section (預覽區塊) -->
       <div v-if="previewData" class="report-section mt-6">
         <div class="summary-banner mb-4">
-          <div v-for="s in ['TOTAL', 'NEW', 'MODIFIED', 'ERROR', 'NOCHANGE']" 
+          <!-- INTERNAL-AI-20260424: Removed MODIFIED and NOCHANGE stats to focus on ADD NEW only. -->
+          <!-- (INTERNAL-AI-20260424: 移除 MODIFIED 與 NOCHANGE 統計，專注於新增。) -->
+          <div v-for="s in ['TOTAL', 'NEW', 'ERROR']" 
             :key="s"
             class="summary-item cursor-pointer transition-all"
             :class="[
               { 'is-active': filterStatus === (s === 'TOTAL' ? null : s) },
-              s === 'NEW' ? 'text-success' : s === 'MODIFIED' ? 'text-warning' : s === 'ERROR' ? 'text-danger' : s === 'NOCHANGE' ? 'text-info' : ''
+              s === 'NEW' ? 'text-success' : s === 'ERROR' ? 'text-danger' : ''
             ]"
             @click="handleFilter(s === 'TOTAL' ? null : s)"
           >
@@ -250,8 +254,7 @@ const handleDownloadTemplate = async () => {
             <span class="value">
               {{ s === 'TOTAL' ? previewData.summary.totalRows : 
                  s === 'NEW' ? previewData.summary.newCount : 
-                 s === 'MODIFIED' ? previewData.summary.modifiedCount : 
-                 s === 'ERROR' ? previewData.summary.errorCount : previewData.summary.noChangeCount }}
+                 previewData.summary.errorCount }}
             </span>
           </div>
         </div>
