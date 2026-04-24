@@ -41,6 +41,12 @@ public class PartRepository : IPartRepository
     }
 
     /// <inheritdoc/>
+    public CchParts? GetPartByNoAndCountry(int projectId, string partNo, int countryId)
+    {
+        return _context.CchParts.FirstOrDefault(p => p.ProjectID == projectId && p.PartNo == partNo && p.CountryID == countryId);
+    }
+
+    /// <inheritdoc/>
     public bool ExistsByPartNoAndCountry(int projectId, string partNo, int countryId, int? excludePartId = null)
     {
         return _context.CchParts.Any(p =>

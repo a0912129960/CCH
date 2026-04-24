@@ -11,16 +11,16 @@ public interface IPartExcelService
     byte[] ExportParts(int? projectId, string? status, string? partNo, int? supplierId);
 
     /// <summary>
-    /// Previews the bulk upload from an Excel stream.
-    /// (繁體中文) 從 Excel 串流預覽批次上傳。
+    /// Previews parts in bulk from an Excel file stream.
+    /// (繁體中文) 從 Excel 檔案串流預覽批次上傳零件。
     /// </summary>
-    BulkUploadPreviewDto PreviewBulkUpload(int projectId, Stream fileStream);
+    Task<BulkUploadPreviewDto> PreviewBulkUpload(int projectId, Stream fileStream);
 
     /// <summary>
     /// Confirms and persists the uploaded parts.
     /// (繁體中文) 確認並持久化上傳的零件。
     /// </summary>
-    BulkUploadConfirmResponseDto ConfirmBulkUpload(List<PartDto> parts);
+    Task<BulkUploadConfirmResponseDto> ConfirmBulkUpload(List<PartDto> parts);
 
     byte[] GetUploadTemplate();
 }
