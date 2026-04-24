@@ -28,7 +28,9 @@ export const useTabStore = defineStore('tabs', () => {
     const exists = openTabs.value.find(t => t.path === tab.path);
     if (!exists) {
       openTabs.value.push(tab);
-      refreshKeys.value[tab.path] = 0;
+      // INTERNAL-AI-20260424: Use timestamp as refresh key to ensure fresh load when re-opening a closed tab.
+      // (INTERNAL-AI-20260424: 使用時間戳記作為重新整理金鑰，確保重新開啟已關閉的標籤時會重新載入。)
+      refreshKeys.value[tab.path] = Date.now();
     }
     activeTabPath.value = tab.path;
   }
