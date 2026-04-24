@@ -5,6 +5,7 @@ import Button from '@src/components/common/Button.vue';
 import { partService, type CreatePartRequest, type SubmitPartRequest } from '@src/services/part/part';
 import { commonService, type CountryOption, type ProjectOption } from '@src/services/common/common';
 import { ElMessage } from 'element-plus';
+import { useTabStore } from '@src/stores/tabs';
 
 /**
  * Part No Creation View (新增零件編號頁面)
@@ -15,12 +16,20 @@ import { ElMessage } from 'element-plus';
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
+const tabStore = useTabStore();
 
 const { projectId: userProjectId } = authService.state;
 
-// Prefer projectId from route query (passed from PartListView's customer filter),
+// Prefer projectId from route query (passed from PartListView's project filter),
 // fall back to the logged-in user's own projectId (客戶使用者自己的 ID).
 const resolvedprojectId = (route.query.projectId as string) || userProjectId || '';
+
+// Resolved project display name (for read-only display)
+const resolvedProjectName = computed(() => {
+  if (!form.value.projectId) return '';
+  const found = projects.value.find(p => p.key === form.value.projectId);
+  return found ? found.value : form.value.projectId;
+});
 
 const countries = ref<CountryOption[]>([]);
 const projects = ref<ProjectOption[]>([]);
@@ -253,7 +262,8 @@ const handleSubmit = async () => {
 
     if (result.success) {
       ElMessage.success(result.message || t('part_create.success'));
-      router.push({ name: 'parts' });
+      tabStore.refreshTab('/parts');
+      router.push({ name: 'parts', query: form.value.projectId ? { projectId: form.value.projectId } : {} });
     }
   } catch (error) {
     console.error('Failed to create part:', error);
@@ -289,7 +299,8 @@ const handleSaveAndSubmit = async () => {
 
     if (result.success) {
       ElMessage.success(result.message || t('part_create.save_and_submit_success'));
-      router.push({ name: 'parts' });
+      tabStore.refreshTab('/parts');
+      router.push({ name: 'parts', query: form.value.projectId ? { projectId: form.value.projectId } : {} });
     }
   } catch (error) {
     console.error('Failed to save and submit part:', error);
@@ -320,15 +331,13 @@ const handleSaveAndSubmit = async () => {
                 <span>{{ $t('part_create.col_value') }}</span>
               </div>
 
-              <!-- Project -->
+              <!-- Project (read-only, sourced from Parts List selection) -->
               <div class="info-table__row">
                 <div class="info-table__field">
                   {{ $t('common.project') }} <span class="required-asterisk">*</span>
                 </div>
                 <div class="info-table__value">
-                  <el-select v-model="form.projectId" :placeholder="$t('employee.project_select')" class="form-select-el" :class="{ 'is-invalid': errors.projectId }" data-test="project-select" filterable>
-                    <el-option v-for="p in projects" :key="p.key" :label="p.value" :value="p.key" />
-                  </el-select>
+                  <span class="readonly-value" data-test="project-readonly">{{ resolvedProjectName || form.projectId || '-' }}</span>
                   <span v-if="errors.projectId" class="error-text">{{ $t(errors.projectId) }}</span>
                 </div>
               </div>
@@ -535,4 +544,5 @@ h1 { font-size: 2rem; color: var(--sidebar-color); margin: 0; }
 .error-text { display: block; color: #F56C6C; font-size: 0.8rem; margin-top: 0.25rem; }
 .immutable-hint { display: block; color: #E6A23C; font-size: 0.78rem; margin-top: 0.25rem; }
 .form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+.readonly-value { display: inline-block; padding: 0.6rem 0.8rem; font-size: 0.9rem; color: #525f7f; font-weight: 600; }
 </style>

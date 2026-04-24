@@ -61,6 +61,48 @@ public class PartLifecycleService : IPartLifecycleService
     }
 
     /// <inheritdoc/>
+    public object CreateAndSubmitPart(PartSaveRequest request)
+    {
+        // Build the entity with final status S02 (直接以 S02 建立實體)
+        var entity = new CchParts
+        {
+            ProjectID        = request.ProjectId ?? 101,
+            PartNo           = request.PartNo,
+            CountryID        = request.CountryId ?? 1,
+            PartDescription  = request.PartDesc,
+            Division         = request.Division ?? string.Empty,
+            SupplierID       = !string.IsNullOrEmpty(request.Supplier) ? ResolveSupplierIdByName(request.Supplier) : 1,
+            HTSCode          = request.HtsCode,
+            DutyRate         = request.Rate,
+            AddHTSCode1      = request.HtsCode1,
+            AddDutyRate1     = request.Rate1,
+            AddHTSCode2      = request.HtsCode2,
+            AddDutyRate2     = request.Rate2,
+            AddHTSCode3      = request.HtsCode3,
+            AddDutyRate3     = request.Rate3,
+            AddHTSCode4      = request.HtsCode4,
+            AddDutyRate4     = request.Rate4,
+            Remark           = request.Remark ?? string.Empty,
+            Status           = "S02",
+            CreatedBy        = CurrentUser,
+            UpdatedBy        = CurrentUser
+        };
+
+        var id = _repository.CreatePart(entity);
+
+        // Milestone 1 — Created (null → S01)
+        RecordHistory(id, "Created", null, "S01");
+
+        // Milestone 2 — Submitted to Dimerco (S01 → S02)
+        RecordHistory(id, "Submitted to Dimerco", "S01", "S02");
+
+        // Snapshot in CCHPartHistories — logic unchanged (CCHPartHistories 快照邏輯不變)
+        RecordSnapshot(entity);
+
+        return new { partId = id, partNo = request.PartNo, status = "S02" };
+    }
+
+    /// <inheritdoc/>
     public object UpdatePart(int partId, PartSaveRequest request)
     {
         var existing = GetExistingPart(partId);
