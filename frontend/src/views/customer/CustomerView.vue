@@ -136,7 +136,7 @@ const formatDate = (dateStr: string) => {
             <h3>{{ $t('customer.pending_review') }}</h3>
           </div>
 
-          <div class="table-container card-shadow">
+          <div class="card-shadow">
             <table class="app-table">
               <thead>
                 <tr>
@@ -338,22 +338,37 @@ h3 {
 }
 
 /* Table Styles */
-.table-container {
+/*.table-container {
   background: white;
   border-radius: 12px;
   overflow-x: auto;
   margin-bottom: 2rem;
+}*/
+
+.table-container {
+  background: white;
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-bottom: 0rem;
 }
 
-.card-shadow {
+/* .card-shadow {
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
+} */
 
-.app-table {
+/* .app-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-}
+} */
+
+.app-table {
+   /* width: 100%;  */
+  max-width: 1250px; 
+  /* 9列的合理最小总宽 */ 
+  border-collapse: collapse; 
+  text-align: left; }
 
 .app-table th {
   background-color: #f8f9fe;
