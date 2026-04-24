@@ -68,8 +68,8 @@ const { t } = useI18n();
     </el-table-column>
     <el-table-column label="Summary">
       <template #default="scope">
-        <span v-if="scope.row.rowStatus?.toUpperCase() === 'ERROR'" class="text-danger font-bold">
-          {{ scope.row.errors?.join(', ') || t('part_upload.summary.error') }}
+        <span v-if="scope.row.errors && scope.row.errors.length" :class="scope.row.rowStatus?.toUpperCase() === 'ERROR' ? 'text-danger font-bold' : 'text-warning'">
+          {{ scope.row.errors.join(', ') }}
         </span>
       </template>
     </el-table-column>

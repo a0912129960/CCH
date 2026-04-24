@@ -120,7 +120,8 @@ public class PartExcelService : IPartExcelService
                 SupplierId = sId
             };
 
-            var existing = _repository.GetPartByNo(projectId, partNo);
+            // Use the triple key (Project, PartNo, Country) for precise duplicate detection
+            var existing = countryId != 0 ? _repository.GetPartByNoAndCountry(projectId, partNo, countryId) : null;
             PartDto? originalData = null;
             var rowStatus = "New";
 
@@ -151,25 +152,35 @@ public class PartExcelService : IPartExcelService
                 };
 
                 newData.Status = existing.Status;
-                rowStatus = IsModified(originalData, newData) ? "Modified" : "NoChange";
+                // Since only new entries are allowed, set RowStatus to Error if found
+                rowStatus = "Error";
             }
 
-            // Perform Rule-based validation (套用業務規則驗證)
+            // Perform Rule-based validation (ValidationService will add "Already exists" error if isNew = false)
             var validationResult = await _validationService.ValidateExcelRowAsync(newData, originalData, role, existing == null);
+            
+            // Add hard errors (Must be corrected)
             foreach (var ve in validationResult.Errors) errors.Add($"{ve.Field}: {ve.Message}");
-            foreach (var vw in validationResult.Warnings) errors.Add($"Hint: {vw}");
+            
+            // Combine all messages for display (Hard Errors + Informational Warnings)
+            var displayMessages = new List<string>(errors);
+            foreach (var vw in validationResult.Warnings) displayMessages.Add(vw); // Remove "Hint: " prefix
 
-            // 2. Uniqueness Constraint (Rule 2)
             if (existing == null && countryId != 0)
             {
                 if (_repository.ExistsByPartNoAndCountry(projectId, partNo, countryId))
                 {
-                    errors.Add("Part No: This (Customer, Part No, Country) combination already exists.");
+                    var msg = "Part No: This (Customer, Part No, Country) combination already exists.";
+                    errors.Add(msg);
+                    displayMessages.Add(msg);
                 }
             }
 
-            if (validationResult.Errors.Any() || (existing == null && errors.Any())) rowStatus = "Error";
-            else if (rowStatus != "Error" && errors.Any(e => e.StartsWith("Country:") || e.StartsWith("Part No:"))) rowStatus = "Error";
+            // Row is "Error" only if there are hard errors (Validation errors, Duplicate detection, or Metadata missing)
+            if (validationResult.Errors.Any() || errors.Any(e => e.StartsWith("Country:") || e.StartsWith("Part No:")))
+            {
+                rowStatus = "Error";
+            }
 
             switch (rowStatus)
             {
@@ -183,7 +194,7 @@ public class PartExcelService : IPartExcelService
             {
                 RowIndex = row.RowNumber(),
                 RowStatus = rowStatus,
-                Errors = errors,
+                Errors = displayMessages,
                 NewData = newData,
                 OriginalData = originalData
             });
@@ -191,26 +202,7 @@ public class PartExcelService : IPartExcelService
 
         return new BulkUploadPreviewDto { Summary = summary, Rows = previewRows };
     }
-
-    private bool IsModified(PartDto old, PartDto @new)
-    {
-        return old.CountryId != @new.CountryId ||
-               old.Division != @new.Division ||
-               old.Supplier != @new.Supplier || // Supplier is handled by name lookup during confirm
-               old.PartDesc != @new.PartDesc ||
-               old.HtsCode != @new.HtsCode ||
-               old.Rate != @new.Rate ||
-               old.HtsCode1 != @new.HtsCode1 ||
-               old.Rate1 != @new.Rate1 ||
-               old.HtsCode2 != @new.HtsCode2 ||
-               old.Rate2 != @new.Rate2 ||
-               old.HtsCode3 != @new.HtsCode3 ||
-               old.Rate3 != @new.Rate3 ||
-               old.HtsCode4 != @new.HtsCode4 ||
-               old.Rate4 != @new.Rate4 ||
-               old.Remark != @new.Remark;
-    }
-
+    
     /// <inheritdoc/>
     public async Task<BulkUploadConfirmResponseDto> ConfirmBulkUpload(List<PartDto> parts)
     {
@@ -224,8 +216,12 @@ public class PartExcelService : IPartExcelService
             try
             {
                 var projectId = p.ProjectId ?? 0;
-                var existing = _repository.GetPartByNo(projectId, p.PartNo);
+                var countryId = p.CountryId ?? 0;
+                
+                // Precise lookup using the triple key (Only New entries allowed)
+                var existing = countryId != 0 ? _repository.GetPartByNoAndCountry(projectId, p.PartNo, countryId) : null;
                 PartDto? originalData = null;
+                
                 if (existing != null)
                 {
                     originalData = new PartDto
@@ -252,19 +248,12 @@ public class PartExcelService : IPartExcelService
                     p.Status = existing.Status;
                 }
 
+                // Pass isNew = (existing == null) to ValidationService (which enforces Only New)
                 var validationResult = await _validationService.ValidateExcelRowAsync(p, originalData, role, existing == null);
                 if (validationResult.Errors.Any())
                 {
                     result.Failed++;
                     result.Errors.Add($"{p.PartNo}: {string.Join(" | ", validationResult.Errors.Select(ve => ve.Message))}");
-                    continue;
-                }
-
-                // Rule 2 Uniqueness check for new records
-                if (existing == null && _repository.ExistsByPartNoAndCountry(projectId, p.PartNo, p.CountryId ?? 0))
-                {
-                    result.Failed++;
-                    result.Errors.Add($"{p.PartNo}: This (Customer, Part No, Country) combination already exists.");
                     continue;
                 }
 
@@ -285,27 +274,11 @@ public class PartExcelService : IPartExcelService
 
                 if (existing != null)
                 {
-                    existing.PartDescription = p.PartDesc;
-                    existing.CountryID = p.CountryId;
-                    existing.Division = p.Division;
-                    existing.SupplierID = sId;
-                    existing.HTSCode = p.HtsCode;
-                    existing.DutyRate = p.Rate;
-                    existing.AddHTSCode1 = p.HtsCode1;
-                    existing.AddDutyRate1 = p.Rate1;
-                    existing.AddHTSCode2 = p.HtsCode2;
-                    existing.AddDutyRate2 = p.Rate2;
-                    existing.AddHTSCode3 = p.HtsCode3;
-                    existing.AddDutyRate3 = p.Rate3;
-                    existing.AddHTSCode4 = p.HtsCode4;
-                    existing.AddDutyRate4 = p.Rate4;
-                    existing.Remark = p.Remark;
-                    existing.Status = "S01";
-                    existing.UpdatedBy = CurrentUser;
-                    existing.IsHTSExists = validationResult.IsHTSExists ?? false;
-                    _repository.UpdatePart(existing);
-                    target = existing;
-                    result.Updated++;
+                    // This block should technically be unreachable due to validationResult above,
+                    // but keeping for structural integrity while marking failure just in case.
+                    result.Failed++;
+                    result.Errors.Add($"{p.PartNo}: This part already exists.");
+                    continue;
                 }
                 else
                 {
@@ -336,6 +309,7 @@ public class PartExcelService : IPartExcelService
                     _repository.CreatePart(target);
                     result.Inserted++;
                 }
+                RecordHistory(target.ID, "Bulk Upload", null, "S01");
                 RecordSnapshot(target);
             }
             catch (Exception ex)
@@ -374,6 +348,20 @@ public class PartExcelService : IPartExcelService
             CreatedBy = entity.UpdatedBy ?? "system",
             CreatedDate = DateTime.Now,
             IsHTSExists = entity.IsHTSExists
+        });
+    }
+
+    private void RecordHistory(int partId, string action, string? fromStatus, string? toStatus, string remark = "")
+    {
+        _repository.AddHistory(new CchPartMilestones
+        {
+            PartID = partId,
+            Action = action,
+            FromStatus = fromStatus,
+            ToStatus = toStatus,
+            Remark = remark,
+            CreatedBy = CurrentUser,
+            CreatedDate = DateTime.Now
         });
     }
 

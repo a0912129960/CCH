@@ -27,19 +27,10 @@ public class PartValidationService : IPartValidationService
         var result = new ValidationResult();
         var action = isNew ? "CREATE_SAVE" : "UPDATE_SAVE";
 
-        // 6. Role-based Access Control
-        if (role == "customer") { /* Allowed */ }
-        else if (role == "dcb")
+        // 0. Only New Entries Restriction (Excel specific logic handled by isNew flag)
+        if (!isNew)
         {
-            if (isNew)
-            {
-                result.Errors.Add(("Action", "DCB is not allowed to create new parts."));
-                return result;
-            }
-        }
-        else
-        {
-            result.Errors.Add(("Action", $"{role} is not allowed to perform {action}."));
+            result.Errors.Add(("Part No", "This part already exists. Bulk upload only supports new entries."));
             return result;
         }
 

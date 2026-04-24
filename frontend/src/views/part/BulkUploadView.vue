@@ -20,6 +20,7 @@ const { role, projectId: userProjectId } = authService.state;
 const isEmployee = role && role !== UserRole.CUSTOMER;
 
 const isCompleted = ref(false);
+const confirming = ref(false);
 const uploadRef = ref();
 const uploadFile = ref<File | null>(null);
 const previewing = ref(false);
@@ -149,7 +150,19 @@ const handleReset = () => {
   previewData.value = null;
   uploadFile.value = null;
   filterStatus.value = null;
-  if (isEmployee) selectedProjectId.value = '';
+  
+  // INTERNAL-AI-20260424: Maintain the "default first project" rule when resetting.
+  // (INTERNAL-AI-20260424: 重設時維持「預設選取第一個專案」的規則。)
+  if (projects.value.length > 0) {
+    selectedProjectId.value = projects.value[0].id;
+  } else if (isEmployee) {
+    selectedProjectId.value = '';
+  }
+  
+  // Clear the upload component internal state
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles();
+  }
 };
 
 const handleDownloadTemplate = async () => {
@@ -213,10 +226,16 @@ const handleDownloadTemplate = async () => {
               </el-upload>
             </div>
 
-            <div v-if="previewData" class="action-footer mt-6 flex justify-center">
+            <div v-if="previewData" class="action-footer mt-6 flex justify-center gap-4">
+              <Button 
+                type="secondary"
+                @click="handleReset"
+              >
+                {{ $t('part_upload.re_upload') }}
+              </Button>
               <Button 
                 :loading="confirming" 
-                :disabled="!previewData.rows.some(r => r.rowStatus === 'NEW')"
+                :disabled="!previewData.rows.some(r => r.rowStatus?.toUpperCase() === 'NEW')"
                 @click="handleConfirm"
               >
                 {{ $t('part_upload.confirm_button') }}
@@ -311,4 +330,5 @@ h1 { font-size: 2rem; color: var(--sidebar-color); margin: 0; }
 .text-red-500 { color: #ef4444; }
 .text-center { text-center: center; }
 .py-10 { padding: 2.5rem 0; }
+.action-footer { display: flex; justify-content: center; gap: 1.5rem; }
 </style>
