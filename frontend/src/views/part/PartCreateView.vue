@@ -20,7 +20,7 @@ const { projectId: userProjectId } = authService.state;
 
 // Prefer projectId from route query (passed from PartListView's customer filter),
 // fall back to the logged-in user's own projectId (客戶使用者自己的 ID).
-const resolvedprojectId = (route.query.projectId as string) || userprojectId || '';
+const resolvedprojectId = (route.query.projectId as string) || userProjectId || '';
 
 const countries = ref<CountryOption[]>([]);
 const projects = ref<ProjectOption[]>([]);
