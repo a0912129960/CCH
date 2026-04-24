@@ -153,9 +153,10 @@ const handleHtsCodeBlur = async () => {
 
     // Fallback to 8-digit was used and general rate found → auto-fill
     if (result.fallback_used && result.data?.general) {
-      const parsed = parseFloat(result.data.general.replace('%', '').trim());
-      if (!isNaN(parsed)) {
-        form.value.rate = parsed;
+      const raw = result.data.general.replace('%', '').trim();
+      const rate = raw.toLowerCase() === 'free' ? 0 : parseFloat(raw);
+      if (!isNaN(rate)) {
+        form.value.rate = rate;
         ElMessage.info('General Duty Rate auto-filled from HTS recommendation.');
       }
     }
