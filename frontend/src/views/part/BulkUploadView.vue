@@ -19,16 +19,54 @@ const router = useRouter();
 const { role, projectId: userProjectId } = authService.state;
 const isEmployee = role && role !== UserRole.CUSTOMER;
 
+const isCompleted = ref(false);
+const uploadRef = ref();
 const uploadFile = ref<File | null>(null);
 const previewing = ref(false);
-const confirming = ref(false);
-const isCompleted = ref(false);
 
 /**
  * MANDATORY: Using shallowRef for massive array data to optimize performance (Rule 1.2).
  * (針對巨量陣列資料使用 shallowRef 以優化效能。)
  */
 const previewData = shallowRef<BulkUploadPreviewReport | null>(null);
+
+const handlePreview = async () => {
+  if (!selectedProjectId.value) {
+    ElMessage.warning(t('employee.project_select'));
+    // INTERNAL-AI-20260424: Clear the file list even on validation failure to release the 'limit="1"' quota.
+    // (INTERNAL-AI-20260424: 即使驗證失敗也要清空檔案列表，以釋放 limit="1" 的配額。)
+    if (uploadRef.value) {
+      uploadRef.value.clearFiles();
+    }
+    uploadFile.value = null;
+    return;
+  }
+  
+  if (!uploadFile.value) {
+    // If handlePreview is somehow called without a file, ensure state is clean.
+    if (uploadRef.value) {
+      uploadRef.value.clearFiles();
+    }
+    return;
+  }
+
+  previewing.value = true;
+  try {
+    const result = await partService.previewBulkUpload(uploadFile.value, Number(selectedProjectId.value));
+    previewData.value = result;
+    ElMessage.success('Preview loaded.');
+  } catch (error: any) {
+    ElMessage.error(error.message || 'Preview failed.');
+    // INTERNAL-AI-20260424: Clear the upload file list on error so the user can try again.
+    if (uploadRef.value) {
+      uploadRef.value.clearFiles();
+    }
+    uploadFile.value = null;
+  } finally {
+    previewing.value = false;
+  }
+};
+
 const filterStatus = ref<string | null>(null); // 'NEW', 'MODIFIED', 'ERROR', 'NOCHANGE' or null
 
 const filteredRows = computed(() => {
@@ -53,30 +91,21 @@ const selectedProjectId = ref(isEmployee ? '' : userProjectId || '');
 
 onMounted(async () => {
   try {
-    projects.value = await partService.getProjects();
+    const rawData = await partService.getProjects();
+    // INTERNAL-AI-20260424: Filter out any "All" or empty options if they exist in the raw data.
+    // (INTERNAL-AI-20260424: 從原始資料中過濾掉任何「全部」或空白的選項。)
+    const data = rawData.filter(p => p.id && p.id !== 'all' && p.name && p.name.toLowerCase() !== 'all');
+    projects.value = data;
+    
+    // INTERNAL-AI-20260424: Always default to the first project in Bulk Upload to avoid empty selection.
+    // (INTERNAL-AI-20260424: 在批量上傳中始終預設選取第一個專案，以避免空白選取。)
+    if (data.length > 0) {
+      selectedProjectId.value = data[0].id;
+    }
   } catch (error) {
     console.error('Failed to load projects:', error);
   }
 });
-
-const handlePreview = async () => {
-  if (!selectedProjectId.value) {
-    ElMessage.warning(t('employee.project_select'));
-    return;
-  }
-  if (!uploadFile.value) return;
-
-  previewing.value = true;
-  try {
-    const result = await partService.previewBulkUpload(uploadFile.value, Number(selectedProjectId.value));
-    previewData.value = result;
-    ElMessage.success('Preview loaded.');
-  } catch (error: any) {
-    ElMessage.error(error.message || 'Preview failed.');
-  } finally {
-    previewing.value = false;
-  }
-};
 
 const handleFileChange = (file: UploadFile) => {
   if (file.raw) {
@@ -167,6 +196,7 @@ const handleDownloadTemplate = async () => {
 
             <div v-loading="previewing">
               <el-upload
+                ref="uploadRef"
                 class="upload-dragger"
                 drag
                 action="#"
