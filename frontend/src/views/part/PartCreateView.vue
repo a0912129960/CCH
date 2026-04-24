@@ -449,9 +449,11 @@ const handleSaveAndSubmit = async () => {
                   <span v-if="errors.usHtsCode" class="error-text">{{ $t(errors.usHtsCode) }}</span>
                   <div v-if="htsError" class="error-text">{{ htsError }}</div>
                   <div v-if="htsLookupLoading" class="field-hint">Looking up rate...</div>
-                  <span v-else-if="htsExists === true" class="hts-badge hts-found">✓ Verified on USITC</span>
-                  <span v-else-if="htsExists === false" class="hts-badge hts-not-found">✗ Not found on USITC</span>
-                  <span v-else class="hts-badge hts-unknown">— Not yet verified</span>
+                  <template v-else-if="form.usHtsCode">
+                    <span v-if="htsExists === true" class="hts-badge hts-found">✓ Verified on USITC</span>
+                    <span v-else-if="htsExists === false" class="hts-badge hts-not-found">✗ Not found on USITC</span>
+                    <span v-else class="hts-badge hts-unknown">— Not yet verified</span>
+                  </template>
                 </div>
               </div>
 
@@ -588,6 +590,11 @@ h1 { font-size: 2rem; color: var(--sidebar-color); margin: 0; }
 .form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
 .readonly-value { display: inline-block; padding: 0.6rem 0.8rem; font-size: 0.9rem; color: #525f7f; font-weight: 600; }
 .mono { font-family: monospace; }
+.field-hint { font-size: 0.75rem; color: #8898aa; margin-top: 3px; }
+.hts-badge { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
+.hts-found     { background: #f0faf0; color: #52c41a; border: 1px solid #b7eb8f; }
+.hts-not-found { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffa39e; }
+.hts-unknown   { background: #f5f5f5; color: #adb5bd; border: 1px solid #d9d9d9; }
 .btn-cch { padding: 9px 22px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.18s; border: none; display: inline-flex; align-items: center; font-family: inherit; }
 .btn-save { background-color: var(--primary-color); color: #fff; }
 .btn-save:hover:not(:disabled) { background-color: #337ecc; }
