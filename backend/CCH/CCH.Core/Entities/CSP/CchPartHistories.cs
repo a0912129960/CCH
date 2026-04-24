@@ -143,6 +143,6 @@ public class CchPartHistories
     /// Whether the HTS Code was found on hts.usitc.gov (null = not checked, true = found, false = not found).
     /// TODO: Remove [NotMapped] once CCHPartHistories.IsHTSExists column is added to the DB.
     /// </summary>
-    [NotMapped]
+    ///[NotMapped]
     public bool? IsHTSExists { get; set; }
 }
