@@ -35,6 +35,24 @@ public class PartsController : ControllerBase
         Ok(ApiResponse<PartListResponseDto>.SuccessResponse(_queryService.SearchParts(projectId, status, partNo, supplier, page, pageSize)));
 
     /// <summary>
+    /// Checks whether the given PartNo + CountryId combination already exists for the customer.
+    /// Returns { isDuplicate: true/false }.
+    /// (繁體中文) 檢查指定客戶下 PartNo + CountryId 組合是否重複，回傳 { isDuplicate: true/false }。
+    /// </summary>
+    [HttpGet("check-duplicate")]
+    public ActionResult<ApiResponse<object>> CheckDuplicate(
+        [FromQuery] int customerId,
+        [FromQuery] string partNo,
+        [FromQuery] int countryId)
+    {
+        if (string.IsNullOrWhiteSpace(partNo))
+            return BadRequest(ApiResponse<object>.FailureResponse("partNo is required. / partNo 為必填。"));
+
+        var isDuplicate = _queryService.CheckDuplicate(customerId, partNo, countryId);
+        return Ok(ApiResponse<object>.SuccessResponse(new { isDuplicate }));
+    }
+
+    /// <summary>
     /// Exports parts to an Excel file.
     /// (繁體中文) 將零件匯出至 Excel 檔案。
     /// </summary>

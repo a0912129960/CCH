@@ -28,6 +28,14 @@ public interface IPartRepository
     CchParts? GetPartByNo(int projectId, string partNo);
 
     /// <summary>
+    /// Checks whether a part with the same PartNo + CountryId already exists under the given customer.
+    /// Returns true if a duplicate is found (excluding the given excludePartId, if provided).
+    /// (繁體中文) 檢查同一客戶下是否已存在相同 PartNo + CountryId 的零件。
+    /// 若傳入 excludePartId，則排除該筆記錄（用於編輯時的唯一性檢查）。
+    /// </summary>
+    bool ExistsByPartNoAndCountry(int customerId, string partNo, int countryId, int? excludePartId = null);
+
+    /// <summary>
     /// Retrieves a specific part entity by ID.
     /// (繁體中文) 根據 ID 取得特定零件實體。
     /// </summary>

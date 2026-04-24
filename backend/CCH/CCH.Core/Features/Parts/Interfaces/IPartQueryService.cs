@@ -17,4 +17,10 @@ public interface IPartQueryService
 
     IEnumerable<MilestoneDto> GetMilestones(int partId);
     IEnumerable<PartDetailDto> GetHistory(int partId);
+
+    /// <summary>
+    /// Checks whether a Part No + Country of Origin combination already exists for the given customer.
+    /// (繁體中文) 檢查指定客戶下 PartNo + CountryId 組合是否已存在。
+    /// </summary>
+    bool CheckDuplicate(int customerId, string partNo, int countryId);
 }

@@ -236,4 +236,9 @@ public class PartQueryService : IPartQueryService
                 IsHTSExists = s.IsHTSExists
             })
             .ToList();
+//}
+
+    /// <inheritdoc/>
+    public bool CheckDuplicate(int customerId, string partNo, int countryId) =>
+        _repository.ExistsByPartNoAndCountry(customerId, partNo, countryId);
 }
