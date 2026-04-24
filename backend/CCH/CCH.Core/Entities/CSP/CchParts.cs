@@ -144,4 +144,9 @@ public class CchParts
     /// Updated Date
     /// </summary>
     public DateTime? UpdatedDate { get; set; }
+
+    /// <summary>
+    /// Whether the HTS Code was found on hts.usitc.gov (null = not checked, true = found, false = not found).
+    /// </summary>
+    public bool? IsHTSExists { get; set; }
 }

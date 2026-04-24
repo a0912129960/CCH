@@ -108,7 +108,8 @@ public class PartQueryService : IPartQueryService
                 Rate4     = beforeSnapshot.Rate4,
                 Remark    = beforeSnapshot.Remark ?? "",
                 UpdatedBy   = _commonRepository.GetUserName(beforeSnapshot.CreatedBy ?? ""),
-                UpdatedDate = beforeSnapshot.CreatedDate ?? DateTime.MinValue
+                UpdatedDate = beforeSnapshot.CreatedDate ?? DateTime.MinValue,
+                IsHTSExists = beforeSnapshot.IsHTSExists
             } : new PartDetailDto(),
             Modified = new PartDetailDto
             {
@@ -128,9 +129,10 @@ public class PartQueryService : IPartQueryService
                 Rate3     = listItem.Rate3,
                 HtsCode4  = listItem.HtsCode4,
                 Rate4     = listItem.Rate4,
-                Remark    = entity.Remark ?? "",
+                Remark      = entity.Remark ?? "",
                 UpdatedBy   = listItem.UpdatedBy,
-                UpdatedDate = listItem.UpdatedDate
+                UpdatedDate = listItem.UpdatedDate,
+                IsHTSExists = entity.IsHTSExists
             }
         };
     }
@@ -230,7 +232,8 @@ public class PartQueryService : IPartQueryService
                 Rate4 = s.Rate4,
                 Remark = s.Remark ?? "",
                 UpdatedBy = _commonRepository.GetUserName(s.CreatedBy ?? ""),
-                UpdatedDate = s.CreatedDate ?? DateTime.MinValue
+                UpdatedDate = s.CreatedDate ?? DateTime.MinValue,
+                IsHTSExists = s.IsHTSExists
             })
             .ToList();
 }

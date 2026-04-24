@@ -235,6 +235,7 @@ export interface PartDetailFields {
   remark: string;
   updatedBy: string;
   updatedDate: string;
+  isHTSExists?: boolean | null;
 }
 
 /**
@@ -297,6 +298,7 @@ export interface PartSavePayload {
   htsCode4?: string | null;
   rate4?: number | null;
   remark?: string;
+  isHTSExists?: boolean | null;
 }
 
 /**
@@ -391,6 +393,34 @@ export async function inactivatePart(partId: number): Promise<void> {
  */
 export async function sendToCustomerReview(partId: number, payload: PartSavePayload): Promise<void> {
   await api.post(`/parts/${partId}/send-to-customer-review`, payload);
+}
+
+export interface HtsRecommendationResult {
+  input_hts_code: string;
+  matched_keyword: string | null;
+  fallback_used: boolean;
+  message?: string;
+  data?: {
+    general: string | null;
+    special: string | null;
+    other: string | null;
+    description: string | null;
+  };
+}
+
+/**
+ * Query USITC HTS recommendation for a given HTS code (10-digit or 8-digit fallback).
+ * Returns null on any error so the caller can silently skip.
+ * (依 HTS Code 查詢 USITC 關稅建議；任何錯誤都回傳 null，讓呼叫方靜默跳過。)
+ */
+export async function getHtsRecommendation(formattedHtsCode: string): Promise<HtsRecommendationResult | null> {
+  try {
+    const rawCode = formattedHtsCode.replace(/\./g, '');
+    const response = await api.get<{ success: boolean; data: HtsRecommendationResult }>(`/hts-recommendation/${rawCode}`);
+    return response.data.data ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**

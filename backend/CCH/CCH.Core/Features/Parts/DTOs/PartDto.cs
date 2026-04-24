@@ -96,6 +96,7 @@ public class PartDetailDto
     public string Remark { get; set; } = string.Empty;
     public string UpdatedBy { get; set; } = string.Empty;
     public DateTime UpdatedDate { get; set; }
+    public bool? IsHTSExists { get; set; }
 }
 
 /// <summary>
@@ -198,6 +199,7 @@ public class PartSaveRequest
     public decimal? Rate4 { get; set; }
 
     public string Remark { get; set; } = string.Empty;
+    public bool? IsHTSExists { get; set; }
 }
 
 /// <summary>
